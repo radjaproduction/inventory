@@ -2,8 +2,8 @@
   "name": "Radja Production",
   "short_name": "Radja",
   "description": "Aplikasi Inventory & Manajemen Stok Radja Production",
-  "start_url": "/invradja/index.html",
-  "scope": "/invradja/",
+  "start_url": "/inventory/index.html",
+  "scope": "/inventory/",
   "display": "standalone",
   "background_color": "#E6E6E6",
   "theme_color": "#F5881E",
@@ -11,25 +11,25 @@
   "lang": "id",
   "categories": ["business", "productivity"],
   "icons": [
-    { "src": "/invradja/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/invradja/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
-    { "src": "/invradja/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/invradja/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "/inventory/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/inventory/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/inventory/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/inventory/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
     {
       "name": "Input Data",
       "short_name": "Input",
       "description": "Input data stok masuk",
-      "url": "/invradja/index.html?tab=input",
-      "icons": [{ "src": "/invradja/icon-192.png", "sizes": "192x192" }]
+      "url": "/inventory/index.html?tab=input",
+      "icons": [{ "src": "/inventory/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Transaksi",
       "short_name": "Transaksi",
       "description": "Buat transaksi baru",
-      "url": "/invradja/index.html?tab=transaksi",
-      "icons": [{ "src": "/invradja/icon-192.png", "sizes": "192x192" }]
+      "url": "/inventory/index.html?tab=transaksi",
+      "icons": [{ "src": "/inventory/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }
