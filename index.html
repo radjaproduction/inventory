@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
     <title>Radja Production - App</title>
 
-    <link rel="manifest" href="/invradja/manifest.json">
+    <link rel="manifest" href="/inventory/manifest.json">
     <meta name="theme-color" content="#0b0c10">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -14,14 +14,14 @@
     <!-- Cegah browser Android/Chrome memunculkan toolbar pencarian -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
-    <link rel="apple-touch-icon" href="/invradja/icon-192.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="/invradja/icon-192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="/invradja/icon-512.png">
+    <link rel="apple-touch-icon" href="/inventory/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/inventory/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/inventory/icon-512.png">
 
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/invradja/service-worker.js')
+                navigator.serviceWorker.register('/inventory/service-worker.js')
                     .then(reg => console.log('✅ SW registered:', reg.scope))
                     .catch(err => console.log('❌ SW error:', err));
             });
@@ -33,7 +33,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&family=Montserrat:wght@400;600;700;900&family=Inter:wght@400;600;700;900&family=Nunito:wght@400;600;700;900&family=Bebas+Neue&display=swap" rel="stylesheet">
-    <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <script>
@@ -238,7 +237,7 @@
             .sj-header { align-items: flex-start !important; }
             .th-header { align-items: flex-start !important; }
             html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
     </style>
 
