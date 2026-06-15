@@ -2021,8 +2021,10 @@ function hitungStokEfektifTrx(modelNama, warnaNama, ukuranNama, kecualiRowId, br
         const u = (uLabel?.textContent || "").trim().toUpperCase();
         const q = parseInt(qtyEl?.value) || 0;
         
-        // FIX: tambahkan cek model agar tidak terpotong lintas model lain
-        if (w && w !== 'PILIH' && u && u !== 'PILIH' && w === wTarget && u === uTarget) {
+        // FIX: cek model via trxState (satu form = satu model), warna & ukuran per baris
+        const activeModel = (trxState?.modelNama || "").trim().toUpperCase();
+        const modelMatch = !mTarget || !activeModel || activeModel === mTarget;
+        if (w && w !== 'PILIH' && u && u !== 'PILIH' && w === wTarget && u === uTarget && modelMatch) {
             stokDB -= q;
         }
     });
@@ -2258,8 +2260,9 @@ function updateSSK(tab, rowId) {
                 const brandStok = masterData.brand.map(b => {
                     const stokMap = hitungStokBrand(b.id);
                     const total = Object.values(stokMap).reduce((s, v) => s + Math.max(0, v), 0);
-                    return { ...b, total };
-                }).filter(b => b.total !== 0 || appData.riwayatInput.some(d => d.brand === b.nama)).sort((a, b) => {
+                    const totalRaw = Object.values(stokMap).reduce((s, v) => s + v, 0);
+                    return { ...b, total, totalRaw };
+                }).filter(b => b.total !== 0 || b.totalRaw !== 0 || appData.riwayatInput.some(d => d.brand === b.nama)).sort((a, b) => {
     if (_brandSortMode === 'zero-first') {
         const aZero = a.total === 0 ? 0 : 1;
         const bZero = b.total === 0 ? 0 : 1;
@@ -2273,7 +2276,7 @@ function updateSSK(tab, rowId) {
                     const maxStok = Math.max(...brandStok.map(b => b.total), 1);
                     brandListEl.innerHTML = brandStok.map(b => {
                         const pct = Math.max(2, Math.round((b.total / maxStok) * 100));
-                        const isNegative = b.total < 0;
+                        const isNegative = b.totalRaw < 0;
                         return `<div onclick="openBrandDetail(${b.id}, '${b.nama}')" class="rounded-xl overflow-hidden cursor-pointer transition-all border border-borderDark" style="background:#0b0c10;">
                             <div class="flex items-center justify-between px-3 py-2.5">
                                 <div class="flex items-center gap-2.5 flex-grow min-w-0">
@@ -2290,7 +2293,7 @@ function updateSSK(tab, rowId) {
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-2 flex-shrink-0 ml-3">
-                                    <span class="text-[12px] font-black ${isNegative ? 'text-red-400' : 'brand-text'}">${b.total.toLocaleString('id-ID')} <span class="text-[9px]">Pcs</span></span>
+                                    <span class="text-[12px] font-black ${isNegative ? 'text-red-400' : 'brand-text'}">${(isNegative ? b.totalRaw : b.total).toLocaleString('id-ID')} <span class="text-[9px]">Pcs</span></span>
                                     <i class="fa-solid fa-chevron-right text-[10px]" style="color:rgba(255,140,0,0.5)"></i>
                                 </div>
                             </div>
@@ -2632,7 +2635,7 @@ function updateSSK(tab, rowId) {
         const detailView = document.getElementById('stok-detail-view');
         document.getElementById('detail-brand-name').innerText = brandName;
         _detailStokMap = hitungStokBrand(brandId);
-        const totalPcs = Object.values(_detailStokMap).reduce((s, v) => s + v, 0);
+        const totalPcs = Object.values(_detailStokMap).reduce((s, v) => s + Math.max(0, v), 0);
         document.getElementById('detail-brand-total').innerText = totalPcs.toLocaleString('id-ID') + ' Pcs';
 
         // Reset filter panel MODEL/SIZE
@@ -5266,6 +5269,8 @@ function updateSSK(tab, rowId) {
 
         trx.items.forEach((item, idx) => {
             const stokSaatIni = hitungStokItem(trx.model, item.warna, item.ukuran, trx.brand);
+            const maxQty = stokSaatIni + item.qty;
+            const row = document.createElement('div');
             row.style.cssText = 'background:#0b0c10;border:1px solid #2a2d35;border-radius:8px;padding:8px 10px;';
             row.innerHTML = `
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
@@ -5316,7 +5321,8 @@ function updateSSK(tab, rowId) {
             const el = document.getElementById(`edit-trx-qty-${idx}`);
             const qtyBaru = parseInt(el?.value) || 0;
             const stokSaatIni = hitungStokItem(trx.model, item.warna, item.ukuran, trx.brand);
-            const maxQty = stokSaatIni + item.qty; { showToast(`Qty minimal 1 untuk ${item.warna}/${item.ukuran}`); return; }
+            const maxQty = stokSaatIni + item.qty;
+            if (qtyBaru < 1) { showToast(`Qty minimal 1 untuk ${item.warna}/${item.ukuran}`); return; }
             if (qtyBaru > maxQty) { showToast(`Qty maks ${maxQty} untuk ${item.warna}/${item.ukuran} (stok tidak cukup)`); return; }
 
             if (qtyBaru !== item.qty) {
