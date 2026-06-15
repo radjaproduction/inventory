@@ -4268,26 +4268,29 @@ function updateSSK(tab, rowId) {
         try {
             const modelNama = trxState.modelNama;
             for (const item of items) {
-                // Ambil riwayat input terbaru dari DB untuk item ini
+                // Ambil riwayat input terbaru dari DB untuk item ini — filter by brand + model
+                const brandNamaFilter = trxState.brandNama;
                 const { data: inputRows } = await sbClient
                     .from('riwayat_input_item')
-                    .select('qty, riwayat_input!inner(mode, model)')
+                    .select('qty, riwayat_input!inner(mode, model, brand)')
                     .eq('warna', item.warna)
-                    .eq('ukuran', item.ukuran);
+                    .eq('ukuran', item.ukuran)
+                    .eq('riwayat_input.brand', brandNamaFilter);
                 const { data: trxRows } = await sbClient
                     .from('transaksi_item')
-                    .select('qty, transaksi!inner(model)')
+                    .select('qty, transaksi!inner(model, brand)')
                     .eq('warna', item.warna)
-                    .eq('ukuran', item.ukuran);
+                    .eq('ukuran', item.ukuran)
+                    .eq('transaksi.brand', brandNamaFilter);
 
                 let stokDB = 0;
                 (inputRows || []).forEach(r => {
-                    if (r.riwayat_input?.model === modelNama) {
+                    if (r.riwayat_input?.model === modelNama && r.riwayat_input?.brand === brandNamaFilter) {
                         stokDB += r.riwayat_input.mode === 'retur' ? -r.qty : r.qty;
                     }
                 });
                 (trxRows || []).forEach(r => {
-                    if (r.transaksi?.model === modelNama) stokDB -= r.qty;
+                    if (r.transaksi?.model === modelNama && r.transaksi?.brand === brandNamaFilter) stokDB -= r.qty;
                 });
 
                 if (item.qty > stokDB) {
