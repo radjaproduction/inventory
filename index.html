@@ -2257,7 +2257,7 @@ function updateSSK(tab, rowId) {
             } else {
                 const brandStok = masterData.brand.map(b => {
                     const stokMap = hitungStokBrand(b.id);
-                    const total = Object.values(stokMap).reduce((s, v) => s + v, 0);
+                    const total = Object.values(stokMap).reduce((s, v) => s + Math.max(0, v), 0);
                     return { ...b, total };
                 }).filter(b => b.total !== 0 || appData.riwayatInput.some(d => d.brand === b.nama)).sort((a, b) => {
     if (_brandSortMode === 'zero-first') {
