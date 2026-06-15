@@ -7115,10 +7115,12 @@ ${docStyles}
     });
 
     function exitApp() {
-        showConfirm('Keluar dari aplikasi?', function() {
-            window.close();
-            setTimeout(() => { location.replace('about:blank'); }, 200);
-        }, { title: 'EXIT', type: 'warning', icon: '🚪', ok: 'YA, KELUAR' });
+        _pinLoginVal = '';
+        const dots = document.querySelectorAll('#pin-login-dots .pin-dot');
+        dots.forEach(d => d.classList.remove('active'));
+        const err = document.getElementById('pin-login-error');
+        if (err) err.textContent = '';
+        document.getElementById('pin-login-screen').style.display = 'flex';
     }
 
     const _blockBrowserKeys = function(e) {
@@ -7180,6 +7182,18 @@ ${docStyles}
         const printOverlay = document.getElementById('print-overlay');
         if (printOverlay && printOverlay.style.display !== 'none') {
             closePrintOverlay(); return;
+        }
+
+        // Tutup Modal Koreksi Stok jika terbuka
+        const modalKoreksi = document.getElementById('modal-koreksi-stok');
+        if (modalKoreksi && !modalKoreksi.classList.contains('hidden')) {
+            tutupKoreksiStok(); return;
+        }
+
+        // Tutup Brand Detail jika terbuka
+        const stokDetailView = document.getElementById('stok-detail-view');
+        if (stokDetailView && !stokDetailView.classList.contains('hidden')) {
+            closeBrandDetail(); return;
         }
 
         const pinLogin = document.getElementById('pin-login-screen');
