@@ -2452,6 +2452,7 @@ function updateSSK(tab, rowId) {
 
     let _detailStokMap = {};
     let _detailBrandName = '';
+    let _detailBrandId = null;
     let _activeWarnaFilter = null;
     let _filterInputMode = 'semua'; // 'semua' | 'masuk' | 'retur'
 
@@ -2508,18 +2509,22 @@ function updateSSK(tab, rowId) {
             const bgColor = warnaKode;
             const textColor = isMinus ? '#fca5a5' : textOnColor;
             const borderStyle = isMinus ? '2px solid #ef4444' : '1.5px solid rgba(255,140,0,0.55)';
+            const keyEsc = key.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
             return `<div class="rounded-lg overflow-hidden flex items-stretch" style="background:${bgColor}; min-height:38px; border: ${borderStyle};">
                 <div class="flex-1 flex items-center px-3 py-1.5">
                     <div class="flex flex-col leading-tight">
                         <span class="font-black text-[11px] tracking-wide" style="color:${textColor};">${model} <span style="opacity:0.5;font-weight:400;">|</span> <span class="text-[10px] font-bold" style="color:${textColor};opacity:0.85;">SIZE: ${ukuran}</span></span>
-                        <span class="text-[9px] font-bold mt-0.5 tracking-wider" style="color:${textColor};opacity:0.75;">&#9632; ${isMinus ? warna : warna}</span>
+                        <span class="text-[9px] font-bold mt-0.5 tracking-wider" style="color:${textColor};opacity:0.75;">&#9632; ${warna}</span>
                         ${isMinus ? `<span class="text-[8px] font-black mt-0.5" style="color:#f87171;"><i class="fa-solid fa-circle-exclamation mr-1"></i>STOK MINUS — CEK DATA</span>` : ''}
                         ${isLow ? `<span class="text-[8px] font-bold mt-0.5" style="color:${textColor};opacity:0.85;"><i class="fa-solid fa-triangle-exclamation mr-1"></i>STOK MENIPIS</span>` : ''}
                     </div>
                 </div>
-                <div class="flex flex-row items-center justify-between px-3" style="min-width:100px;">
-                    <span class="font-bold text-[10px]" style="color:${textColor};opacity:0.7;white-space:nowrap;">Stok:</span>
-                    <span class="font-black text-[22px] leading-none" style="color:${isMinus ? '#f87171' : textColor};">${qty}</span>
+                <div class="flex flex-col items-end justify-center gap-1 px-3" style="min-width:110px;">
+                    <div class="flex flex-row items-center justify-between w-full">
+                        <span class="font-bold text-[10px]" style="color:${textColor};opacity:0.7;white-space:nowrap;">Stok:</span>
+                        <span class="font-black text-[22px] leading-none" style="color:${isMinus ? '#f87171' : textColor};">${qty}</span>
+                    </div>
+                    ${isMinus ? `<button onclick="openKoreksiStok('${keyEsc}',${qty})" style="background:#ef4444;color:#fff;font-size:8px;font-weight:900;padding:2px 7px;border-radius:5px;border:none;cursor:pointer;font-family:Montserrat,sans-serif;letter-spacing:0.5px;white-space:nowrap;"><i class="fa-solid fa-wrench mr-1"></i>KOREKSI</button>` : ''}
                 </div>
             </div>`;
         }).join('');
@@ -2636,6 +2641,7 @@ function updateSSK(tab, rowId) {
 
     function openBrandDetail(brandId, brandName) {
         _detailBrandName = brandName;
+        _detailBrandId = brandId;
         _activeWarnaFilter = null;
         _stokFilterType = null; _stokFilterValue = null;
         const dashboard = document.getElementById('stok-dashboard-view');
@@ -2705,6 +2711,77 @@ function updateSSK(tab, rowId) {
                 detailView.classList.add('hidden'); detailView.classList.remove('flex');
                 dashboard.classList.remove('hidden'); dashboard.classList.add('flex', 'tab-content');
             }, 250);
+        }
+    }
+
+    function openKoreksiStok(key, stokSkrg) {
+        const [model, warna, ukuran] = key.split('||');
+        const modal = document.getElementById('modal-koreksi-stok');
+        if (!modal) return;
+        document.getElementById('koreksi-info-text').innerHTML =
+            `<span style="color:#ff8c00;font-weight:900;">${_detailBrandName}</span> &bull; ${model}<br>
+             <span style="font-size:10px;color:#9ca3af;">${warna} / ${ukuran}</span>`;
+        document.getElementById('koreksi-stok-skrg').textContent = stokSkrg;
+        document.getElementById('koreksi-stok-target').value = 0;
+        modal.dataset.key = key;
+        modal.dataset.stokSkrg = stokSkrg;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function tutupKoreksiStok() {
+        const modal = document.getElementById('modal-koreksi-stok');
+        if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+    }
+
+    async function simpanKoreksiStok() {
+        const modal = document.getElementById('modal-koreksi-stok');
+        if (!modal) return;
+        const key = modal.dataset.key;
+        const stokSkrg = parseInt(modal.dataset.stokSkrg) || 0;
+        const stokTarget = parseInt(document.getElementById('koreksi-stok-target').value);
+        if (isNaN(stokTarget) || stokTarget < 0) {
+            showToast('⚠️ Isi stok yang benar (≥ 0)'); return;
+        }
+        const selisih = stokTarget - stokSkrg; // harus positif supaya stok naik
+        if (selisih === 0) { tutupKoreksiStok(); return; }
+        if (selisih < 0) {
+            showToast('⚠️ Stok target harus lebih besar dari stok sekarang'); return;
+        }
+        const [model, warna, ukuran] = key.split('||');
+        const brandNama = _detailBrandName;
+        const now = new Date();
+        const tanggal = now.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' });
+        const jam = now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
+        const btnSimpan = document.getElementById('koreksi-btn-simpan');
+        if (btnSimpan) { btnSimpan.disabled = true; btnSimpan.textContent = 'Menyimpan...'; }
+        try {
+            const { data: ri, error: riErr } = await sbClient.from('riwayat_input').insert({
+                mode: 'masuk', brand: brandNama, model: model,
+                keterangan: `KOREKSI STOK (dari ${stokSkrg} → ${stokTarget})`, tanggal, jam
+            }).select().single();
+            if (riErr) throw riErr;
+            const { data: insertedItems, error: itemErr } = await sbClient.from('riwayat_input_item').insert([
+                { riwayat_input_id: ri.id, warna, ukuran, qty: selisih }
+            ]).select();
+            if (itemErr) throw itemErr;
+            // Update local data
+            appData.riwayatInput.unshift({
+                id: ri.id, mode: 'masuk', brand: brandNama, model,
+                keterangan: `KOREKSI STOK (dari ${stokSkrg} → ${stokTarget})`, tanggal, jam,
+                items: [{ id: insertedItems[0]?.id, warna, ukuran, qty: selisih }]
+            });
+            // Refresh detail view
+            _detailStokMap = hitungStokBrand(_detailBrandId);
+            const totalPcs = Object.values(_detailStokMap).reduce((s, v) => s + Math.max(0, v), 0);
+            document.getElementById('detail-brand-total').innerText = totalPcs.toLocaleString('id-ID') + ' Pcs';
+            renderDetailItems(null);
+            tutupKoreksiStok();
+            showToast(`✅ Koreksi berhasil! Stok ${model} ${warna}/${ukuran} → ${stokTarget} pcs`);
+        } catch(err) {
+            showToast('❌ Gagal koreksi: ' + (err.message || err));
+        } finally {
+            if (btnSimpan) { btnSimpan.disabled = false; btnSimpan.textContent = 'SIMPAN'; }
         }
     }
 
@@ -7123,5 +7200,36 @@ ${docStyles}
     });
 
     </script>
+
+    <!-- MODAL KOREKSI STOK -->
+    <div id="modal-koreksi-stok" class="hidden fixed inset-0 z-[999] items-end justify-center" style="background:rgba(0,0,0,0.7);">
+        <div style="background:#111318;border-radius:20px 20px 0 0;padding:24px 20px 32px;width:100%;max-width:480px;border-top:2px solid #ef4444;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <span style="color:#ef4444;font-size:13px;font-weight:900;letter-spacing:1px;font-family:Montserrat,sans-serif;"><i class="fa-solid fa-wrench mr-2"></i>KOREKSI STOK</span>
+                <button onclick="tutupKoreksiStok()" style="background:none;border:none;color:#6b7280;font-size:20px;cursor:pointer;line-height:1;">&times;</button>
+            </div>
+            <div id="koreksi-info-text" style="font-size:12px;color:#fff;font-family:Montserrat,sans-serif;margin-bottom:16px;line-height:1.6;"></div>
+            <div style="display:flex;gap:16px;align-items:center;margin-bottom:20px;">
+                <div style="flex:1;background:#1a1d24;border-radius:10px;padding:12px;text-align:center;">
+                    <div style="color:#9ca3af;font-size:9px;font-weight:700;margin-bottom:4px;">STOK SEKARANG</div>
+                    <div id="koreksi-stok-skrg" style="color:#f87171;font-size:26px;font-weight:900;font-family:Montserrat,sans-serif;"></div>
+                </div>
+                <div style="color:#6b7280;font-size:20px;">→</div>
+                <div style="flex:1;background:#1a1d24;border-radius:10px;padding:12px;text-align:center;">
+                    <div style="color:#9ca3af;font-size:9px;font-weight:700;margin-bottom:4px;">STOK TARGET</div>
+                    <input id="koreksi-stok-target" type="number" min="0" value="0"
+                        style="width:100%;text-align:center;background:transparent;border:none;outline:none;color:#4ade80;font-size:26px;font-weight:900;font-family:Montserrat,sans-serif;">
+                </div>
+            </div>
+            <div style="background:#1a1d24;border-radius:8px;padding:10px 14px;margin-bottom:20px;font-size:10px;color:#9ca3af;font-family:Montserrat,sans-serif;line-height:1.6;">
+                ⚡ Koreksi akan mencatat <b style="color:#ff8c00;">Input Masuk</b> sebagai selisih dari stok sekarang ke target.<br>
+                Contoh: stok -1 → target 5 = input masuk 6 pcs dicatat otomatis.
+            </div>
+            <div style="display:flex;gap:10px;">
+                <button onclick="tutupKoreksiStok()" style="flex:1;padding:13px;border:1px solid #3a3d45;border-radius:12px;background:#1f2230;color:#9ca3af;font-family:Montserrat,sans-serif;font-weight:700;font-size:12px;cursor:pointer;">BATAL</button>
+                <button id="koreksi-btn-simpan" onclick="simpanKoreksiStok()" style="flex:2;padding:13px;border:none;border-radius:12px;background:linear-gradient(90deg,#ef4444,#f87171);color:#fff;font-family:Montserrat,sans-serif;font-weight:900;font-size:12px;cursor:pointer;letter-spacing:0.5px;">SIMPAN</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
