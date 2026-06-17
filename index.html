@@ -3689,11 +3689,11 @@ function updateSSK(tab, rowId) {
         const popup = document.createElement('div');
         popup.id = 'warna-dropdown-popup';
         popup.className = 'fixed z-[999] bg-[#15171e] border border-[#2a2d35] rounded-xl shadow-2xl overflow-hidden';
-        popup.style.minWidth = '160px'; popup.style.maxHeight = '200px'; popup.style.overflowY = 'auto';
+        popup.style.minWidth = '200px'; popup.style.maxHeight = '300px'; popup.style.overflowY = 'auto';
         warnaList.forEach(w => {
             const item = document.createElement('div');
-            item.className = 'flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-[#0b0c10] transition-colors';
-            item.innerHTML = `<div class="w-5 h-5 rounded flex-shrink-0 border border-white/20" style="background:${w.kode}"></div><span class="text-[11px] font-medium text-white capitalize">${w.nama}</span>`;
+            item.className = 'flex items-center gap-3 px-5 py-4 cursor-pointer hover:bg-[#0b0c10] transition-colors border-b border-[#2a2d35] last:border-0';
+            item.innerHTML = `<div class="w-6 h-6 rounded flex-shrink-0 border border-white/20" style="background:${w.kode}"></div><span class="text-sm font-bold text-white capitalize">${w.nama}</span>`;
             item.onclick = () => { pilihWarna(tab, rowId, w.nama, w.kode); popup.remove(); };
             popup.appendChild(item);
         });
@@ -3746,10 +3746,10 @@ function updateSSK(tab, rowId) {
         const popup = document.createElement('div');
         popup.id = 'ukuran-dropdown-popup';
         popup.className = 'fixed z-[999] bg-[#15171e] border border-[#2a2d35] rounded-xl shadow-2xl overflow-hidden';
-        popup.style.minWidth = '120px'; popup.style.maxHeight = '180px'; popup.style.overflowY = 'auto';
+        popup.style.minWidth = '160px'; popup.style.maxHeight = '300px'; popup.style.overflowY = 'auto';
         sortUkuran(ukuranList).forEach(u => {
             const item = document.createElement('div');
-            item.className = 'px-4 py-2 cursor-pointer hover:bg-[#0b0c10] text-[11px] font-bold text-white transition-colors';
+            item.className = 'px-5 py-4 cursor-pointer hover:bg-[#0b0c10] text-sm font-bold text-white transition-colors border-b border-[#2a2d35] last:border-0';
             item.textContent = u.nama;
             item.onclick = () => { pilihUkuran(tab, rowId, u.nama); popup.remove(); };
             popup.appendChild(item);
@@ -3777,10 +3777,10 @@ function updateSSK(tab, rowId) {
         const popup = document.createElement('div');
         popup.id = 'generic-dropdown-popup';
         popup.className = 'fixed z-[999] bg-[#15171e] border border-[#2a2d35] rounded-xl shadow-2xl overflow-hidden';
-        popup.style.minWidth = '200px'; popup.style.maxHeight = '220px'; popup.style.overflowY = 'auto';
+        popup.style.minWidth = '240px'; popup.style.maxHeight = '300px'; popup.style.overflowY = 'auto';
         items.forEach(item => {
             const div = document.createElement('div');
-            div.className = 'px-4 py-2.5 cursor-pointer hover:bg-[#0b0c10] text-[11px] font-bold text-white transition-colors border-b border-[#2a2d35] last:border-0';
+            div.className = 'px-5 py-4 cursor-pointer hover:bg-[#0b0c10] text-sm font-bold text-white transition-colors border-b border-[#2a2d35] last:border-0';
             div.textContent = item.label;
             div.onclick = () => { onSelect(item); popup.remove(); };
             popup.appendChild(div);
