@@ -5477,6 +5477,22 @@ function updateSSK(tab, rowId) {
         return true;
     }
 
+    // ===== Auto-hide transaksi LUNAS yang sudah lebih dari 2 minggu (KREDIT selalu tetap tampil) =====
+    var _trxShowAllOld = false;
+    function isTrxLebihDari2Minggu(tanggalStr) {
+        const tgl = parseTanggalID(tanggalStr);
+        if (!tgl) return false;
+        const batas = new Date();
+        batas.setHours(0,0,0,0);
+        batas.setDate(batas.getDate() - 14);
+        return tgl < batas;
+    }
+    function toggleTrxShowAllOld() {
+        _trxShowAllOld = !_trxShowAllOld;
+        renderRiwayatTransaksi();
+    }
+    window.toggleTrxShowAllOld = toggleTrxShowAllOld;
+
     function setFilterHariIni() {
         const _now = new Date();
         const today = _now.getFullYear() + '-' + String(_now.getMonth()+1).padStart(2,'0') + '-' + String(_now.getDate()).padStart(2,'0');
@@ -5767,8 +5783,33 @@ function updateSSK(tab, rowId) {
         let filteredTrx = appData.riwayatTransaksi.filter(d => tanggalDalamRange(d.tanggal, fDari, fSampai));
         if (_filterTrxStatus === 'lunas') filteredTrx = filteredTrx.filter(d => d.status === 'lunas');
         else if (_filterTrxStatus === 'kredit') filteredTrx = filteredTrx.filter(d => d.status !== 'lunas');
+
+        // Auto-hide LUNAS >2 minggu (KREDIT selalu tetap tampil), hanya kalau tidak ada filter tanggal manual aktif
+        let hiddenOldCount = 0;
+        if (!fDari && !fSampai && !_trxShowAllOld) {
+            const beforeCount = filteredTrx.length;
+            filteredTrx = filteredTrx.filter(d => d.status !== 'lunas' || !isTrxLebihDari2Minggu(d.tanggal));
+            hiddenOldCount = beforeCount - filteredTrx.length;
+        }
+
+        const bannerHiddenOld = hiddenOldCount > 0 ? `
+            <div class="mb-3 rounded-xl border border-borderDark bg-cardBg p-3 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <i class="fa-solid fa-clock-rotate-left brand-text flex-shrink-0"></i>
+                    <div class="text-[10px] text-black leading-snug">${hiddenOldCount} transaksi LUNAS lebih dari 2 minggu disembunyikan.</div>
+                </div>
+                <button onclick="toggleTrxShowAllOld()" class="flex-shrink-0 text-[9px] font-black px-2.5 py-1.5 rounded-lg brand-gradient-bg text-black whitespace-nowrap">TAMPILKAN</button>
+            </div>` : (_trxShowAllOld ? `
+            <div class="mb-3 rounded-xl border border-borderDark bg-cardBg p-3 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <i class="fa-solid fa-eye brand-text flex-shrink-0"></i>
+                    <div class="text-[10px] text-black leading-snug">Menampilkan semua riwayat LUNAS (termasuk yang lebih dari 2 minggu).</div>
+                </div>
+                <button onclick="toggleTrxShowAllOld()" class="flex-shrink-0 text-[9px] font-black px-2.5 py-1.5 rounded-lg bg-darkBg border border-borderDark text-black whitespace-nowrap">SEMBUNYIKAN</button>
+            </div>` : '');
+
         if (filteredTrx.length === 0) {
-            list.innerHTML = '<div class="text-center text-black text-xs mt-10"><i class="fa-solid fa-calendar-xmark text-3xl mb-2 opacity-50"></i><br>Tidak ada transaksi di rentang tanggal ini.</div>';
+            list.innerHTML = bannerHiddenOld + '<div class="text-center text-black text-xs mt-10"><i class="fa-solid fa-calendar-xmark text-3xl mb-2 opacity-50"></i><br>Tidak ada transaksi di rentang tanggal ini.</div>';
             return;
         }
 
@@ -5799,7 +5840,7 @@ function updateSSK(tab, rowId) {
 
         const seenData = JSON.parse(localStorage.getItem('trx_seen_vendor') || '{}');
 
-        list.innerHTML = bannerKorup + Object.entries(vendorGroups).sort(([a], [b]) => a.localeCompare(b, 'id', { sensitivity: 'base' })).map(([vendor, trxList]) => {
+        list.innerHTML = bannerHiddenOld + bannerKorup + Object.entries(vendorGroups).sort(([a], [b]) => a.localeCompare(b, 'id', { sensitivity: 'base' })).map(([vendor, trxList]) => {
             const vendorLabel = String(vendor || '').trim() ? vendor : 'VENDOR TIDAK DIKETAHUI';
             const vendorKey = (vendorLabel || 'vendor_tidak_diketahui').replace(/\s+/g,'_');
             const cards = trxList.map((d, idx) => {
