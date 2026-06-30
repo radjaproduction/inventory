@@ -4545,7 +4545,7 @@ function updateSSK(tab, rowId) {
 	        renderInputSheetOptions(rowId);
 	        refreshInputSheetSSK(rowId);
         if (sheet) sheet.classList.add('active');
-        setTimeout(() => qtySheet?.focus(), 120);
+        if (qtySheet) qtySheet.focus();
     }
 
 	    function closeInputVariasiSheet() {
@@ -4938,7 +4938,7 @@ function updateSSK(tab, rowId) {
 	        renderTrxSheetOptions(rowId);
 	        refreshTrxSheetSSK(rowId);
 	        if (sheet) sheet.classList.add('active');
-	        setTimeout(() => qtySheet?.focus(), 120);
+	        if (qtySheet) qtySheet.focus();
 	    }
 
 	    function closeTrxVariasiSheet() {
