@@ -335,6 +335,55 @@
             flex-shrink: 0;
         }
 
+        .qty-numpad-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .qty-numpad-grid.disabled {
+            opacity: 0.35;
+            pointer-events: none;
+        }
+        .qty-numpad-btn {
+            min-height: 50px;
+            border-radius: 12px;
+            border: 1px solid #eadfd0;
+            background: #F6DBB6;
+            color: #1a1d24;
+            font-size: 18px;
+            font-weight: 900;
+            font-family: Montserrat, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            transition: transform 0.06s ease, background 0.06s ease;
+        }
+        .qty-numpad-btn:active {
+            background: var(--brand-main);
+            border-color: var(--brand-main);
+            color: #000;
+            transform: scale(0.92);
+        }
+        .qty-numpad-btn.qty-numpad-clear {
+            color: #ef4444;
+            border-color: rgba(239,68,68,0.4);
+        }
+        .qty-numpad-btn.qty-numpad-clear:active {
+            background: rgba(239,68,68,0.25);
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+        .qty-numpad-btn.qty-numpad-del {
+            color: #1a1d24;
+            font-size: 16px;
+        }
+
         #config-screen {
             position: fixed; inset: 0; background: #F6DBB6;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -835,11 +884,24 @@
                     <div class="input-sheet-section">
                         <div class="text-[10px] font-black text-black tracking-wider mb-2">QTY</div>
                         <div class="grid grid-cols-[1fr_82px] gap-2 items-center">
-                            <input id="input-sheet-qty" class="input-sheet-qty" type="text" inputmode="numeric" pattern="[0-9]*" value="0" style="text-transform:none;" oninput="onInputSheetQtyChange()">
+                            <input id="input-sheet-qty" class="input-sheet-qty" type="text" inputmode="numeric" pattern="[0-9]*" value="0" readonly style="text-transform:none;cursor:default;">
                             <div>
                                 <div class="text-[9px] font-black text-black mb-1 text-center">SSK</div>
                                 <div id="input-sheet-ssk" class="h-[42px] rounded-xl bg-darkBg border border-borderDark flex items-center justify-center text-sm font-black text-black">-</div>
                             </div>
+                        </div>
+                        <div class="qty-numpad-grid" id="input-sheet-numpad-grid">
+                            <button type="button" onclick="qtyNumpadPress('input','2')" class="qty-numpad-btn">2</button>
+                            <button type="button" onclick="qtyNumpadPress('input','3')" class="qty-numpad-btn">3</button>
+                            <button type="button" onclick="qtyNumpadPress('input','4')" class="qty-numpad-btn">4</button>
+                            <button type="button" onclick="qtyNumpadPress('input','5')" class="qty-numpad-btn">5</button>
+                            <button type="button" onclick="qtyNumpadPress('input','6')" class="qty-numpad-btn">6</button>
+                            <button type="button" onclick="qtyNumpadPress('input','7')" class="qty-numpad-btn">7</button>
+                            <button type="button" onclick="qtyNumpadPress('input','8')" class="qty-numpad-btn">8</button>
+                            <button type="button" onclick="qtyNumpadPress('input','9')" class="qty-numpad-btn">9</button>
+                            <button type="button" onclick="qtyNumpadPress('input','C')" class="qty-numpad-btn qty-numpad-clear">C</button>
+                            <button type="button" onclick="qtyNumpadPress('input','0')" class="qty-numpad-btn">0</button>
+                            <button type="button" onclick="qtyNumpadPress('input','DEL')" class="qty-numpad-btn qty-numpad-del"><i class="fa-solid fa-delete-left"></i></button>
                         </div>
                     </div>
                 </div>
@@ -880,11 +942,24 @@
                     <div class="input-sheet-section">
                         <div class="text-[10px] font-black text-black tracking-wider mb-2">QTY</div>
                         <div class="grid grid-cols-[1fr_82px] gap-2 items-center">
-                            <input id="trx-sheet-qty" class="input-sheet-qty" type="text" inputmode="numeric" pattern="[0-9]*" value="0" style="text-transform:none;" oninput="onTrxSheetQtyChange()">
+                            <input id="trx-sheet-qty" class="input-sheet-qty" type="text" inputmode="numeric" pattern="[0-9]*" value="0" readonly style="text-transform:none;cursor:default;">
                             <div>
                                 <div class="text-[9px] font-black text-black mb-1 text-center">SSK</div>
                                 <div id="trx-sheet-ssk" class="h-[42px] rounded-xl bg-darkBg border border-borderDark flex items-center justify-center text-sm font-black text-black">-</div>
                             </div>
+                        </div>
+                        <div class="qty-numpad-grid" id="trx-sheet-numpad-grid">
+                            <button type="button" onclick="qtyNumpadPress('trx','2')" class="qty-numpad-btn">2</button>
+                            <button type="button" onclick="qtyNumpadPress('trx','3')" class="qty-numpad-btn">3</button>
+                            <button type="button" onclick="qtyNumpadPress('trx','4')" class="qty-numpad-btn">4</button>
+                            <button type="button" onclick="qtyNumpadPress('trx','5')" class="qty-numpad-btn">5</button>
+                            <button type="button" onclick="qtyNumpadPress('trx','6')" class="qty-numpad-btn">6</button>
+                            <button type="button" onclick="qtyNumpadPress('trx','7')" class="qty-numpad-btn">7</button>
+                            <button type="button" onclick="qtyNumpadPress('trx','8')" class="qty-numpad-btn">8</button>
+                            <button type="button" onclick="qtyNumpadPress('trx','9')" class="qty-numpad-btn">9</button>
+                            <button type="button" onclick="qtyNumpadPress('trx','C')" class="qty-numpad-btn qty-numpad-clear">C</button>
+                            <button type="button" onclick="qtyNumpadPress('trx','0')" class="qty-numpad-btn">0</button>
+                            <button type="button" onclick="qtyNumpadPress('trx','DEL')" class="qty-numpad-btn qty-numpad-del"><i class="fa-solid fa-delete-left"></i></button>
                         </div>
                     </div>
                 </div>
@@ -4468,6 +4543,7 @@ function updateSSK(tab, rowId) {
 	        const ukuranActiveLabel = document.getElementById('input-sheet-ukuran-active');
 	        if (warnaActiveLabel) warnaActiveLabel.textContent = _isInputPlaceholder(warnaAktif) ? 'Pilih' : warnaAktif;
         if (ukuranActiveLabel) ukuranActiveLabel.textContent = _isInputPlaceholder(ukuranAktif) ? 'Pilih' : ukuranAktif;
+        updateQtyNumpadState('input', warnaAktif, ukuranAktif);
         if (!warnaWrap || !ukuranWrap) return;
 
         const warnaList = getInputSheetWarnaList(rowId);
@@ -4559,6 +4635,49 @@ function updateSSK(tab, rowId) {
 	            hapusRowInput(closingRowId);
 	        }
 	    }
+
+    // ==================== NUMPAD CUSTOM UNTUK QTY (Input Data & Transaksi) ====================
+    // Numpad terkunci sampai WARNA dan UKURAN sudah dipilih.
+    function updateQtyNumpadState(tab, warnaAktif, ukuranAktif) {
+        const gridId = tab === 'trx' ? 'trx-sheet-numpad-grid' : 'input-sheet-numpad-grid';
+        const grid = document.getElementById(gridId);
+        if (!grid) return;
+        const ready = !_isInputPlaceholder(warnaAktif) && !_isInputPlaceholder(ukuranAktif);
+        grid.classList.toggle('disabled', !ready);
+    }
+
+    function qtyNumpadPress(tab, key) {
+        const fieldId = tab === 'trx' ? 'trx-sheet-qty' : 'input-sheet-qty';
+        const qtySheet = document.getElementById(fieldId);
+        if (!qtySheet) return;
+
+        // Pengaman: blokir juga di level JS, bukan cuma CSS pointer-events
+        const draft = tab === 'trx' ? trxSheetDraft : inputSheetDraft;
+        if (_isInputPlaceholder(draft?.warna) || _isInputPlaceholder(draft?.ukuran)) {
+            showToast('⚠️ Pilih warna & ukuran dulu sebelum isi qty');
+            return;
+        }
+
+        let val = String(qtySheet.value || '0').replace(/\D/g, '') || '0';
+
+        if (key === 'C') {
+            val = '0';
+        } else if (key === 'DEL') {
+            val = val.slice(0, -1);
+            if (val === '') val = '0';
+        } else {
+            // digit 0-9
+            val = (val === '0') ? key : val + key;
+            if (val.length > 5) val = val.slice(0, 5); // batasi maksimal 5 digit
+        }
+
+        qtySheet.value = val;
+        if (tab === 'trx') {
+            onTrxSheetQtyChange();
+        } else {
+            onInputSheetQtyChange();
+        }
+    }
 
 	    function onInputSheetQtyChange() {
 	        if (!activeInputSheetRowId) return;
@@ -4858,6 +4977,7 @@ function updateSSK(tab, rowId) {
 	        const ukuranActiveLabel = document.getElementById('trx-sheet-ukuran-active');
 	        if (warnaActiveLabel) warnaActiveLabel.textContent = _isInputPlaceholder(warnaAktif) ? 'Pilih' : warnaAktif;
 	        if (ukuranActiveLabel) ukuranActiveLabel.textContent = _isInputPlaceholder(ukuranAktif) ? 'Pilih' : ukuranAktif;
+	        updateQtyNumpadState('trx', warnaAktif, ukuranAktif);
 	        if (!warnaWrap || !ukuranWrap) return;
 
 	        const warnaList = getTrxSheetWarnaList(rowId);
