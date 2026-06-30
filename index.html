@@ -749,22 +749,30 @@
                     </div>
                 </div>
                 <div class="bg-cardBg rounded-xl p-4 border border-borderDark flex flex-col">
-                    <div class="brand-gradient-bg rounded-xl px-3 py-2.5 flex items-center gap-2 mb-3 shadow-[0_2px_12px_rgba(255,140,0,0.25)] cursor-pointer" onclick="toggleBrandSort()">
+                    <div class="brand-gradient-bg rounded-xl px-3 py-2.5 flex items-center gap-2 shadow-[0_2px_12px_rgba(255,140,0,0.25)] cursor-pointer" onclick="toggleStokAccordion('stok-brand-collapse','stok-brand-chevron')">
     <i class="fa-solid fa-tags text-black text-sm"></i>
     <div class="flex-1">
         <div class="text-[13px] font-black text-black uppercase tracking-wide leading-none">STOK PER BRAND</div>
         <div class="text-[9px] text-black/60 font-bold mt-0.5" id="brand-sort-label">Klik untuk sort stok 0 ke atas</div>
     </div>
-    <i class="fa-solid fa-arrow-up-wide-short text-black text-sm" id="brand-sort-icon"></i>
+    <button type="button" onclick="event.stopPropagation(); toggleBrandSort()" class="w-7 h-7 rounded-lg bg-black/10 flex items-center justify-center flex-shrink-0">
+        <i class="fa-solid fa-arrow-up-wide-short text-black text-sm" id="brand-sort-icon"></i>
+    </button>
+    <i class="fa-solid fa-chevron-down text-black text-sm collapse-chevron rotated flex-shrink-0" id="stok-brand-chevron"></i>
 </div>
-                    <div id="stok-brand-list" class="flex flex-col gap-2"></div>
-                </div>
-                <div class="bg-cardBg rounded-xl p-4 border border-borderDark flex flex-col gap-3">
-                    <div class="brand-gradient-bg rounded-xl px-3 py-2.5 flex items-center gap-2 shadow-[0_2px_12px_rgba(255,140,0,0.25)]">
-                        <i class="fa-solid fa-handshake text-black text-sm"></i>
-                        <div class="text-[13px] font-black text-black uppercase tracking-wide leading-none">TRANSAKSI VENDOR</div>
+                    <div id="stok-brand-collapse" class="collapse-body">
+                        <div id="stok-brand-list" class="flex flex-col gap-2 pt-3"></div>
                     </div>
-                    <div id="stok-vendor-list" class="flex flex-col gap-2 mt-1"></div>
+                </div>
+                <div class="bg-cardBg rounded-xl p-4 border border-borderDark flex flex-col">
+                    <div class="brand-gradient-bg rounded-xl px-3 py-2.5 flex items-center gap-2 shadow-[0_2px_12px_rgba(255,140,0,0.25)] cursor-pointer" onclick="toggleStokAccordion('stok-vendor-collapse','stok-vendor-chevron')">
+                        <i class="fa-solid fa-handshake text-black text-sm"></i>
+                        <div class="text-[13px] font-black text-black uppercase tracking-wide leading-none flex-1">TRANSAKSI VENDOR</div>
+                        <i class="fa-solid fa-chevron-down text-black text-sm collapse-chevron rotated flex-shrink-0" id="stok-vendor-chevron"></i>
+                    </div>
+                    <div id="stok-vendor-collapse" class="collapse-body">
+                        <div id="stok-vendor-list" class="flex flex-col gap-2 pt-3"></div>
+                    </div>
                 </div>
             </div>
 
@@ -3272,6 +3280,15 @@ function updateSSK(tab, rowId) {
             const chev = document.getElementById(chevronId);
             if (chev) chev.classList.add('rotated');
         }
+    }
+
+    // Akordeon independen (tidak saling menutup) — dipakai untuk STOK PER BRAND & TRANSAKSI VENDOR
+    function toggleStokAccordion(bodyId, chevronId) {
+        const body = document.getElementById(bodyId);
+        const chevron = document.getElementById(chevronId);
+        if (!body) return;
+        body.classList.toggle('collapsed');
+        if (chevron) chevron.classList.toggle('rotated');
     }
 
     // ==================== BACKGROUND MODE ====================
