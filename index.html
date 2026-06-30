@@ -92,33 +92,14 @@
         .divide-borderDark > * + * { border-color: color-mix(in srgb, var(--brand-main) 25%, transparent) !important; }
         .border-b.border-borderDark,
         .border-t.border-borderDark { border-color: color-mix(in srgb, var(--brand-main) 25%, transparent) !important; }
-        body.bg-light { background-color: #ffffff !important; }
-        body.bg-light .bg-\[\#0b0c10\], body.bg-light .bg-darkBg { background-color: #f3f4f6 !important; }
-        body.bg-light .bg-cardBg, body.bg-light .bg-\[\#15171e\] { background-color: #ffffff !important; }
-        body.bg-light [class*="bg-[#15171e]/30"] { background-color: rgba(0,0,0,0.08) !important; }
-        body.bg-light [class*="bg-[#0b0c10]/95"] { background-color: rgba(255,255,255,0.95) !important; }
-        body.bg-light .bg-\[\#1a1d26\], body.bg-light .hover\:bg-\[\#1a1d26\]:hover { background-color: #eceef1 !important; }
-        body.bg-light .bg-gray-800 { background-color: #eceef1 !important; }
-        body.bg-light .bg-gray-500 { background-color: #d1d5db !important; }
-        body.bg-light .border-borderDark,
-        body.bg-light .border-\[\#2a2d35\] { border-color: #d1d5db !important; }
-        body.bg-light .border-gray-500,
-        body.bg-light .border-gray-600,
-        body.bg-light .border-gray-700 { border-color: #d1d5db !important; }
-        body.bg-light .text-white { color: #15171e !important; }
-        body.bg-light .text-gray-300 { color: #52525b !important; }
-        body.bg-light .text-gray-400 { color: #475569 !important; }
-        body.bg-light .text-gray-500 { color: #3f3f46 !important; }
-        body.bg-light .text-gray-600,
-        body.bg-light .placeholder-gray-600::placeholder { color: #27272a !important; }
+        body.bg-light { background-color: #f1f1f3 !important; }
+        body.bg-light .bg-\[#0b0c10\], body.bg-light .bg-darkBg { background-color: #e8e8ec !important; }
+        body.bg-light .bg-cardBg { background-color: #ffffff !important; }
+        body.bg-light .border-borderDark { border-color: #d4d4d8 !important; }
+        body.bg-light .text-white { color: #111 !important; }
+        body.bg-light .text-gray-400 { color: #555 !important; }
+        body.bg-light .text-gray-500 { color: #666 !important; }
         body.bg-light #bg-pro { opacity: 0.12; }
-        body.bg-light input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.55) !important; opacity: 0.8 !important; }
-        body.bg-light #loading-overlay, body.bg-light #config-screen { background: #ffffff !important; }
-        body.bg-light [style*="background:#0b0c10"] { background-color: #f8f9fb !important; border-color: #d1d5db !important; }
-        body.bg-light [style*="background:#0b0c10"][style*="color:#fff"] { color: #15171e !important; }
-        body.bg-light [style*="background:#0b0c10"][style*="color:#6b7280"] { color: #475569 !important; }
-        body.bg-light [style*="border:1px solid #2a2d35"],
-        body.bg-light [style*="border-bottom:1px solid #2a2d35"] { border-color: #d1d5db !important; }
 
         #bg-toggle.is-light { background: #ffffff !important; }
         #bg-toggle.is-light #bg-toggle-knob { transform: translateX(28px); background: #0b0c10; }
@@ -178,25 +159,25 @@
         }
 
         #loading-overlay {
-            position: fixed; inset: 0; background: #ffffff;
+            position: fixed; inset: 0; background: #0b0c10;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             z-index: 9990; gap: 16px;
         }
         .spinner {
-            width: 40px; height: 40px; border: 3px solid #d1d5db;
+            width: 40px; height: 40px; border: 3px solid #2a2d35;
             border-top-color: var(--brand-main); border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         #config-screen {
-            position: fixed; inset: 0; background: #ffffff;
+            position: fixed; inset: 0; background: #0b0c10;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             z-index: 9998; padding: 24px; gap: 16px;
         }
     </style>
 </head>
-<body class="w-full min-h-screen overflow-x-hidden bg-light">
+<body class="w-full min-h-screen overflow-x-hidden">
 
     <div id="custom-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:99999;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(4px);">
         <div id="custom-modal-box" style="background:#15171e;border-radius:20px;width:100%;max-width:340px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.6);border:1px solid rgba(255,140,0,0.25);animation:modalIn 0.22s cubic-bezier(0.34,1.56,0.64,1) forwards;">
@@ -262,8 +243,8 @@
 
     <div id="loading-overlay">
         <div class="spinner"></div>
-        <span class="text-xs font-bold tracking-widest" style="color:#3f3f46;">MENGHUBUNGKAN KE DATABASE...</span>
-        <span id="loading-timeout-hint" style="display:none;font-size:9px;color:#52525b;font-family:Montserrat,sans-serif;margin-top:-8px;">Koneksi lambat? Cek internet atau URL/Key Supabase.</span>
+        <span class="text-xs text-gray-400 font-bold tracking-widest">MENGHUBUNGKAN KE DATABASE...</span>
+        <span id="loading-timeout-hint" style="display:none;font-size:9px;color:#6b7280;font-family:Montserrat,sans-serif;margin-top:-8px;">Koneksi lambat? Cek internet atau URL/Key Supabase.</span>
     </div>
 
     <style>
@@ -291,11 +272,8 @@
         }
     </style>
 
-    <div id="pin-login-screen" style="display:none;position:fixed;inset:0;background:radial-gradient(ellipse at 50% 20%, rgba(255,140,0,0.22) 0%, rgba(255,179,71,0.10) 35%, #ffffff 70%), #ffffff;z-index:9995;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:0;overflow:hidden;">
-        <div class="absolute bottom-0 right-0 pointer-events-none select-none" style="width:220px;height:150px;opacity:0.07;transform:translate(18%,18%);z-index:0;">
-            <svg viewBox="0 0 3996.74 2715.33" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;"><path fill="#15171e" d="M1379.8 2078.49l-339.7 -450.38 -797.43 0 819.99 1087.21 369.69 0 427.79 0 778.91 0c746.73,0 1357.68,-610.94 1357.68,-1357.67 0,-746.72 -610.94,-1357.66 -1357.68,-1357.66l-685.55 0c242.92,127.17 422.11,359.81 476.47,636.83l209.08 0c396.43,0 720.83,324.36 720.83,720.83 0,396.44 -324.35,720.83 -720.83,720.83l-1259.26 0zm906.78 -104.15l-261.1 -346.23 -0.04 0 -84.57 -112.11c240.44,-141.62 402.14,-403.18 402.14,-701.94 0,-448.98 -365.11,-814.06 -814.05,-814.06l-1528.97 0 480.33 636.83 1048.65 0c97.46,0 177.22,79.74 177.22,177.22 0,97.51 -79.76,177.25 -177.22,177.25l-781.29 0 741.44 983.04 797.46 0z"/></svg>
-        </div>
-        <div class="w-full max-w-xs flex flex-col items-center gap-5 mx-auto relative z-10">
+    <div id="pin-login-screen" style="display:none;position:fixed;inset:0;background:radial-gradient(ellipse at 50% 20%, rgba(255,140,0,0.55) 0%, rgba(180,80,0,0.25) 35%, #0b0c10 70%), #0b0c10;z-index:9995;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:0;">
+        <div class="w-full max-w-xs flex flex-col items-center gap-5 mx-auto">
             <div class="brand-gradient-bg rounded-2xl px-6 py-4 text-center w-full">
                 <div id="pin-login-logo-wrap" class="flex justify-center mb-2 hidden"><img id="pin-login-logo" src="" class="h-12 object-contain"></div>
                 <div class="text-xl font-black text-[#15171e] display-brand-name">RADJA PRODUCTION</div>
@@ -325,11 +303,8 @@
         </div>
     </div>
 
-    <div id="pin-master-screen" style="display:none;position:fixed;inset:0;background:radial-gradient(ellipse at 50% 20%, rgba(255,140,0,0.22) 0%, rgba(255,179,71,0.10) 35%, #ffffff 70%), #ffffff;z-index:9996;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:0;overflow:hidden;">
-        <div class="absolute bottom-0 right-0 pointer-events-none select-none" style="width:220px;height:150px;opacity:0.07;transform:translate(18%,18%);z-index:0;">
-            <svg viewBox="0 0 3996.74 2715.33" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;"><path fill="#15171e" d="M1379.8 2078.49l-339.7 -450.38 -797.43 0 819.99 1087.21 369.69 0 427.79 0 778.91 0c746.73,0 1357.68,-610.94 1357.68,-1357.67 0,-746.72 -610.94,-1357.66 -1357.68,-1357.66l-685.55 0c242.92,127.17 422.11,359.81 476.47,636.83l209.08 0c396.43,0 720.83,324.36 720.83,720.83 0,396.44 -324.35,720.83 -720.83,720.83l-1259.26 0zm906.78 -104.15l-261.1 -346.23 -0.04 0 -84.57 -112.11c240.44,-141.62 402.14,-403.18 402.14,-701.94 0,-448.98 -365.11,-814.06 -814.05,-814.06l-1528.97 0 480.33 636.83 1048.65 0c97.46,0 177.22,79.74 177.22,177.22 0,97.51 -79.76,177.25 -177.22,177.25l-781.29 0 741.44 983.04 797.46 0z"/></svg>
-        </div>
-        <div class="w-full max-w-xs flex flex-col items-center gap-5 mx-auto relative z-10">
+    <div id="pin-master-screen" style="display:none;position:fixed;inset:0;background:radial-gradient(ellipse at 50% 20%, rgba(255,140,0,0.45) 0%, rgba(180,80,0,0.20) 35%, rgba(11,12,16,0.97) 70%);z-index:9996;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:0;backdrop-filter:blur(6px);">
+        <div class="w-full max-w-xs flex flex-col items-center gap-5 mx-auto">
             <div class="brand-gradient-bg rounded-2xl px-6 py-4 text-center w-full">
                 <div class="w-12 h-12 rounded-2xl bg-black/20 border border-black/10 flex items-center justify-center mx-auto mb-2">
                     <i class="fa-solid fa-shield-halved text-[#15171e] text-xl"></i>
@@ -364,11 +339,8 @@
         </div>
     </div>
 
-    <div id="pin-setup-screen" style="display:none;position:fixed;inset:0;background:radial-gradient(ellipse at 50% 20%, rgba(255,140,0,0.22) 0%, rgba(255,179,71,0.10) 35%, #ffffff 70%), #ffffff;z-index:9998;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:0;overflow:hidden;">
-        <div class="absolute bottom-0 right-0 pointer-events-none select-none" style="width:220px;height:150px;opacity:0.07;transform:translate(18%,18%);z-index:0;">
-            <svg viewBox="0 0 3996.74 2715.33" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;"><path fill="#15171e" d="M1379.8 2078.49l-339.7 -450.38 -797.43 0 819.99 1087.21 369.69 0 427.79 0 778.91 0c746.73,0 1357.68,-610.94 1357.68,-1357.67 0,-746.72 -610.94,-1357.66 -1357.68,-1357.66l-685.55 0c242.92,127.17 422.11,359.81 476.47,636.83l209.08 0c396.43,0 720.83,324.36 720.83,720.83 0,396.44 -324.35,720.83 -720.83,720.83l-1259.26 0zm906.78 -104.15l-261.1 -346.23 -0.04 0 -84.57 -112.11c240.44,-141.62 402.14,-403.18 402.14,-701.94 0,-448.98 -365.11,-814.06 -814.05,-814.06l-1528.97 0 480.33 636.83 1048.65 0c97.46,0 177.22,79.74 177.22,177.22 0,97.51 -79.76,177.25 -177.22,177.25l-781.29 0 741.44 983.04 797.46 0z"/></svg>
-        </div>
-        <div class="w-full max-w-xs flex flex-col items-center gap-5 mx-auto relative z-10">
+    <div id="pin-setup-screen" style="display:none;position:fixed;inset:0;background:radial-gradient(ellipse at 50% 20%, rgba(255,140,0,0.55) 0%, rgba(180,80,0,0.25) 35%, #0b0c10 70%);z-index:9998;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:0;">
+        <div class="w-full max-w-xs flex flex-col items-center gap-5 mx-auto">
             <div class="brand-gradient-bg rounded-2xl px-6 py-4 text-center w-full">
                 <div class="text-xl font-black text-[#15171e]">🔐 BUAT PIN</div>
                 <div id="pin-setup-subtitle" class="text-[11px] text-[#15171e]/70 font-bold mt-0.5">Buat PIN Login (4 angka)</div>
@@ -427,10 +399,6 @@
     </div>
 
     <div id="main-app" class="w-full relative min-h-screen flex flex-col" style="display:none">
-
-        <div id="bg-watermark-logo" class="fixed bottom-0 right-0 pointer-events-none select-none" style="width:240px;height:163px;opacity:0.08;transform:translate(20%,20%);z-index:0;">
-            <svg viewBox="0 0 3996.74 2715.33" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;"><path fill="var(--brand-main)" d="M1379.8 2078.49l-339.7 -450.38 -797.43 0 819.99 1087.21 369.69 0 427.79 0 778.91 0c746.73,0 1357.68,-610.94 1357.68,-1357.67 0,-746.72 -610.94,-1357.66 -1357.68,-1357.66l-685.55 0c242.92,127.17 422.11,359.81 476.47,636.83l209.08 0c396.43,0 720.83,324.36 720.83,720.83 0,396.44 -324.35,720.83 -720.83,720.83l-1259.26 0zm906.78 -104.15l-261.1 -346.23 -0.04 0 -84.57 -112.11c240.44,-141.62 402.14,-403.18 402.14,-701.94 0,-448.98 -365.11,-814.06 -814.05,-814.06l-1528.97 0 480.33 636.83 1048.65 0c97.46,0 177.22,79.74 177.22,177.22 0,97.51 -79.76,177.25 -177.22,177.25l-781.29 0 741.44 983.04 797.46 0z"/></svg>
-        </div>
 
         <div id="bg-pro" class="absolute top-0 right-0 w-full h-64 overflow-hidden pointer-events-none z-0">
             <svg width="100%" height="260" viewBox="0 0 420 260" preserveAspectRatio="xMaxYMin slice" xmlns="http://www.w3.org/2000/svg">
@@ -667,15 +635,15 @@
             </div>
             <div class="flex flex-col gap-3">
                 <div id="trx-vendor-selector" onclick="bukaDropdownTrx('vendor')" class="bg-cardBg rounded-xl p-5 flex items-center justify-between border border-borderDark cursor-pointer hover:bg-[#1a1d26] transition-colors">
-                    <div class="flex items-center gap-4"><div class="w-12 h-12 rounded-lg brand-gradient-bg flex items-center justify-center text-black"><i class="fa-solid fa-truck-fast text-xl"></i></div><div><h3 class="text-sm font-bold text-white mb-1">VENDOR</h3><p class="text-xs text-gray-400" id="trx-vendor-display">Pilih vendor</p></div></div>
+                    <div class="flex items-center gap-4"><div class="w-12 h-12 rounded-lg bg-black/40 brand-text border border-borderDark flex items-center justify-center"><i class="fa-solid fa-truck-fast text-xl"></i></div><div><h3 class="text-sm font-bold text-white mb-1">VENDOR</h3><p class="text-xs text-gray-400" id="trx-vendor-display">Pilih vendor</p></div></div>
                     <i class="fa-solid fa-chevron-down text-gray-500 text-base"></i>
                 </div>
                 <div id="trx-brand-selector" onclick="bukaDropdownTrx('brand')" class="bg-cardBg rounded-xl p-5 flex items-center justify-between border border-borderDark cursor-pointer hover:bg-[#1a1d26] transition-colors">
-                    <div class="flex items-center gap-4"><div class="w-12 h-12 rounded-lg brand-gradient-bg flex items-center justify-center text-black"><i class="fa-solid fa-tags text-xl"></i></div><div><h3 class="text-sm font-bold text-white mb-1">BRAND</h3><p class="text-xs text-gray-400" id="trx-brand-display">Pilih brand</p></div></div>
+                    <div class="flex items-center gap-4"><div class="w-12 h-12 rounded-lg bg-black/40 brand-text border border-borderDark flex items-center justify-center"><i class="fa-solid fa-tags text-xl"></i></div><div><h3 class="text-sm font-bold text-white mb-1">BRAND</h3><p class="text-xs text-gray-400" id="trx-brand-display">Pilih brand</p></div></div>
                     <i class="fa-solid fa-chevron-down text-gray-500 text-base"></i>
                 </div>
                 <div id="trx-model-selector" onclick="bukaDropdownTrx('model')" class="bg-cardBg rounded-xl p-5 flex items-center justify-between border border-borderDark cursor-pointer hover:bg-[#1a1d26] transition-colors">
-                    <div class="flex items-center gap-4"><div class="w-12 h-12 rounded-lg brand-gradient-bg flex items-center justify-center text-black"><i class="fa-solid fa-shirt text-xl"></i></div><div><h3 class="text-sm font-bold text-white mb-1">MODEL</h3><p class="text-xs text-gray-400" id="trx-model-display">Pilih model</p></div></div>
+                    <div class="flex items-center gap-4"><div class="w-12 h-12 rounded-lg bg-black/40 brand-text border border-borderDark flex items-center justify-center"><i class="fa-solid fa-shirt text-xl"></i></div><div><h3 class="text-sm font-bold text-white mb-1">MODEL</h3><p class="text-xs text-gray-400" id="trx-model-display">Pilih model</p></div></div>
                     <i class="fa-solid fa-chevron-down text-gray-500 text-base"></i>
                 </div>
                 <div style="display:none">
@@ -719,23 +687,16 @@
                 <button id="subtab-btn-pelunasan" onclick="switchRiwayatSubTab('pelunasan')" class="flex-1 py-4 text-[10px] font-bold rounded-lg text-gray-500 hover:text-white transition-all flex items-center justify-center gap-1"><i class="fa-solid fa-money-bill-wave text-[9px]"></i>PELUNASAN</button>
                 <button id="subtab-btn-bayar-sebagian" onclick="switchRiwayatSubTab('bayar-sebagian')" class="flex-1 py-4 text-[10px] font-bold rounded-lg text-gray-500 hover:text-white transition-all flex items-center justify-center gap-1"><i class="fa-solid fa-hand-holding-dollar text-[9px]"></i>BAYAR<br>SEBAGIAN</button>
             </div>
-            <div class="flex flex-col gap-2 bg-cardBg p-2.5 rounded-xl border border-borderDark">
-                <div class="flex gap-2 items-stretch">
-                    <div class="flex flex-col min-w-0 flex-1"><label class="text-[8px] text-gray-400 font-bold mb-0.5 leading-none">DARI</label><input type="date" id="filter-dari-tanggal" onchange="applyFilterTanggal()" class="w-full h-full bg-darkBg text-white text-[10px] px-2 py-3.5 rounded-lg border border-borderDark outline-none"></div>
-                    <span class="text-gray-500 text-xs flex-shrink-0 flex items-center">-</span>
-                    <div class="flex flex-col min-w-0 flex-1"><label class="text-[8px] text-gray-400 font-bold mb-0.5 leading-none">SAMPAI</label><input type="date" id="filter-sampai-tanggal" onchange="applyFilterTanggal()" class="w-full h-full bg-darkBg text-white text-[10px] px-2 py-3.5 rounded-lg border border-borderDark outline-none"></div>
-                </div>
-                <div class="flex gap-2">
-                    <button onclick="setFilterHariIni()" class="flex-1 text-[9px] font-black rounded-lg text-black transition-colors flex items-center justify-center gap-1 whitespace-nowrap py-2.5" style="background:linear-gradient(90deg,#ff8c00,#ffb347);">
-                        <i class="fa-solid fa-calendar-day text-[8px]"></i> HARI INI
-                    </button>
-                    <button onclick="setFilterBulanIni()" class="flex-1 text-[9px] font-black rounded-lg text-black transition-colors flex items-center justify-center gap-1 whitespace-nowrap py-2.5" style="background:linear-gradient(90deg,#ff8c00,#ffb347);">
-                        <i class="fa-solid fa-calendar-week text-[8px]"></i> BULAN INI
-                    </button>
-                    <button onclick="resetFilterTanggal()" class="flex-1 text-[9px] font-black rounded-lg text-black transition-colors flex items-center justify-center gap-1 whitespace-nowrap py-2.5" style="background:linear-gradient(90deg,#ff8c00,#ffb347);">
-                        <i class="fa-solid fa-rotate-left text-[8px]"></i> SEMUA
-                    </button>
-                </div>
+            <div class="flex gap-2 bg-cardBg p-2.5 rounded-xl border border-borderDark items-stretch">
+                <div class="flex flex-col min-w-0 w-[28%]"><label class="text-[8px] text-gray-400 font-bold mb-0.5 leading-none">DARI</label><input type="date" id="filter-dari-tanggal" onchange="applyFilterTanggal()" class="w-full h-full bg-darkBg text-white text-[10px] px-2 py-3.5 rounded-lg border border-borderDark outline-none"></div>
+                <span class="text-gray-500 text-xs flex-shrink-0 flex items-center">-</span>
+                <div class="flex flex-col min-w-0 w-[28%]"><label class="text-[8px] text-gray-400 font-bold mb-0.5 leading-none">SAMPAI</label><input type="date" id="filter-sampai-tanggal" onchange="applyFilterTanggal()" class="w-full h-full bg-darkBg text-white text-[10px] px-2 py-3.5 rounded-lg border border-borderDark outline-none"></div>
+                <button onclick="setFilterHariIni()" class="flex-1 text-[9px] font-black rounded-lg text-black transition-colors flex items-center justify-center gap-1 whitespace-nowrap" style="background:linear-gradient(90deg,#ff8c00,#ffb347);">
+                    <i class="fa-solid fa-calendar-day text-[8px]"></i> HARI INI
+                </button>
+                <button onclick="resetFilterTanggal()" class="flex-1 text-[9px] font-black rounded-lg text-black transition-colors flex items-center justify-center gap-1 whitespace-nowrap" style="background:linear-gradient(90deg,#ff8c00,#ffb347);">
+                    <i class="fa-solid fa-rotate-left text-[8px]"></i> SEMUA
+                </button>
             </div>
             <!-- Filter Mode Riwayat Input -->
             <div id="filter-input-mode-bar" class="flex gap-1 bg-darkBg p-1 rounded-xl border border-borderDark">
@@ -1246,35 +1207,9 @@
         const urlDisplay = document.getElementById('setting-supabase-url-display');
         const url = SUPABASE_URL || localStorage.getItem('sb_url') || '';
         if (urlDisplay) urlDisplay.textContent = url.replace('https://', '');
-        // Tampilkan data hasil cache lokal (kalau ada) dulu, biar dashboard tidak kosong
-        // sambil menunggu data terbaru dari Supabase — bikin bukaan app terasa instan.
-        // Data dari Supabase tetap ditarik LENGKAP (bukan dibatasi tanggal), karena stok
-        // dihitung dari rekap seluruh histori — kalau dibatasi, angka stok bisa salah.
-        muatDataDariCache();
         await muatSemuaData();
-        simpanDataKeCache();
         initUI();
         muatStatusPIN();
-    }
-
-    // ==================== CACHE LOKAL (stale-while-revalidate) ====================
-    function muatDataDariCache() {
-        try {
-            const cached = localStorage.getItem('app_data_cache');
-            if (!cached) return;
-            const c = JSON.parse(cached);
-            if (c.masterData) Object.assign(masterData, c.masterData);
-            if (c.appData) Object.assign(appData, c.appData);
-            renderVendorList(); renderBrandList(); renderModelList();
-            renderWarnaList(); renderUkuranList(); renderBrandOptions();
-            renderStokDashboard();
-        } catch(e) { console.warn('Gagal memuat cache lokal:', e.message); }
-    }
-
-    function simpanDataKeCache() {
-        try {
-            localStorage.setItem('app_data_cache', JSON.stringify({ masterData, appData }));
-        } catch(e) { console.warn('Gagal simpan cache lokal (mungkin penuh):', e.message); }
     }
 
     // ==================== PIN SYSTEM ====================
@@ -1986,15 +1921,11 @@ ALTER TABLE bayar_sebagian DISABLE ROW LEVEL SECURITY;`;
     }
 
     function initUI() {
-        // Default filter: BULAN INI — biar list riwayat tidak langsung menampilkan
-        // seluruh histori (2 bulan+) sekaligus. User tetap bisa pilih "SEMUA" manual.
-        const _now0 = new Date();
-        const _firstDay0 = _now0.getFullYear() + '-' + String(_now0.getMonth()+1).padStart(2,'0') + '-01';
-        const _today0 = _now0.getFullYear() + '-' + String(_now0.getMonth()+1).padStart(2,'0') + '-' + String(_now0.getDate()).padStart(2,'0');
+        // Default filter kosong = tampilkan semua data
         const dariEl = document.getElementById("filter-dari-tanggal");
         const sampaiEl = document.getElementById("filter-sampai-tanggal");
-        if (dariEl) dariEl.value = _firstDay0;
-        if (sampaiEl) sampaiEl.value = _today0;
+        if (dariEl) dariEl.value = '';
+        if (sampaiEl) sampaiEl.value = '';
         tambahModelRow();
         tambahWarnaRow();
         tambahUkuranRow();
@@ -2522,14 +2453,6 @@ function updateSSK(tab, rowId) {
     let _activeWarnaFilter = null;
     let _filterInputMode = 'semua'; // 'semua' | 'masuk' | 'retur'
 
-    // ==================== PAGINATION RIWAYAT (biar list tidak terlalu panjang) ====================
-    const RIWAYAT_PAGE_SIZE = 20;
-    const RIWAYAT_VENDOR_PAGE_SIZE = 15;
-    let _riwayatInputShowCount = RIWAYAT_PAGE_SIZE;
-    let _riwayatTrxShowVendorCount = RIWAYAT_VENDOR_PAGE_SIZE;
-    function muatLebihBanyakRiwayatInput() { _riwayatInputShowCount += RIWAYAT_PAGE_SIZE; renderRiwayatInput(); }
-    function muatLebihBanyakRiwayatTrx() { _riwayatTrxShowVendorCount += RIWAYAT_VENDOR_PAGE_SIZE; renderRiwayatTransaksi(); }
-
     // Fallback warna otomatis berdasarkan nama jika kode kosong/default
     function getWarnaKode(warnaNama) {
         const warnaData = masterData.warna.find(w => w.nama.toUpperCase() === warnaNama.toUpperCase());
@@ -2961,11 +2884,11 @@ function updateSSK(tab, rowId) {
             if (toggle) toggle.classList.remove('is-light');
             if (label) label.textContent = 'Aktif: Gelap';
         }
-        localStorage.setItem('app_bg_mode_v2', mode);
+        localStorage.setItem('app_bg_mode', mode);
     }
 
     function loadSavedBgMode() {
-        const mode = localStorage.getItem('app_bg_mode_v2') || 'light';
+        const mode = localStorage.getItem('app_bg_mode') || 'dark';
         setBackground(mode);
     }
     function previewLogo(event) {
@@ -4557,15 +4480,6 @@ function updateSSK(tab, rowId) {
         applyFilterTanggal();
     }
 
-    function setFilterBulanIni() {
-        const _now = new Date();
-        const firstDay = _now.getFullYear() + '-' + String(_now.getMonth()+1).padStart(2,'0') + '-01';
-        const today = _now.getFullYear() + '-' + String(_now.getMonth()+1).padStart(2,'0') + '-' + String(_now.getDate()).padStart(2,'0');
-        document.getElementById('filter-dari-tanggal').value = firstDay;
-        document.getElementById('filter-sampai-tanggal').value = today;
-        applyFilterTanggal();
-    }
-
     function resetFilterTanggal() {
         document.getElementById('filter-dari-tanggal').value = '';
         document.getElementById('filter-sampai-tanggal').value = '';
@@ -4579,8 +4493,6 @@ function updateSSK(tab, rowId) {
             showToast('⚠️ Tanggal awal tidak boleh lebih besar dari tanggal akhir!');
             return;
         }
-        _riwayatInputShowCount = RIWAYAT_PAGE_SIZE;
-        _riwayatTrxShowVendorCount = RIWAYAT_VENDOR_PAGE_SIZE;
         selectedTrxIds.clear();
         updateCetakBar();
         const activeSubTab = document.getElementById('subtab-btn-transaksi')?.classList.contains('brand-gradient-bg') ? 'transaksi'
@@ -4593,7 +4505,6 @@ function updateSSK(tab, rowId) {
 
     function setFilterInputMode(mode) {
         _filterInputMode = mode;
-        _riwayatInputShowCount = RIWAYAT_PAGE_SIZE;
         var btns = { semua: 'filter-input-semua', masuk: 'filter-input-masuk', retur: 'filter-input-retur' };
         var activeClass = 'flex-1 py-3.5 text-[10px] font-bold rounded-lg brand-gradient-bg text-black shadow-sm transition-all';
         var inactiveMasuk = 'flex-1 py-3.5 text-[10px] font-bold rounded-lg text-gray-500 hover:text-white transition-all flex items-center justify-center gap-1';
@@ -4620,7 +4531,7 @@ function updateSSK(tab, rowId) {
             list.innerHTML = '<div class="text-center text-gray-500 text-xs mt-10"><i class="fa-solid fa-calendar-xmark text-3xl mb-2 opacity-50"></i><br>Tidak ada data di rentang tanggal ini.</div>';
             return;
         }
-        list.innerHTML = filtered.slice(0, _riwayatInputShowCount).map((d, idx) => {
+        list.innerHTML = filtered.map((d, idx) => {
             const isRetur = d.mode === 'retur';
             const borderClass = isRetur ? 'border-red-500/40' : 'border-borderDark';
             const badgeClass = isRetur ? 'bg-red-500/20 text-red-400 border-red-500/40' : 'bg-green-500/20 text-green-400 border-green-500/40';
@@ -4658,7 +4569,7 @@ function updateSSK(tab, rowId) {
                     </div>
                 </div>
             </div>`;
-        }).join('') + (filtered.length > _riwayatInputShowCount ? `<button onclick="muatLebihBanyakRiwayatInput()" class="w-full py-3 rounded-lg dashed-border-brand brand-text font-bold text-[11px] flex items-center justify-center gap-2 hover:bg-[#1a1d26] transition-colors mt-1"><i class="fa-solid fa-rotate"></i> Muat Lebih Banyak (${filtered.length - _riwayatInputShowCount} lagi)</button>` : '');
+        }).join('');
     }
 
     function bukaModalEditInputItem(riwayatId, modelNama, warna, ukuran, qtyLama, itemIdx, mode) {
@@ -4818,7 +4729,6 @@ function updateSSK(tab, rowId) {
 
     function setFilterTrxStatus(mode) {
         _filterTrxStatus = mode;
-        _riwayatTrxShowVendorCount = RIWAYAT_VENDOR_PAGE_SIZE;
         const btnSemua = document.getElementById('filter-trx-semua');
         const btnLunas = document.getElementById('filter-trx-lunas');
         const btnKredit = document.getElementById('filter-trx-kredit');
@@ -4858,8 +4768,7 @@ function updateSSK(tab, rowId) {
 
         const seenData = JSON.parse(localStorage.getItem('trx_seen_vendor') || '{}');
 
-        const sortedVendorEntries = Object.entries(vendorGroups).sort(([a], [b]) => a.localeCompare(b, 'id', { sensitivity: 'base' }));
-        list.innerHTML = sortedVendorEntries.slice(0, _riwayatTrxShowVendorCount).map(([vendor, trxList]) => {
+        list.innerHTML = Object.entries(vendorGroups).sort(([a], [b]) => a.localeCompare(b, 'id', { sensitivity: 'base' })).map(([vendor, trxList]) => {
             const vendorKey = vendor.replace(/\s+/g,'_');
             const cards = trxList.map((d, idx) => {
                 const isLunas = d.status === 'lunas';
@@ -4942,7 +4851,7 @@ function updateSSK(tab, rowId) {
                 </div>
                 <div id="vg-body-${vendorKey}" class="hidden flex-col gap-2 mt-2">${cards}</div>
             </div>`;
-        }).join('') + (sortedVendorEntries.length > _riwayatTrxShowVendorCount ? `<button onclick="muatLebihBanyakRiwayatTrx()" class="w-full py-3 rounded-lg dashed-border-brand brand-text font-bold text-[11px] flex items-center justify-center gap-2 hover:bg-[#1a1d26] transition-colors mt-1"><i class="fa-solid fa-rotate"></i> Muat Lebih Banyak Vendor (${sortedVendorEntries.length - _riwayatTrxShowVendorCount} lagi)</button>` : '');
+        }).join('');
         if (_openVendorKey) {
             const body = document.getElementById('vg-body-' + _openVendorKey);
             const chev = document.getElementById('vg-chevron-' + _openVendorKey);
@@ -5142,10 +5051,10 @@ function updateSSK(tab, rowId) {
             .th-wrap { background:#fff; border-radius:12px; width:100%; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.10); }
             .th-header { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:14px 18px; border-bottom:3px solid ${brandMain}; -webkit-print-color-adjust:exact; print-color-adjust:exact; color-adjust:exact; }
             .th-badge { background:${brandMain} !important; color:#000 !important; font-size:12px; font-weight:900; padding:5px 12px; border-radius:8px; letter-spacing:1px; white-space:nowrap; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important; }
-            .th-no { font-size:9px; color:#525252; margin-top:3px; text-align:right; }
+            .th-no { font-size:9px; color:#666; margin-top:3px; text-align:right; }
             .th-infobox { background:#d4d4d4; border:1px solid #c0c0c0; border-radius:8px; margin:12px 18px; padding:10px 12px; display:grid; grid-template-columns:1fr 1fr; gap:6px; }
             .th-inforow { font-size:10px; display:flex; flex-direction:column; gap:2px; }
-            .th-infolabel { color:#595959; font-size:9px; }
+            .th-infolabel { color:#888; font-size:9px; }
             .th-infoval { font-weight:700; color:#111; }
             .th-tablewrap { padding:0 18px 12px; }
             .th-tablewrap table { width:100%; border-collapse:collapse; }
@@ -5162,9 +5071,9 @@ function updateSSK(tab, rowId) {
             .th-statusbadge { padding:5px 14px; border-radius:8px; font-weight:900; font-size:12px; background:${statusBg}; color:${statusColor}; border:1.5px solid ${statusColor}; letter-spacing:1px; white-space:nowrap; }
             .th-signarea { display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:0 18px 16px; margin-top:6px; }
             .th-signbox { text-align:center; }
-            .th-signline { border-top:1px solid #ccc; margin-top:32px; padding-top:5px; font-size:9px; color:#595959; }
+            .th-signline { border-top:1px solid #ccc; margin-top:32px; padding-top:5px; font-size:9px; color:#888; }
             .th-signname { font-weight:900; color:${brandMain}; font-size:10px; margin-top:2px; }
-            .th-footer { text-align:center; font-size:8px; color:#737373; padding:10px 18px 14px; border-top:1px solid #e5e7eb; letter-spacing:1px; text-transform:uppercase; }
+            .th-footer { text-align:center; font-size:8px; color:#aaa; padding:10px 18px 14px; border-top:1px solid #e5e7eb; letter-spacing:1px; text-transform:uppercase; }
         </style>
         <div class="th-wrap">
             <div class="th-header">
@@ -5328,11 +5237,11 @@ function updateSSK(tab, rowId) {
             .sj-wrap { background:#fff; border-radius:16px; padding:10px 16px 16px 16px; width:100%; border:1px solid #e5e7eb; box-shadow:0 4px 24px rgba(0,0,0,0.10); -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important; }
             .sj-header { display:flex; justify-content:space-between; align-items:center; gap:10px; padding-bottom:12px; border-bottom:2px solid ${brandMain}; margin-bottom:12px; }
             .sj-title { background:${brandMain}; color:#000; font-size:11px; font-weight:900; padding:5px 10px; border-radius:8px; letter-spacing:0.5px; white-space:nowrap; text-align:center; }
-            .sj-no { font-size:9px; color:#595959; margin-top:3px; }
+            .sj-no { font-size:9px; color:#888; margin-top:3px; }
             .sj-badge { background:rgba(255,140,0,0.12); border:1px solid ${brandMain}; color:${brandMain}; font-size:9px; font-weight:700; padding:3px 8px; border-radius:6px; display:inline-block; margin-bottom:10px; }
             .sj-infogrid { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:12px; }
             .sj-inforow { display:flex; gap:6px; font-size:9px; }
-            .sj-infolabel { color:#595959; min-width:100px; }
+            .sj-infolabel { color:#888; min-width:100px; }
             .sj-infoval { color:#111; font-weight:700; }
             .sj-table { width:100%; border-collapse:collapse; margin-bottom:12px; table-layout:fixed; }
             .sj-table thead tr { background:${brandMain}; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important; }
@@ -5345,7 +5254,7 @@ function updateSSK(tab, rowId) {
             .sj-table tbody tr:nth-child(even) { background:#d4d4d4; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important; }
             .sj-table .td-data { color:#111; padding:4px 3px; text-align:center; font-size:8.5px; white-space:normal; overflow:hidden; word-break:break-word; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important; }
             .sj-table .td-model { color:#111; padding:4px 3px; text-align:center; font-size:8.5px; font-weight:700; white-space:normal; overflow:hidden; word-break:break-word; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important; }
-            .sj-table .td-muted { color:#454545; padding:4px 3px; text-align:center; font-size:8.5px; white-space:normal; word-break:break-word; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important; }
+            .sj-table .td-muted { color:#555; padding:4px 3px; text-align:center; font-size:8.5px; white-space:normal; word-break:break-word; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important; }
             .sj-table .td-qty { padding:4px 3px; text-align:center; font-size:8.5px; white-space:nowrap; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important; }
             @media print {
                 .sj-table .td-data, .sj-table .td-model, .sj-table .td-muted, .sj-table .td-qty { font-size:7px !important; padding:2px 2px !important; }
@@ -5355,9 +5264,9 @@ function updateSSK(tab, rowId) {
             .sj-totalrow td { background:#c8c8c8; font-weight:900; padding:5px 4px; font-size:10px; border-top:2px solid ${brandMain}; color:${brandMain}; white-space:nowrap; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important; }
             .sj-signarea { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px; }
             .sj-signbox { text-align:center; }
-            .sj-signline { border-top:1px solid #ccc; margin-top:32px; padding-top:5px; font-size:9px; color:#595959; }
+            .sj-signline { border-top:1px solid #ccc; margin-top:32px; padding-top:5px; font-size:9px; color:#888; }
             .sj-signname { font-weight:900; color:#111; font-size:10px; margin-top:2px; }
-            .sj-footer { text-align:center; font-size:8px; color:#737373; margin-top:12px; padding-top:10px; border-top:1px solid #e5e7eb; }
+            .sj-footer { text-align:center; font-size:8px; color:#aaa; margin-top:12px; padding-top:10px; border-top:1px solid #e5e7eb; }
         </style>
         <div class="sj-wrap">
             <div class="sj-header">
@@ -6431,7 +6340,7 @@ function updateSSK(tab, rowId) {
         const riwayatRows = riwayatBayar.map(p => `
             <tr style="border-bottom:1px solid #e5e7eb;">
                 <td style="padding:6px 10px;color:#111;">${p.tanggal} ${p.jam}</td>
-                <td style="padding:6px 10px;color:#454545;">${p.keterangan || 'BAYAR SEBAGIAN'}</td>
+                <td style="padding:6px 10px;color:#555;">${p.keterangan || 'BAYAR SEBAGIAN'}</td>
                 <td style="padding:6px 10px;text-align:right;font-weight:900;color:#16a34a;">Rp ${p.jumlah.toLocaleString('id-ID')}</td>
             </tr>`).join('');
 
@@ -6441,10 +6350,10 @@ function updateSSK(tab, rowId) {
             .th-wrap { background:#fff; border-radius:12px; width:100%; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.10); }
             .th-header { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:14px 18px; border-bottom:3px solid ${brandMain}; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
             .th-badge { background:${brandMain} !important; color:#000 !important; font-size:12px; font-weight:900; padding:5px 12px; border-radius:8px; letter-spacing:1px; white-space:nowrap; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
-            .th-no { font-size:9px; color:#525252; margin-top:3px; text-align:right; }
+            .th-no { font-size:9px; color:#666; margin-top:3px; text-align:right; }
             .th-infobox { background:#d4d4d4; border:1px solid #c0c0c0; border-radius:8px; margin:12px 18px; padding:10px 12px; display:grid; grid-template-columns:1fr 1fr; gap:6px; }
             .th-inforow { font-size:10px; display:flex; flex-direction:column; gap:2px; }
-            .th-infolabel { color:#595959; font-size:9px; }
+            .th-infolabel { color:#888; font-size:9px; }
             .th-infoval { font-weight:700; color:#111; }
             .th-tablewrap { padding:0 18px 10px; }
             .th-tablewrap table { width:100%; border-collapse:collapse; }
@@ -6455,7 +6364,7 @@ function updateSSK(tab, rowId) {
             .th-totalrow { border-top:2px solid ${brandMain}; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
             .th-totalrow td { padding:7px 10px; font-size:11px; }
             .th-section { margin:0 18px 10px; }
-            .th-section-title { font-size:9px; font-weight:900; color:#595959; letter-spacing:1px; text-transform:uppercase; margin-bottom:4px; }
+            .th-section-title { font-size:9px; font-weight:900; color:#888; letter-spacing:1px; text-transform:uppercase; margin-bottom:4px; }
             .th-paybox { background:#d4d4d4; border:1px solid #c0c0c0; border-radius:8px; overflow:hidden; }
             .th-paybox table { width:100%; border-collapse:collapse; }
             .th-paybox thead tr { background:#b0b0b0; }
@@ -6463,10 +6372,10 @@ function updateSSK(tab, rowId) {
             .th-paybox tbody td { padding:6px 10px; font-size:10px; }
             .th-paybox tbody tr:nth-child(even) { background:#e0e0e0; }
             .th-sisabox { margin:0 18px 10px; background:#fee2e2; border:1.5px solid #dc2626; border-radius:8px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
-            .th-footer { text-align:center; font-size:8px; color:#737373; padding:10px 18px 14px; border-top:1px solid #e5e7eb; letter-spacing:1px; text-transform:uppercase; }
+            .th-footer { text-align:center; font-size:8px; color:#aaa; padding:10px 18px 14px; border-top:1px solid #e5e7eb; letter-spacing:1px; text-transform:uppercase; }
             .th-signarea { display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:0 18px 16px; margin-top:6px; }
             .th-signbox { text-align:center; }
-            .th-signline { border-top:1px solid #ccc; margin-top:32px; padding-top:5px; font-size:9px; color:#595959; }
+            .th-signline { border-top:1px solid #ccc; margin-top:32px; padding-top:5px; font-size:9px; color:#888; }
             .th-signname { font-weight:900; color:${brandMain}; font-size:10px; margin-top:2px; }
         </style>
         <div class="th-wrap">
@@ -6517,7 +6426,7 @@ function updateSSK(tab, rowId) {
             <div class="th-sisabox">
                 <div>
                     <div style="font-size:9px;font-weight:700;color:#dc2626;letter-spacing:1px;">SISA TAGIHAN</div>
-                    <div style="font-size:9px;color:#454545;margin-top:2px;">Total Tagihan − Sudah Dibayar</div>
+                    <div style="font-size:9px;color:#555;margin-top:2px;">Total Tagihan − Sudah Dibayar</div>
                 </div>
                 <div style="font-size:18px;font-weight:900;color:#dc2626;">Rp ${sisaTagihan.toLocaleString('id-ID')}</div>
             </div>
