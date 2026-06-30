@@ -3711,8 +3711,6 @@ function updateSSK(tab, rowId) {
         const label = document.getElementById(`${tab}-warna-label-${rowId}`);
         if (dot) dot.style.background = kode;
         if (label) label.textContent = nama;
-        const ukuranLabel = document.getElementById(`${tab}-ukuran-label-${rowId}`);
-        if (ukuranLabel) ukuranLabel.textContent = 'Pilih';
         const sskEl = document.getElementById(`${tab}-ssk-${rowId}`);
         if (sskEl) sskEl.value = '';
         updateSSK(tab, rowId);
@@ -3770,9 +3768,58 @@ function updateSSK(tab, rowId) {
         if (tab === 'input') _updateInputRowBtn(rowId);
         if (tab === 'trx') _updateTrxRowBtn(rowId);
     }
+
+    function tambahVariasiDariKolom(tab, rowId, keep) {
+        if (tab === 'input' && !inputState.modelId) { showToast('⚠️ Pilih MODEL terlebih dahulu!'); return; }
+        if (tab === 'trx' && !trxState.modelNama) { showToast('⚠️ Pilih MODEL terlebih dahulu!'); return; }
+
+        const list = document.getElementById(`${tab}-variasi-list`);
+        if (!list) return;
+
+        const warnaNama = document.getElementById(`${tab}-warna-label-${rowId}`)?.textContent?.trim() || '';
+        const ukuranNama = document.getElementById(`${tab}-ukuran-label-${rowId}`)?.textContent?.trim() || '';
+
+        if (keep === 'warna' && (!warnaNama || warnaNama === 'Pilih')) {
+            showToast('⚠️ Pilih WARNA terlebih dahulu!');
+            return;
+        }
+        if (keep === 'ukuran' && (!ukuranNama || ukuranNama === 'Pilih')) {
+            showToast('⚠️ Pilih UKURAN terlebih dahulu!');
+            return;
+        }
+
+        if (tab === 'input') tambahVariasiInput();
+        if (tab === 'trx') tambahVariasiTrx();
+
+        const newRow = list.lastElementChild;
+        const newId = newRow?.id?.replace(`${tab}-row-`, '');
+        if (!newId) return;
+
+        if (keep === 'warna') {
+            const warnaData = masterData.warna.find(w => (w.nama || '').trim().toUpperCase() === warnaNama.toUpperCase());
+            const dotColor = document.getElementById(`${tab}-warna-dot-${rowId}`)?.style?.background || '#888';
+            pilihWarna(tab, newId, warnaNama, warnaData?.kode || dotColor);
+        } else {
+            pilihUkuran(tab, newId, ukuranNama);
+        }
+
+        updateSSK(tab, newId);
+        if (tab === 'input') _updateInputRowBtn(newId);
+        if (tab === 'trx') {
+            _updateTrxRowsLockState();
+            _updateTrxRowBtn(newId);
+            refreshSemuaSSKTrx();
+        }
+    }
+    function tutupSemuaDropdownPopup() {
+        ['generic-dropdown-popup', 'warna-dropdown-popup', 'ukuran-dropdown-popup'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        });
+    }
+
     function bukaGenericDropdown(items, trigger, onSelect) {
-        const existing = document.getElementById('generic-dropdown-popup');
-        if (existing) existing.remove();
+        tutupSemuaDropdownPopup();
         if (items.length === 0) { showAlert('Data belum tersedia.', {type:'warning'}); return; }
         const popup = document.createElement('div');
         popup.id = 'generic-dropdown-popup';
@@ -3790,7 +3837,7 @@ function updateSSK(tab, rowId) {
         document.body.appendChild(popup);
         setTimeout(() => {
             document.addEventListener('click', function handler(e) {
-                if (!popup.contains(e.target) && e.target !== trigger) { popup.remove(); document.removeEventListener('click', handler); }
+                if (!popup.contains(e.target) && !trigger.contains(e.target)) { popup.remove(); document.removeEventListener('click', handler); }
             });
         }, 50);
     }
@@ -3935,18 +3982,24 @@ function updateSSK(tab, rowId) {
         const delClick = isFirst ? '' : `onclick="hapusRowInput(${id})"`;
 
         row.innerHTML = `
-            <div class="col-span-4">
-                <div id="input-warna-sel-${id}" onclick="bukaDropdownWarna('input',${id})" class="bg-darkBg rounded-lg px-2 py-6 flex items-center gap-1.5 border border-borderDark cursor-pointer opacity-40 pointer-events-none select-none">
+            <div class="col-span-4 flex gap-1">
+                <div id="input-warna-sel-${id}" onclick="bukaDropdownWarna('input',${id})" class="bg-darkBg rounded-lg px-2 py-6 flex items-center gap-1.5 border border-borderDark cursor-pointer opacity-40 pointer-events-none select-none flex-1 min-w-0">
                     <div id="input-warna-dot-${id}" class="w-3 h-3 rounded-full flex-shrink-0 border border-white/20" style="background:#888"></div>
                     <span id="input-warna-label-${id}" class="font-bold text-xs flex-grow text-left truncate text-white">Pilih</span>
                     <i class="fa-solid fa-chevron-down text-[9px] brand-text flex-shrink-0"></i>
                 </div>
+                <button type="button" title="Tambah baris, kosongkan warna" onclick="tambahVariasiDariKolom('input',${id},'ukuran')" class="w-10 rounded-lg border brand-text flex items-center justify-center active:scale-95 transition-all flex-shrink-0" style="border-color:var(--brand-main);background:rgba(255,140,0,0.10);">
+                    <i class="fa-solid fa-plus text-[10px]"></i>
+                </button>
             </div>
-            <div class="col-span-3">
-                <div id="input-ukuran-sel-${id}" onclick="bukaDropdownUkuran('input',${id})" class="bg-darkBg rounded-lg px-2 py-6 flex justify-between items-center border border-borderDark cursor-pointer opacity-40 pointer-events-none select-none">
-                    <span id="input-ukuran-label-${id}" class="text-xs font-bold text-white">Pilih</span>
+            <div class="col-span-3 flex gap-1">
+                <div id="input-ukuran-sel-${id}" onclick="bukaDropdownUkuran('input',${id})" class="bg-darkBg rounded-lg px-2 py-6 flex items-center gap-1.5 border border-borderDark cursor-pointer opacity-40 pointer-events-none select-none flex-1 min-w-0">
+                    <span id="input-ukuran-label-${id}" class="text-xs font-bold text-white flex-grow text-left truncate">Pilih</span>
                     <i class="fa-solid fa-chevron-down text-[9px] brand-text flex-shrink-0"></i>
                 </div>
+                <button type="button" title="Tambah baris, kosongkan ukuran" onclick="tambahVariasiDariKolom('input',${id},'warna')" class="w-10 rounded-lg border brand-text flex items-center justify-center active:scale-95 transition-all flex-shrink-0" style="border-color:var(--brand-main);background:rgba(255,140,0,0.10);">
+                    <i class="fa-solid fa-plus text-[10px]"></i>
+                </button>
             </div>
             <div class="col-span-2">
                 <div id="input-qty-wrap-${id}" class="bg-darkBg rounded-lg flex items-center justify-center border border-borderDark px-1 py-6 opacity-40 pointer-events-none select-none">
@@ -4076,6 +4129,7 @@ function updateSSK(tab, rowId) {
     }
 
     function bukaDropdownTrx(type) {
+        tutupSemuaDropdownPopup();
         const triggerEl = document.getElementById('trx-' + type + '-selector');
         if (type === 'vendor') {
             if (masterData.vendor.length === 0) { showAlert('Belum ada vendor.', {type:'warning'}); return; }
@@ -4187,18 +4241,24 @@ function updateSSK(tab, rowId) {
         const delClick = isFirst ? '' : `onclick="hapusRowTrx(${id})"`;
 
         row.innerHTML = `
-            <div class="col-span-4">
-                <div id="trx-warna-sel-${id}" onclick="bukaDropdownWarna('trx',${id})" class="bg-darkBg rounded-lg px-2 py-6 flex items-center gap-1.5 border border-borderDark cursor-pointer opacity-40 pointer-events-none select-none">
+            <div class="col-span-4 flex gap-1">
+                <div id="trx-warna-sel-${id}" onclick="bukaDropdownWarna('trx',${id})" class="bg-darkBg rounded-lg px-2 py-6 flex items-center gap-1.5 border border-borderDark cursor-pointer opacity-40 pointer-events-none select-none flex-1 min-w-0">
                     <div id="trx-warna-dot-${id}" class="w-3 h-3 rounded-full flex-shrink-0 border border-white/20" style="background:#888"></div>
                     <span id="trx-warna-label-${id}" class="font-bold text-xs flex-grow text-left truncate text-white">Pilih</span>
                     <i class="fa-solid fa-chevron-down text-[9px] brand-text flex-shrink-0"></i>
                 </div>
+                <button type="button" title="Tambah baris, kosongkan warna" onclick="tambahVariasiDariKolom('trx',${id},'ukuran')" class="w-10 rounded-lg border brand-text flex items-center justify-center active:scale-95 transition-all flex-shrink-0" style="border-color:var(--brand-main);background:rgba(255,140,0,0.10);">
+                    <i class="fa-solid fa-plus text-[10px]"></i>
+                </button>
             </div>
-            <div class="col-span-3">
-                <div id="trx-ukuran-sel-${id}" onclick="bukaDropdownUkuran('trx',${id})" class="bg-darkBg rounded-lg px-2 py-6 flex justify-between items-center border border-borderDark cursor-pointer opacity-40 pointer-events-none select-none">
-                    <span id="trx-ukuran-label-${id}" class="text-xs font-bold text-white">Pilih</span>
+            <div class="col-span-3 flex gap-1">
+                <div id="trx-ukuran-sel-${id}" onclick="bukaDropdownUkuran('trx',${id})" class="bg-darkBg rounded-lg px-2 py-6 flex items-center gap-1.5 border border-borderDark cursor-pointer opacity-40 pointer-events-none select-none flex-1 min-w-0">
+                    <span id="trx-ukuran-label-${id}" class="text-xs font-bold text-white flex-grow text-left truncate">Pilih</span>
                     <i class="fa-solid fa-chevron-down text-[9px] brand-text flex-shrink-0"></i>
                 </div>
+                <button type="button" title="Tambah baris, kosongkan ukuran" onclick="tambahVariasiDariKolom('trx',${id},'warna')" class="w-10 rounded-lg border brand-text flex items-center justify-center active:scale-95 transition-all flex-shrink-0" style="border-color:var(--brand-main);background:rgba(255,140,0,0.10);">
+                    <i class="fa-solid fa-plus text-[10px]"></i>
+                </button>
             </div>
             <div class="col-span-2">
                 <div id="trx-qty-wrap-${id}" class="bg-darkBg rounded-lg flex items-center justify-center border border-borderDark px-1 py-6 opacity-40 pointer-events-none select-none">
