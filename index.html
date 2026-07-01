@@ -38,11 +38,75 @@
     <link rel="icon" type="image/png" sizes="512x512" href="/inventory/icon-512.png">
 
     <script>
+        // ==================== NOTIFIKASI UPDATE VERSI APLIKASI ====================
+        // Cara kerja: browser otomatis cek ulang service-worker.js tiap kali app dibuka/foreground.
+        // Kalau isi file service-worker.js di server berbeda dari yang tersimpan di HP (artinya
+        // ada versi baru yang di-deploy), browser akan install SW baru di background lalu event
+        // 'updatefound' terpicu. Setelah SW baru siap ('installed') DAN sebelumnya sudah ada SW aktif
+        // (bukan pertama kali install), berarti ini update -> tampilkan banner.
+        let _swRegistrationGlobal = null;
+        let _swUpdateReady = false;
+
+        function tampilkanBannerUpdate() {
+            if (_swUpdateReady) return; // sudah tampil, jangan dobel
+            _swUpdateReady = true;
+            const banner = document.getElementById('app-update-banner');
+            if (banner) banner.style.display = 'block';
+        }
+
+        function terapkanUpdateAplikasi() {
+            const banner = document.getElementById('app-update-banner');
+            if (banner) banner.style.display = 'none';
+            if (_swRegistrationGlobal && _swRegistrationGlobal.waiting) {
+                // Minta SW baru langsung aktif (skip menunggu semua tab lama tertutup)
+                _swRegistrationGlobal.waiting.postMessage({ type: 'SKIP_WAITING' });
+            } else {
+                // Fallback: kalau tidak ada SW waiting (misal cache browser biasa), reload paksa
+                location.reload(true);
+            }
+        }
+
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/inventory/service-worker.js')
-                    .then(reg => console.log('✅ SW registered:', reg.scope))
+                    .then(reg => {
+                        console.log('✅ SW registered:', reg.scope);
+                        _swRegistrationGlobal = reg;
+
+                        // Kalau saat register ternyata sudah ada SW baru yang "waiting" (misal
+                        // user sempat tutup app pas lagi ada update), langsung tampilkan banner.
+                        if (reg.waiting && navigator.serviceWorker.controller) {
+                            tampilkanBannerUpdate();
+                        }
+
+                        // Pantau kalau ada SW baru yang mulai di-install (deploy baru terdeteksi)
+                        reg.addEventListener('updatefound', () => {
+                            const newWorker = reg.installing;
+                            if (!newWorker) return;
+                            newWorker.addEventListener('statechange', () => {
+                                // 'installed' + sudah ada controller aktif = ini update (bukan install pertama kali)
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    tampilkanBannerUpdate();
+                                }
+                            });
+                        });
+
+                        // Cek update tiap kali app dibuka lagi ke foreground (misal user balik dari app lain)
+                        document.addEventListener('visibilitychange', () => {
+                            if (document.visibilityState === 'visible') reg.update().catch(() => {});
+                        });
+                        // Cek update berkala tiap 15 menit selama app dibuka terus
+                        setInterval(() => reg.update().catch(() => {}), 15 * 60 * 1000);
+                    })
                     .catch(err => console.log('❌ SW error:', err));
+
+                // Setelah SW baru ambil alih kontrol (setelah SKIP_WAITING), reload sekali biar app pakai versi baru
+                let _swAlreadyRefreshed = false;
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (_swAlreadyRefreshed) return;
+                    _swAlreadyRefreshed = true;
+                    location.reload();
+                });
             });
         }
     </script>
@@ -419,6 +483,19 @@
     </style>
 </head>
 <body class="w-full min-h-screen overflow-x-hidden bg-light">
+    <div id="app-update-banner" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:9999998;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(90deg,#ff8c00,#ffb347);box-shadow:0 -4px 20px rgba(0,0,0,0.25);">
+        <div style="max-width:480px;margin:0 auto;display:flex;align-items:center;gap:10px;">
+            <div style="width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fa-solid fa-rotate" style="color:#000;font-size:15px;"></i>
+            </div>
+            <div style="flex-grow:1;font-family:'Montserrat',sans-serif;">
+                <div style="font-size:11px;font-weight:900;color:#000;letter-spacing:0.3px;">VERSI BARU TERSEDIA</div>
+                <div style="font-size:9px;font-weight:600;color:#000;opacity:0.75;">Klik untuk perbarui aplikasi</div>
+            </div>
+            <button type="button" onclick="terapkanUpdateAplikasi()" style="background:#000;color:#ff8c00;font-family:'Montserrat',sans-serif;font-weight:900;font-size:11px;letter-spacing:0.3px;padding:9px 14px;border-radius:10px;flex-shrink:0;-webkit-tap-highlight-color:transparent;">UPDATE</button>
+        </div>
+    </div>
+
     <script>
         // Set mode terang/gelap SECEPAT mungkin (sebelum paint pertama),
         // supaya tidak ada flash putih sambil menunggu loadSavedBgMode() di initUI()
