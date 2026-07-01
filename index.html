@@ -822,7 +822,7 @@
                     <div class="h-[64px] flex flex-col justify-center px-4 flex-grow z-10 relative">
                         <h1 class="text-xl font-black text-[#000000] leading-none tracking-wide mb-1">DASHBOARD <span class="text-black">STOK</span></h1>
                         <h2 class="display-brand-name text-[9px] font-bold text-[#000000] tracking-[0.15em] leading-none uppercase">RADJA PRODUCTION</h2>
-                        <span id="app-version-badge" class="absolute inset-y-0 right-2 text-[#000000] select-none flex flex-col items-end justify-center leading-none gap-0.5" style="font-family:'Poppins',sans-serif;" title="Versi Aplikasi"><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">v2.1.2</span><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">RADJA PRODUCTION</span><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">@2026</span></span>
+                        <span id="app-version-badge" class="absolute inset-y-0 right-2 text-[#000000] select-none flex flex-col items-end justify-center leading-none gap-0.5" style="font-family:'Poppins',sans-serif;" title="Versi Aplikasi"><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">v2.1.3</span><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">RADJA PRODUCTION</span><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">@2026</span></span>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
@@ -4423,10 +4423,15 @@ function updateSSK(tab, rowId) {
     // event.stopPropagation() (tombol sort, pilih riwayat, edit, hapus, dll).
     let _activeDropdownPopup = null;
     let _activeDropdownTrigger = null;
+    let _activeDropdownIcon = null;
 
     function _clearActiveDropdownRefs() {
+        if (_activeDropdownIcon) {
+            _activeDropdownIcon.style.transform = '';
+        }
         _activeDropdownPopup = null;
         _activeDropdownTrigger = null;
+        _activeDropdownIcon = null;
         if (window._genericDropdownCleanup) {
             window._genericDropdownCleanup();
             window._genericDropdownCleanup = null;
@@ -4436,6 +4441,24 @@ function updateSSK(tab, rowId) {
     function _setActiveDropdown(popup, trigger) {
         _activeDropdownPopup = popup;
         _activeDropdownTrigger = trigger;
+        const icon = trigger ? trigger.querySelector('.fa-chevron-down') : null;
+        _activeDropdownIcon = icon || null;
+        if (_activeDropdownIcon) {
+            _activeDropdownIcon.style.transition = 'transform 0.2s ease';
+            _activeDropdownIcon.style.transform = 'rotate(180deg)';
+        }
+    }
+
+    // Kalau trigger yang di-klik sama dengan trigger dropdown yang lagi kebuka,
+    // berarti user klik icon panah itu lagi untuk menutup -> toggle close.
+    // Return true kalau sudah ditutup (caller harus stop, tidak buka ulang).
+    function _toggleDropdownIfSameTrigger(trigger) {
+        if (trigger && _activeDropdownTrigger === trigger && _activeDropdownPopup && _activeDropdownPopup.isConnected) {
+            _activeDropdownPopup.remove();
+            _clearActiveDropdownRefs();
+            return true;
+        }
+        return false;
     }
 
     document.addEventListener('click', function(e) {
@@ -4447,13 +4470,14 @@ function updateSSK(tab, rowId) {
     }, true);
 
     function bukaDropdownWarna(tab, rowId) {
+        const trigger = document.getElementById(`${tab}-warna-sel-${rowId}`);
+        if (!trigger) return;
+        if (_toggleDropdownIfSameTrigger(trigger)) return;
         const existing = document.getElementById('warna-dropdown-popup');
         if (existing) existing.remove();
         if (tab === 'trx' && !trxState.modelNama) { showToast('⚠️ Pilih MODEL terlebih dahulu!'); return; }
         if (tab === 'input' && !inputState.modelId) { showToast('⚠️ Pilih MODEL terlebih dahulu!'); return; }
         if (masterData.warna.length === 0) { showAlert('Belum ada warna.\nTambahkan di Tab Master > Warna.', {type:'warning'}); return; }
-        const trigger = document.getElementById(`${tab}-warna-sel-${rowId}`);
-        if (!trigger) return;
 
         let warnaList = masterData.warna;
         if (tab === 'trx' && trxState.modelNama) {
@@ -4501,13 +4525,14 @@ function updateSSK(tab, rowId) {
         if (tab === 'trx') _updateTrxRowBtn(rowId);
     }
     function bukaDropdownUkuran(tab, rowId) {
+        const trigger = document.getElementById(`${tab}-ukuran-sel-${rowId}`);
+        if (!trigger) return;
+        if (_toggleDropdownIfSameTrigger(trigger)) return;
         const existing = document.getElementById('ukuran-dropdown-popup');
         if (existing) existing.remove();
         if (tab === 'trx' && !trxState.modelNama) { showToast('⚠️ Pilih MODEL terlebih dahulu!'); return; }
         if (tab === 'input' && !inputState.modelId) { showToast('⚠️ Pilih MODEL terlebih dahulu!'); return; }
         if (masterData.ukuran.length === 0) { showAlert('Belum ada ukuran.\nTambahkan di Tab Master > Ukuran.', {type:'warning'}); return; }
-        const trigger = document.getElementById(`${tab}-ukuran-sel-${rowId}`);
-        if (!trigger) return;
 
         let ukuranList = masterData.ukuran;
         if (tab === 'trx' && trxState.modelNama) {
@@ -4602,6 +4627,7 @@ function updateSSK(tab, rowId) {
     }
 
     function bukaGenericDropdown(items, trigger, onSelect) {
+        if (_toggleDropdownIfSameTrigger(trigger)) return;
         tutupSemuaDropdownPopup();
         if (items.length === 0) { showAlert('Data belum tersedia.', {type:'warning'}); return; }
 
@@ -4697,6 +4723,7 @@ function updateSSK(tab, rowId) {
 
     function bukaDropdownInput(type) {
         const triggerEl = document.getElementById('input-' + type + '-selector');
+        if (_toggleDropdownIfSameTrigger(triggerEl)) return;
         if (type === 'brand') {
             if (masterData.brand.length === 0) { showAlert('Belum ada brand.', {type:'warning'}); return; }
             bukaGenericDropdown(masterData.brand.map(b => ({ label: b.nama, id: b.id })), triggerEl, (item) => {
@@ -5215,8 +5242,9 @@ function updateSSK(tab, rowId) {
     }
 
     function bukaDropdownTrx(type) {
-        tutupSemuaDropdownPopup();
         const triggerEl = document.getElementById('trx-' + type + '-selector');
+        if (_toggleDropdownIfSameTrigger(triggerEl)) return;
+        tutupSemuaDropdownPopup();
         if (type === 'vendor') {
             if (masterData.vendor.length === 0) { showAlert('Belum ada vendor.', {type:'warning'}); return; }
             bukaGenericDropdown(masterData.vendor.map(v => ({ label: v.nama, id: v.id })), triggerEl, (item) => {
