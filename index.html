@@ -822,7 +822,7 @@
                     <div class="h-[64px] flex flex-col justify-center px-4 flex-grow z-10 relative">
                         <h1 class="text-xl font-black text-[#000000] leading-none tracking-wide mb-1">DASHBOARD <span class="text-black">STOK</span></h1>
                         <h2 class="display-brand-name text-[9px] font-bold text-[#000000] tracking-[0.15em] leading-none uppercase">RADJA PRODUCTION</h2>
-                        <span id="app-version-badge" class="absolute inset-y-0 right-2 text-[#000000] select-none flex flex-col items-end justify-center leading-none gap-0.5" style="font-family:'Poppins',sans-serif;" title="Versi Aplikasi"><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">v2.1.0</span><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">RADJA PRODUCTION</span><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">@2026</span></span>
+                        <span id="app-version-badge" class="absolute inset-y-0 right-2 text-[#000000] select-none flex flex-col items-end justify-center leading-none gap-0.5" style="font-family:'Poppins',sans-serif;" title="Versi Aplikasi"><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">v2.1.1</span><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">RADJA PRODUCTION</span><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">@2026</span></span>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
@@ -4578,15 +4578,22 @@ function updateSSK(tab, rowId) {
             const el = document.getElementById(id);
             if (el) el.remove();
         });
+        if (window._genericDropdownCleanup) {
+            window._genericDropdownCleanup();
+            window._genericDropdownCleanup = null;
+        }
     }
 
     function bukaGenericDropdown(items, trigger, onSelect) {
         tutupSemuaDropdownPopup();
         if (items.length === 0) { showAlert('Data belum tersedia.', {type:'warning'}); return; }
+
         const popup = document.createElement('div');
         popup.id = 'generic-dropdown-popup';
         popup.className = 'fixed z-[999] bg-[#ffffff] border border-[#eadfd0] rounded-xl shadow-2xl overflow-hidden';
-        popup.style.minWidth = '240px'; popup.style.maxHeight = '300px'; popup.style.overflowY = 'auto';
+        popup.style.overflowY = 'auto';
+        popup.style.WebkitOverflowScrolling = 'touch';
+
         items.forEach(item => {
             const div = document.createElement('div');
             div.className = 'px-5 py-4 cursor-pointer hover:bg-[#F6DBB6] text-sm font-bold text-black transition-colors border-b border-[#eadfd0] last:border-0';
@@ -4594,12 +4601,59 @@ function updateSSK(tab, rowId) {
             div.onclick = () => { onSelect(item); popup.remove(); };
             popup.appendChild(div);
         });
-        const rect = trigger.getBoundingClientRect();
-        popup.style.top = (rect.bottom + 4) + 'px'; popup.style.left = rect.left + 'px';
+
+        // Posisikan: overlay absolute, lebar penuh mengikuti field yang di-tap,
+        // menempel tepat di bawahnya, tanpa mendorong layout apa pun.
+        const posisikanPopup = () => {
+            const rect = trigger.getBoundingClientRect();
+            const viewportH = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
+            const gap = 6;
+            const safeMargin = 8;
+            const top = rect.bottom + gap;
+
+            // Cari elemen fixed di bagian bawah layar yang lagi aktif (action-bar SIMPAN, nav bar, dll)
+            // supaya panel dropdown berhenti sebelum ketutupan elemen tsb.
+            let bottomLimit = viewportH;
+            [
+                document.getElementById('action-bar-input'),
+                document.getElementById('action-bar-transaksi'),
+                document.getElementById('action-bar-brand-detail'),
+                document.getElementById('sticky-total-bar'),
+                document.querySelector('.fixed.bottom-0')
+            ].forEach(el => {
+                if (!el) return;
+                const style = window.getComputedStyle(el);
+                if (style.display === 'none' || style.visibility === 'hidden') return;
+                const r = el.getBoundingClientRect();
+                if (r.height === 0) return;
+                if (r.top < bottomLimit) bottomLimit = r.top;
+            });
+
+            let maxHeight = bottomLimit - top - safeMargin;
+            if (maxHeight < 100) maxHeight = 100;
+
+            popup.style.top = top + 'px';
+            popup.style.left = rect.left + 'px';
+            popup.style.width = rect.width + 'px';
+            popup.style.maxHeight = maxHeight + 'px';
+        };
+        posisikanPopup();
+
         document.body.appendChild(popup);
+
+        // Kalau layar di-resize / rotate selagi popup terbuka, hitung ulang posisinya
+        const onResize = () => posisikanPopup();
+        window.addEventListener('resize', onResize);
+        window._genericDropdownCleanup = () => window.removeEventListener('resize', onResize);
+
         setTimeout(() => {
             document.addEventListener('click', function handler(e) {
-                if (!popup.contains(e.target) && !trigger.contains(e.target)) { popup.remove(); document.removeEventListener('click', handler); }
+                if (!popup.contains(e.target) && !trigger.contains(e.target)) {
+                    popup.remove();
+                    document.removeEventListener('click', handler);
+                    window.removeEventListener('resize', onResize);
+                    window._genericDropdownCleanup = null;
+                }
             });
         }, 50);
     }
