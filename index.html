@@ -6846,24 +6846,25 @@ function updateSSK(tab, rowId) {
             trx.items.forEach((item, idx) => {
                 const row = document.createElement('label');
                 row.id = `hapus-item-row-${idx}`;
-                row.style.cssText = 'display:flex;align-items:center;gap:10px;background:#F6DBB6;border:1px solid #eadfd0;border-radius:8px;padding:8px 10px;cursor:pointer;transition:border-color 0.15s;';
+                row.style.cssText = 'display:flex;align-items:center;gap:10px;background:#1f0a0a;border:1px solid #dc2626;border-radius:8px;padding:8px 10px;cursor:pointer;transition:border-color 0.15s,background 0.15s;';
                 row.innerHTML = `
                     <input type="checkbox" id="hapus-chk-${idx}" data-idx="${idx}" checked
                         style="width:16px;height:16px;accent-color:#dc2626;flex-shrink:0;cursor:pointer;"
                         onchange="
                             var row=document.getElementById('hapus-item-row-${idx}');
+                            var lbl=document.getElementById('hapus-item-label-${idx}');
+                            var sub=document.getElementById('hapus-item-sub-${idx}');
                             row.style.borderColor=this.checked?'#dc2626':'#eadfd0';
                             row.style.background=this.checked?'#1f0a0a':'#F6DBB6';
+                            if(lbl) lbl.style.color=this.checked?'#fff':'#1a1d24';
+                            if(sub) sub.style.color=this.checked?'#e5b8b8':'#000';
                             _updateHapusTrxBtn();
                         ">
                     <div style="flex:1;">
-                        <div style="color:#1a1d24;font-size:11px;font-weight:700;">${item.warna} / ${item.ukuran}</div>
-                        <div style="color:#000;font-size:10px;">${item.qty} pcs → kembali ke stok</div>
+                        <div id="hapus-item-label-${idx}" style="color:#fff;font-size:11px;font-weight:700;">${item.warna} / ${item.ukuran}</div>
+                        <div id="hapus-item-sub-${idx}" style="color:#e5b8b8;font-size:10px;">${item.qty} pcs → kembali ke stok</div>
                     </div>
                     <span style="color:#f87171;font-size:10px;font-weight:900;">${item.qty} pcs</span>`;
-                
-                row.style.borderColor = '#dc2626';
-                row.style.background = '#1f0a0a';
                 itemsContainer.appendChild(row);
             });
             msgEl.appendChild(itemsContainer);
