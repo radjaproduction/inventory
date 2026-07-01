@@ -1374,47 +1374,6 @@
                 </div>
             </div>
 
-            <!-- TEMA & TAMPILAN -->
-            <div class="bg-cardBg rounded-xl border border-borderDark flex flex-col overflow-hidden">
-                <div class="flex items-center justify-between px-4 py-3 cursor-pointer select-none" onclick="toggleCollapse('tema-collapse','tema-chevron')">
-                    <div class="flex items-center gap-2"><i class="fa-solid fa-palette brand-text"></i><h3 class="text-sm font-bold text-black tracking-wide">TEMA & TAMPILAN</h3></div>
-                    <i id="tema-chevron" class="fa-solid fa-chevron-down brand-text text-xs collapse-chevron"></i>
-                </div>
-                <div id="tema-collapse" class="collapse-body collapsed flex flex-col gap-4 px-4 pb-4">
-
-                <!-- Background Mode -->
-                <div class="flex items-center justify-between">
-                    <div class="flex flex-col">
-                        <span class="text-[11px] font-bold text-black">MODE TERANG</span>
-                        <span class="text-[9px] text-black mt-0.5" id="bg-mode-label">Aktif: Gelap</span>
-                    </div>
-                    <!-- Toggle Switch -->
-                    <div id="bg-toggle" onclick="toggleBackground()" class="relative w-14 h-7 rounded-full cursor-pointer transition-all duration-300 flex items-center px-1" style="background:#eadfd0">
-                        <div id="bg-toggle-knob" class="w-5 h-5 rounded-full bg-white shadow-md transition-all duration-300 translate-x-0"></div>
-                    </div>
-                </div>
-
-                <!-- Preset Colors -->
-                <div class="flex flex-col gap-2">
-                    <label class="text-[10px] font-bold text-black tracking-wider">WARNA PRESET</label>
-                    <div class="grid grid-cols-6 gap-3 mt-1">
-                        <div onclick="changeTheme('#ff8c00','#ffb347')" class="w-10 h-10 rounded-full bg-[#ff8c00] flex items-center justify-center ring-2 ring-white ring-offset-2 ring-offset-cardBg cursor-pointer theme-btn hover:scale-110 transition-transform" data-color="#ff8c00"><i class="fa-solid fa-check text-black text-[9px] font-black check-icon"></i></div>
-                        <div onclick="changeTheme('#ef4444','#f87171')" class="w-10 h-10 rounded-full bg-[#ef4444] cursor-pointer theme-btn hover:scale-110 transition-transform flex items-center justify-center" data-color="#ef4444"><i class="fa-solid fa-check text-black text-[9px] font-black check-icon hidden"></i></div>
-                        <div onclick="changeTheme('#d946ef','#e879f9')" class="w-10 h-10 rounded-full bg-[#d946ef] cursor-pointer theme-btn hover:scale-110 transition-transform flex items-center justify-center" data-color="#d946ef"><i class="fa-solid fa-check text-black text-[9px] font-black check-icon hidden"></i></div>
-                        <div onclick="changeTheme('#2563eb','#60a5fa')" class="w-10 h-10 rounded-full bg-[#2563eb] cursor-pointer theme-btn hover:scale-110 transition-transform flex items-center justify-center" data-color="#2563eb"><i class="fa-solid fa-check text-black text-[9px] font-black check-icon hidden"></i></div>
-                        <div onclick="changeTheme('#10b981','#34d399')" class="w-10 h-10 rounded-full bg-[#10b981] cursor-pointer theme-btn hover:scale-110 transition-transform flex items-center justify-center" data-color="#10b981"><i class="fa-solid fa-check text-black text-[9px] font-black check-icon hidden"></i></div>
-                        <div onclick="changeTheme('#ffffff','#e2e8f0')" class="w-10 h-10 rounded-full bg-white border border-borderDark cursor-pointer theme-btn hover:scale-110 transition-transform flex items-center justify-center" data-color="#ffffff"><i class="fa-solid fa-check text-black text-[9px] font-black check-icon hidden"></i></div>
-                    </div>
-                </div>
-
-                <!-- Current Theme Preview -->
-                <div class="flex flex-col gap-1.5">
-                    <label class="text-[10px] font-bold text-black tracking-wider">PREVIEW TEMA AKTIF</label>
-                    <div id="theme-preview-bar" class="w-full h-8 rounded-lg transition-all" style="background: var(--brand-gradient)"></div>
-                </div>
-                </div>
-            </div>
-
             <!-- RIWAYAT PELUNASAN -->
             <div class="bg-cardBg rounded-xl border border-borderDark flex flex-col overflow-hidden">
                 <div class="flex items-center justify-between px-4 py-3 cursor-pointer select-none" onclick="toggleCollapse('pelunasan-setting-collapse','pelunasan-setting-chevron')">
@@ -3261,7 +3220,7 @@ function updateSSK(tab, rowId) {
     // ==================== COLLAPSE (accordion) ====================
     const collapseGroups = {
         'font-collapse': 'font-chevron',
-        'tema-collapse': 'tema-chevron',
+        'pelunasan-setting-collapse': 'pelunasan-setting-chevron',
         'pin-collapse': 'pin-chevron',
         'backup-collapse': 'backup-chevron',
         'danger-collapse': 'danger-chevron'
