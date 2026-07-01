@@ -228,6 +228,36 @@
             width: 100%;
             flex-shrink: 0;
         }
+        /* Kunci tinggi tab INPUT DATA & TRANSAKSI ke layar (tidak ikut memanjang),
+           supaya scroll HANYA terjadi di dalam kolom VARIASI ITEM, bukan di seluruh halaman */
+        #tab-input.tab-content.flex,
+        #tab-transaksi.tab-content.flex {
+            height: 100dvh;
+            height: 100vh;
+            max-height: 100dvh;
+            max-height: 100vh;
+            min-height: 0;
+            overflow: hidden;
+        }
+        #tab-input.tab-content.flex::after,
+        #tab-transaksi.tab-content.flex::after {
+            display: none;
+            height: 0;
+        }
+        #tab-input .tab-bottom-spacer,
+        #tab-transaksi .tab-bottom-spacer {
+            display: none;
+        }
+        /* Body dikunci (tidak bisa scroll) selama tab INPUT DATA / TRANSAKSI aktif */
+        body.lock-page-scroll {
+            overflow: hidden;
+            height: 100dvh;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+        }
 
         .vendor-notif-badge {
             min-width: 18px; height: 18px;
@@ -953,7 +983,7 @@
                     <button id="btn-tambah-variasi-input" onclick="tambahVariasiInput()" class="w-full py-4 rounded-lg dashed-border-brand brand-text font-medium text-sm flex items-center justify-center gap-2 hover:bg-[#fdf6ec] opacity-40 cursor-not-allowed pointer-events-none" disabled><i class="fa-solid fa-plus"></i> Tambah Variasi</button>
                 </div>
             </div>
-        <div style="height:90px;flex-shrink:0;"></div>
+        <div class="tab-bottom-spacer" style="height:90px;flex-shrink:0;"></div>
         </div>
 
         <!-- ACTION BAR: INPUT DATA (fixed above nav) -->
@@ -1120,7 +1150,7 @@
                 <div id="trx-variasi-list" class="flex flex-col variasi-list-grow"></div>
                 <div class="p-3 flex-shrink-0"><button id="btn-tambah-variasi-trx" onclick="tambahVariasiTrx()" class="w-full py-4 rounded-lg dashed-border-brand brand-text font-medium text-sm flex items-center justify-center gap-2 hover:bg-[#fdf6ec] opacity-40 cursor-not-allowed pointer-events-none" disabled><i class="fa-solid fa-plus"></i> Tambah Item</button></div>
             </div>
-        <div style="height:90px;flex-shrink:0;"></div>
+        <div class="tab-bottom-spacer" style="height:90px;flex-shrink:0;"></div>
         </div>
 
         <!-- ACTION BAR: TRANSAKSI (fixed above nav) -->
@@ -3094,6 +3124,14 @@ function updateSSK(tab, rowId) {
         const barTrx = document.getElementById('action-bar-transaksi');
         if (barInput) barInput.style.display = tabName === 'input' ? 'flex' : 'none';
         if (barTrx) barTrx.style.display = tabName === 'transaksi' ? 'flex' : 'none';
+
+        // Kunci scroll halaman khusus tab INPUT DATA & TRANSAKSI,
+        // supaya scroll hanya terjadi di dalam kolom VARIASI ITEM
+        if (tabName === 'input' || tabName === 'transaksi') {
+            document.body.classList.add('lock-page-scroll');
+        } else {
+            document.body.classList.remove('lock-page-scroll');
+        }
 
         // Defer render berat ke setelah tab tampil di layar
         requestAnimationFrame(() => {
@@ -8669,8 +8707,7 @@ ${docStyles}
         }
 
         showConfirm('Keluar dari aplikasi?', function() {
-            window.close();
-            setTimeout(() => { location.href = 'about:blank'; }, 200);
+            exitApp();
         });
     });
 
