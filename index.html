@@ -926,6 +926,7 @@
                             </div>
                         </div>
                         <div class="qty-numpad-grid" id="input-sheet-numpad-grid">
+                            <button type="button" onclick="qtyNumpadPress('input','1')" class="qty-numpad-btn">1</button>
                             <button type="button" onclick="qtyNumpadPress('input','2')" class="qty-numpad-btn">2</button>
                             <button type="button" onclick="qtyNumpadPress('input','3')" class="qty-numpad-btn">3</button>
                             <button type="button" onclick="qtyNumpadPress('input','4')" class="qty-numpad-btn">4</button>
@@ -984,6 +985,7 @@
                             </div>
                         </div>
                         <div class="qty-numpad-grid" id="trx-sheet-numpad-grid">
+                            <button type="button" onclick="qtyNumpadPress('trx','1')" class="qty-numpad-btn">1</button>
                             <button type="button" onclick="qtyNumpadPress('trx','2')" class="qty-numpad-btn">2</button>
                             <button type="button" onclick="qtyNumpadPress('trx','3')" class="qty-numpad-btn">3</button>
                             <button type="button" onclick="qtyNumpadPress('trx','4')" class="qty-numpad-btn">4</button>
@@ -2315,12 +2317,116 @@ END $$;`;
         }
     }
 
+    // ==================== FETCH GRANULAR PER TABEL (dipakai saat realtime sync) ====================
+    // Masing-masing fungsi ini HANYA menarik & mengubah bagian masterData/appData miliknya sendiri,
+    // supaya saat realtime sync tidak perlu menarik ulang SEMUA 11 tabel tiap ada 1 perubahan.
+    async function fetchVendorData() {
+        const { data } = await sbClient.from('vendor').select('*').order('id');
+        masterData.vendor = (data || []).map(x => ({ id: x.id, nama: x.nama, telp: x.telp || '' }));
+    }
+    async function fetchBrandData() {
+        const { data } = await sbClient.from('brand').select('*').order('id');
+        masterData.brand = (data || []).map(x => ({ id: x.id, nama: x.nama }));
+    }
+    async function fetchModelData() {
+        const { data } = await sbClient.from('model').select('*, brand:brand_id(nama)').order('id');
+        masterData.model = (data || []).map(x => ({ id: x.id, brandId: x.brand_id, brandNama: x.brand?.nama || x.brand_nama || '', nama: x.nama, harga: x.harga || 0 }));
+    }
+    async function fetchWarnaData() {
+        const { data } = await sbClient.from('warna').select('*').order('id');
+        masterData.warna = (data || []).map(x => ({ id: x.id, nama: x.nama, kode: x.kode }));
+    }
+    async function fetchUkuranData() {
+        const { data } = await sbClient.from('ukuran').select('*').order('id');
+        masterData.ukuran = (data || []).map(x => ({ id: x.id, nama: x.nama }));
+    }
+    async function fetchPengaturanData() {
+        const { data } = await sbClient.from('pengaturan').select('*');
+        const pengArr = data || [];
+        const pNama = pengArr.find(p => p.key === 'brand_name');
+        const pMain = pengArr.find(p => p.key === 'theme_main');
+        const pSec  = pengArr.find(p => p.key === 'theme_secondary');
+        if (pNama) {
+            const elInput = document.getElementById('input-brand-name');
+            if (elInput) elInput.value = pNama.value;
+            document.querySelectorAll('.display-brand-name').forEach(el => el.textContent = pNama.value.toUpperCase());
+        }
+        if (pMain && pSec) changeTheme(pMain.value, pSec.value, false);
+    }
+    async function fetchRiwayatInputData() {
+        const [ri, riItems] = await Promise.all([
+            sbClient.from('riwayat_input').select('*').order('id', { ascending: false }),
+            sbClient.from('riwayat_input_item').select('*'),
+        ]);
+        const riItemsMap = {};
+        (riItems.data || []).forEach(i => {
+            if (!riItemsMap[i.riwayat_input_id]) riItemsMap[i.riwayat_input_id] = [];
+            riItemsMap[i.riwayat_input_id].push({ id: i.id, warna: i.warna, ukuran: i.ukuran, qty: i.qty });
+        });
+        appData.riwayatInput = (ri.data || []).map(r => ({
+            id: r.id, mode: r.mode, brand: r.brand, model: r.model,
+            keterangan: r.keterangan || '',
+            tanggal: r.tanggal, jam: r.jam,
+            items: riItemsMap[r.id] || []
+        }));
+    }
+    async function fetchTransaksiData() {
+        const [trx, trxItems] = await Promise.all([
+            sbClient.from('transaksi').select('*').order('id', { ascending: false }),
+            sbClient.from('transaksi_item').select('*'),
+        ]);
+        const trxItemsMap = {};
+        (trxItems.data || []).forEach(i => {
+            if (!trxItemsMap[i.transaksi_id]) trxItemsMap[i.transaksi_id] = [];
+            trxItemsMap[i.transaksi_id].push({ id: i.id, warna: i.warna, ukuran: i.ukuran, qty: i.qty, ssk: i.ssk });
+        });
+        appData.riwayatTransaksi = (trx.data || []).map(t => ({
+            id: t.id, vendor: t.vendor, brand: t.brand, model: t.model,
+            harga: t.harga || 0, status: t.status,
+            tanggal: t.tanggal, jam: t.jam,
+            items: trxItemsMap[t.id] || []
+        }));
+    }
+    async function fetchPelunasanData() {
+        const pelDB = await sbClient.from('pelunasan').select('*').order('id', { ascending: false });
+        appData.pelunasan = (pelDB.data || []).map(p => ({
+            id: p.id, transaksi_id: p.transaksi_id, vendor: p.vendor,
+            jumlah: p.jumlah || 0, keterangan: p.keterangan || '',
+            tanggal: p.tanggal, jam: p.jam
+        }));
+    }
+
     // ==================== REALTIME SYNC (Supabase) ====================
     // Sinkron otomatis antar device: kalau ada perubahan data (input/transaksi/master/pelunasan)
     // dari HP/device lain, tampilan di sini ikut ter-update otomatis tanpa perlu refresh manual.
     let _realtimeChannel = null;
     let _realtimeDebounceTimer = null;
     const REALTIME_TABLES = ['vendor', 'brand', 'model', 'warna', 'ukuran', 'pengaturan', 'riwayat_input', 'riwayat_input_item', 'transaksi', 'transaksi_item', 'pelunasan'];
+
+    // Peta nama tabel Supabase -> "grup" data. Tabel yang datanya digabung jadi 1 entity
+    // (misal transaksi + transaksi_item, riwayat_input + riwayat_input_item) masuk grup yang sama,
+    // supaya kalau salah satunya berubah, keduanya ditarik ulang bersamaan (biar data tetap konsisten).
+    const REALTIME_TABLE_GROUP = {
+        vendor: 'vendor', brand: 'brand', model: 'model', warna: 'warna', ukuran: 'ukuran',
+        pengaturan: 'pengaturan',
+        riwayat_input: 'riwayatInput', riwayat_input_item: 'riwayatInput',
+        transaksi: 'transaksi', transaksi_item: 'transaksi',
+        pelunasan: 'pelunasan',
+    };
+
+    // Tiap grup: fungsi fetch (tarik ulang data grup ini SAJA) + fungsi render
+    // (bagian UI mana saja yang perlu ikut di-refresh karena datanya berubah).
+    const REALTIME_GROUP_HANDLERS = {
+        vendor:       { fetch: fetchVendorData,       render: () => { renderVendorList(); } },
+        brand:        { fetch: fetchBrandData,        render: () => { renderBrandList(); renderBrandOptions(); } },
+        model:        { fetch: fetchModelData,        render: () => { renderModelList(); } },
+        warna:        { fetch: fetchWarnaData,        render: () => { renderWarnaList(); } },
+        ukuran:       { fetch: fetchUkuranData,       render: () => { renderUkuranList(); } },
+        pengaturan:   { fetch: fetchPengaturanData,   render: () => {} }, // tema/nama brand sudah langsung diterapkan di dalam fetch-nya
+        riwayatInput: { fetch: fetchRiwayatInputData, render: () => { renderStokDashboard(); if (typeof _renderRiwayatInputOri === 'function') _renderRiwayatInputOri(); } },
+        transaksi:    { fetch: fetchTransaksiData,    render: () => { renderStokDashboard(); if (typeof _renderRiwayatTransaksiOri === 'function') _renderRiwayatTransaksiOri(); if (typeof _renderPelunasanViewOri === 'function') _renderPelunasanViewOri(); } },
+        pelunasan:    { fetch: fetchPelunasanData,    render: () => { if (typeof _renderPelunasanViewOri === 'function') _renderPelunasanViewOri(); } },
+    };
 
     function initRealtimeSync() {
         if (!sbClient || _realtimeChannel) return; // belum konek atau sudah aktif
@@ -2338,21 +2444,30 @@ END $$;`;
         _realtimeChannel = ch;
     }
 
-    // Debounce: kalau ada banyak perubahan sekaligus (misal 1 transaksi + beberapa item),
-    // cukup refresh data & tampilan sekali saja, bukan berkali-kali beruntun.
+    // Debounce + kumpulkan grup yang "kotor" (berubah): kalau ada banyak perubahan sekaligus
+    // (misal 1 transaksi + beberapa item), cukup fetch & render grup terkait sekali saja,
+    // dan HANYA grup yang benar-benar berubah — bukan semua 11 tabel & semua tampilan.
+    let _dirtyGroups = new Set();
     function onRealtimeChange(payload) {
+        const group = REALTIME_TABLE_GROUP[payload.table];
+        if (group) _dirtyGroups.add(group);
         clearTimeout(_realtimeDebounceTimer);
         _realtimeDebounceTimer = setTimeout(async () => {
+            const groups = [..._dirtyGroups];
+            _dirtyGroups.clear();
             try {
-                await muatSemuaData();
-                renderSemuaTampilanData();
+                // 1) Tarik ulang HANYA data grup yang berubah (paralel)
+                await Promise.all(groups.map(g => REALTIME_GROUP_HANDLERS[g]?.fetch?.()));
+                // 2) Render HANYA bagian UI yang datanya berubah
+                groups.forEach(g => REALTIME_GROUP_HANDLERS[g]?.render?.());
             } catch (e) {
                 console.warn('Realtime refresh gagal:', e.message);
             }
-        }, 500);
+        }, 250);
     }
 
-    // Render ulang semua tampilan yang berbasis data (tanpa reset form/input yang sedang diisi user)
+    // Render ulang semua tampilan yang berbasis data (dipakai saat load awal / restore backup,
+    // BUKAN dipakai lagi oleh realtime sync — realtime sekarang render granular via REALTIME_GROUP_HANDLERS di atas)
     function renderSemuaTampilanData() {
         renderVendorList(); renderBrandList(); renderModelList();
         renderWarnaList(); renderUkuranList(); renderBrandOptions();
