@@ -1586,6 +1586,7 @@
         await muatSemuaData();
         initUI();
         muatStatusPIN();
+        initRealtimeSync();
     }
 
     // ==================== PIN SYSTEM ====================
@@ -2136,7 +2137,25 @@ ALTER TABLE riwayat_input_item DISABLE ROW LEVEL SECURITY;
 ALTER TABLE transaksi DISABLE ROW LEVEL SECURITY;
 ALTER TABLE transaksi_item DISABLE ROW LEVEL SECURITY;
 ALTER TABLE pelunasan DISABLE ROW LEVEL SECURITY;
-ALTER TABLE bayar_sebagian DISABLE ROW LEVEL SECURITY;`;
+ALTER TABLE bayar_sebagian DISABLE ROW LEVEL SECURITY;
+
+-- ============================================
+-- AKTIFKAN REALTIME (wajib, agar sinkron otomatis antar device)
+-- ============================================
+DO $$
+BEGIN
+    BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE pengaturan; EXCEPTION WHEN duplicate_object THEN NULL; END;
+    BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE vendor; EXCEPTION WHEN duplicate_object THEN NULL; END;
+    BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE brand; EXCEPTION WHEN duplicate_object THEN NULL; END;
+    BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE model; EXCEPTION WHEN duplicate_object THEN NULL; END;
+    BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE warna; EXCEPTION WHEN duplicate_object THEN NULL; END;
+    BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE ukuran; EXCEPTION WHEN duplicate_object THEN NULL; END;
+    BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE riwayat_input; EXCEPTION WHEN duplicate_object THEN NULL; END;
+    BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE riwayat_input_item; EXCEPTION WHEN duplicate_object THEN NULL; END;
+    BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE transaksi; EXCEPTION WHEN duplicate_object THEN NULL; END;
+    BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE transaksi_item; EXCEPTION WHEN duplicate_object THEN NULL; END;
+    BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE pelunasan; EXCEPTION WHEN duplicate_object THEN NULL; END;
+END $$;`;
 
     function tampilkanModalSQL(fromConfig) {
         // Hapus modal lama jika ada
@@ -2294,6 +2313,53 @@ ALTER TABLE bayar_sebagian DISABLE ROW LEVEL SECURITY;`;
             console.warn('Tabel pelunasan belum ada, fitur pelunasan akan tersedia setelah SQL dijalankan.');
             appData.pelunasan = [];
         }
+    }
+
+    // ==================== REALTIME SYNC (Supabase) ====================
+    // Sinkron otomatis antar device: kalau ada perubahan data (input/transaksi/master/pelunasan)
+    // dari HP/device lain, tampilan di sini ikut ter-update otomatis tanpa perlu refresh manual.
+    let _realtimeChannel = null;
+    let _realtimeDebounceTimer = null;
+    const REALTIME_TABLES = ['vendor', 'brand', 'model', 'warna', 'ukuran', 'pengaturan', 'riwayat_input', 'riwayat_input_item', 'transaksi', 'transaksi_item', 'pelunasan'];
+
+    function initRealtimeSync() {
+        if (!sbClient || _realtimeChannel) return; // belum konek atau sudah aktif
+        let ch = sbClient.channel('radja-realtime-sync');
+        REALTIME_TABLES.forEach(t => {
+            ch = ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, onRealtimeChange);
+        });
+        ch.subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+                console.log('✅ Realtime sync aktif');
+            } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                console.warn('⚠️ Realtime sync gagal terhubung:', status);
+            }
+        });
+        _realtimeChannel = ch;
+    }
+
+    // Debounce: kalau ada banyak perubahan sekaligus (misal 1 transaksi + beberapa item),
+    // cukup refresh data & tampilan sekali saja, bukan berkali-kali beruntun.
+    function onRealtimeChange(payload) {
+        clearTimeout(_realtimeDebounceTimer);
+        _realtimeDebounceTimer = setTimeout(async () => {
+            try {
+                await muatSemuaData();
+                renderSemuaTampilanData();
+            } catch (e) {
+                console.warn('Realtime refresh gagal:', e.message);
+            }
+        }, 500);
+    }
+
+    // Render ulang semua tampilan yang berbasis data (tanpa reset form/input yang sedang diisi user)
+    function renderSemuaTampilanData() {
+        renderVendorList(); renderBrandList(); renderModelList();
+        renderWarnaList(); renderUkuranList(); renderBrandOptions();
+        renderStokDashboard();
+        if (typeof _renderRiwayatTransaksiOri === 'function') _renderRiwayatTransaksiOri();
+        if (typeof _renderRiwayatInputOri === 'function') _renderRiwayatInputOri();
+        if (typeof _renderPelunasanViewOri === 'function') _renderPelunasanViewOri();
     }
 
     function initUI() {
@@ -8261,6 +8327,16 @@ ${docStyles}
         const dropdownPopup = document.getElementById('ukuran-dropdown-popup') ||
                               document.getElementById('generic-dropdown-popup');
         if (dropdownPopup) { dropdownPopup.remove(); return; }
+
+        // Tutup popup DETAIL VARIASI (full-screen) jika terbuka
+        const inputVariasiSheet = document.getElementById('input-variasi-sheet');
+        if (inputVariasiSheet && inputVariasiSheet.classList.contains('active')) {
+            closeInputVariasiSheet(); return;
+        }
+        const trxVariasiSheet = document.getElementById('trx-variasi-sheet');
+        if (trxVariasiSheet && trxVariasiSheet.classList.contains('active')) {
+            closeTrxVariasiSheet(); return;
+        }
 
         const modalOverlay = document.getElementById('custom-modal-overlay');
         if (modalOverlay && modalOverlay.style.display !== 'none' && modalOverlay.style.display !== '') {
