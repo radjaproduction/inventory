@@ -2,8 +2,8 @@
 // SERVICE WORKER - RADJA PRODUCTION PWA
 // ============================================
 
-const CACHE_NAME = 'radja-production-v5';
-const STATIC_CACHE = 'radja-static-v5';
+const CACHE_NAME = 'radja-production-v6';
+const STATIC_CACHE = 'radja-static-v6';
 const BASE = '/inventory';
 
 const STATIC_ASSETS = [
@@ -14,18 +14,30 @@ const STATIC_ASSETS = [
 
 // ===== INSTALL =====
 self.addEventListener('install', event => {
-    console.log('[SW] Installing v5...');
+    console.log('[SW] Installing v6...');
     event.waitUntil(
         caches.open(STATIC_CACHE).then(cache => {
             console.log('[SW] Caching static assets');
             return cache.addAll(STATIC_ASSETS);
-        }).then(() => self.skipWaiting())
+        })
+        // CATATAN: self.skipWaiting() SENGAJA TIDAK dipanggil otomatis di sini lagi.
+        // Sebelumnya SW versi baru langsung aktif sendiri begitu ter-install, yang artinya
+        // app bisa reload sendiri tiba-tiba pas user lagi ngisi form (misal transaksi/qty).
+        // Sekarang SW baru akan "menunggu" (waiting) dulu sampai user klik tombol UPDATE
+        // di banner pada app.html — baru dia aktif lewat pesan 'SKIP_WAITING' di bawah.
     );
+});
+
+// ===== PESAN DARI HALAMAN (dipicu tombol "UPDATE" di banner notifikasi versi baru) =====
+self.addEventListener('message', event => {
+    if (event.data && event.data.type === 'SKIP_WAITING') {
+        self.skipWaiting();
+    }
 });
 
 // ===== ACTIVATE =====
 self.addEventListener('activate', event => {
-    console.log('[SW] Activating v5...');
+    console.log('[SW] Activating v6...');
     event.waitUntil(
         caches.keys().then(cacheNames => {
             return Promise.all(
