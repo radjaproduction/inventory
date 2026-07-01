@@ -1639,6 +1639,33 @@
 
     let sbClient = null;
 
+    // ==================== FETCH TANPA LIMIT (ANTI TERPOTONG) ====================
+    // Supabase/PostgREST membatasi hasil query max 1000 baris per request secara default.
+    // Kalau tabel (misal riwayat_input_item) sudah punya >1000 baris, select('*') biasa
+    // akan diam-diam terpotong dan bisa jadi baris TERBARU yang hilang dari hasil
+    // (karena tanpa .order() urutan tidak terjamin) — inilah penyebab "stok tidak
+    // bertambah walau input berhasil": data sudah tersimpan di DB, tapi saat di-fetch
+    // ulang (initial load / realtime sync), baris barunya tidak ikut kebawa sehingga
+    // appData ke-overwrite jadi seperti belum bertambah.
+    // Fungsi ini fetch SEMUA baris dengan cara looping .range() per 1000 baris.
+    async function fetchAllRows(table, selectStr = '*', orderCol = 'id', ascending = true) {
+        const PAGE = 1000;
+        let from = 0;
+        let all = [];
+        while (true) {
+            const { data, error } = await sbClient
+                .from(table)
+                .select(selectStr)
+                .order(orderCol, { ascending })
+                .range(from, from + PAGE - 1);
+            if (error) { console.warn('fetchAllRows gagal:', table, error.message); break; }
+            all = all.concat(data || []);
+            if (!data || data.length < PAGE) break;
+            from += PAGE;
+        }
+        return all;
+    }
+
     // Sembunyikan loading overlay setelah memberi waktu Tailwind CDN
     // memproses class warna pada elemen yang baru dirender (mencegah flash putih)
     function hideLoadingOverlay() {
@@ -2336,12 +2363,17 @@ END $$;`;
             if (pMain && pSec) changeTheme(pMain.value, pSec.value, false);
 
             setLoadingText('MEMUAT RIWAYAT TRANSAKSI...');
-            const [ri, riItems, trx, trxItems] = await withTimeout(Promise.all([
-                sbClient.from('riwayat_input').select('*').order('id', { ascending: false }),
-                sbClient.from('riwayat_input_item').select('*'),
-                sbClient.from('transaksi').select('*').order('id', { ascending: false }),
-                sbClient.from('transaksi_item').select('*'),
+            const [riDataRaw, riItemsData, trxDataRaw, trxItemsData] = await withTimeout(Promise.all([
+                fetchAllRows('riwayat_input', '*', 'id', true),
+                fetchAllRows('riwayat_input_item', '*', 'id', true),
+                fetchAllRows('transaksi', '*', 'id', true),
+                fetchAllRows('transaksi_item', '*', 'id', true),
             ]), TIMEOUT_MS, 'Muat riwayat');
+            // Urutan tampil: terbaru dulu
+            const ri = { data: [...riDataRaw].sort((a, b) => b.id - a.id) };
+            const riItems = { data: riItemsData };
+            const trx = { data: [...trxDataRaw].sort((a, b) => b.id - a.id) };
+            const trxItems = { data: trxItemsData };
 
             // Gunakan Map untuk lookup O(1) — jauh lebih cepat dari .filter() pada data besar
             const riItemsMap = {};
@@ -2431,16 +2463,16 @@ END $$;`;
         if (pMain && pSec) changeTheme(pMain.value, pSec.value, false);
     }
     async function fetchRiwayatInputData() {
-        const [ri, riItems] = await Promise.all([
-            sbClient.from('riwayat_input').select('*').order('id', { ascending: false }),
-            sbClient.from('riwayat_input_item').select('*'),
+        const [riData, riItemsData] = await Promise.all([
+            fetchAllRows('riwayat_input', '*', 'id', true),
+            fetchAllRows('riwayat_input_item', '*', 'id', true),
         ]);
         const riItemsMap = {};
-        (riItems.data || []).forEach(i => {
+        riItemsData.forEach(i => {
             if (!riItemsMap[i.riwayat_input_id]) riItemsMap[i.riwayat_input_id] = [];
             riItemsMap[i.riwayat_input_id].push({ id: i.id, warna: i.warna, ukuran: i.ukuran, qty: i.qty });
         });
-        appData.riwayatInput = (ri.data || []).map(r => ({
+        appData.riwayatInput = riData.sort((a, b) => b.id - a.id).map(r => ({
             id: r.id, mode: r.mode, brand: r.brand, model: r.model,
             keterangan: r.keterangan || '',
             tanggal: r.tanggal, jam: r.jam,
@@ -2448,16 +2480,16 @@ END $$;`;
         }));
     }
     async function fetchTransaksiData() {
-        const [trx, trxItems] = await Promise.all([
-            sbClient.from('transaksi').select('*').order('id', { ascending: false }),
-            sbClient.from('transaksi_item').select('*'),
+        const [trxData, trxItemsData] = await Promise.all([
+            fetchAllRows('transaksi', '*', 'id', true),
+            fetchAllRows('transaksi_item', '*', 'id', true),
         ]);
         const trxItemsMap = {};
-        (trxItems.data || []).forEach(i => {
+        trxItemsData.forEach(i => {
             if (!trxItemsMap[i.transaksi_id]) trxItemsMap[i.transaksi_id] = [];
             trxItemsMap[i.transaksi_id].push({ id: i.id, warna: i.warna, ukuran: i.ukuran, qty: i.qty, ssk: i.ssk });
         });
-        appData.riwayatTransaksi = (trx.data || []).map(t => ({
+        appData.riwayatTransaksi = trxData.sort((a, b) => b.id - a.id).map(t => ({
             id: t.id, vendor: t.vendor, brand: t.brand, model: t.model,
             harga: t.harga || 0, status: t.status,
             tanggal: t.tanggal, jam: t.jam,
@@ -2465,8 +2497,8 @@ END $$;`;
         }));
     }
     async function fetchPelunasanData() {
-        const pelDB = await sbClient.from('pelunasan').select('*').order('id', { ascending: false });
-        appData.pelunasan = (pelDB.data || []).map(p => ({
+        const pelData = await fetchAllRows('pelunasan', '*', 'id', true);
+        appData.pelunasan = pelData.sort((a, b) => b.id - a.id).map(p => ({
             id: p.id, transaksi_id: p.transaksi_id, vendor: p.vendor,
             jumlah: p.jumlah || 0, keterangan: p.keterangan || '',
             tanggal: p.tanggal, jam: p.jam
@@ -2606,7 +2638,7 @@ function hitungStokBrand(brandId) {
     const map = {};
     appData.riwayatInput.forEach(d => {
         const b = masterData.brand.find(b => (b.nama || "").trim().toUpperCase() === (d.brand || "").trim().toUpperCase());
-        if (brandId && (!b || b.id !== brandId)) return;
+        if (brandId && (!b || b.id != brandId)) return;
         d.items.forEach(item => {
             const currentModel = (d.model || "").trim().toUpperCase();
             const currentWarna = (item.warna || "").trim().toUpperCase();
@@ -2619,7 +2651,7 @@ function hitungStokBrand(brandId) {
     });
     appData.riwayatTransaksi.forEach(d => {
         const b = masterData.brand.find(b => (b.nama || "").trim().toUpperCase() === (d.brand || "").trim().toUpperCase());
-        if (brandId && (!b || b.id !== brandId)) return;
+        if (brandId && (!b || b.id != brandId)) return;
         d.items.forEach(item => {
             const currentModel = (d.model || "").trim().toUpperCase();
             const currentWarna = (item.warna || "").trim().toUpperCase();
@@ -3413,6 +3445,7 @@ function updateSSK(tab, rowId) {
             const totalPcs = Object.values(_detailStokMap).reduce((s, v) => s + Math.max(0, v), 0);
             document.getElementById('detail-brand-total').innerText = totalPcs.toLocaleString('id-ID') + ' Pcs';
             renderDetailItems(null);
+            renderStokDashboard();
             tutupKoreksiStok();
             showToast(`✅ Koreksi berhasil! Stok ${model} ${warna}/${ukuran} → ${stokTarget} pcs`);
         } catch(err) {
@@ -8248,19 +8281,19 @@ ${docStyles}
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> MENGAMBIL DATA...';
             showToast('⏳ Menyiapkan backup...');
 
-            const _sbFetch = async (query) => { try { const r = await query; return r; } catch(e) { return { data: [] }; } };
-            const [v, b, m, w, u, ri, riItems, trx, trxItems, pel, pengaturan] = await Promise.all([
-    _sbFetch(sbClient.from('vendor').select('*').order('id', { ascending: true })),
-    _sbFetch(sbClient.from('brand').select('*').order('id', { ascending: true })),
-    _sbFetch(sbClient.from('model').select('*').order('id', { ascending: true })),
-    _sbFetch(sbClient.from('warna').select('*').order('id', { ascending: true })),
-    _sbFetch(sbClient.from('ukuran').select('*').order('id', { ascending: true })),
-    _sbFetch(sbClient.from('riwayat_input').select('*').order('id', { ascending: true })),
-    _sbFetch(sbClient.from('riwayat_input_item').select('*').order('id', { ascending: true })),
-    _sbFetch(sbClient.from('transaksi').select('*').order('id', { ascending: true })),
-    _sbFetch(sbClient.from('transaksi_item').select('*').order('id', { ascending: true })),
-    _sbFetch(sbClient.from('pelunasan').select('*').order('id', { ascending: true })),
-    _sbFetch(sbClient.from('pengaturan').select('*')),
+            const _sbFetchAll = async (table) => { try { return await fetchAllRows(table, '*', 'id', true); } catch(e) { return []; } };
+            const [vData, bData, mData, wData, uData, riData, riItemsData, trxData, trxItemsData, pelData, pengaturanRes] = await Promise.all([
+    _sbFetchAll('vendor'),
+    _sbFetchAll('brand'),
+    _sbFetchAll('model'),
+    _sbFetchAll('warna'),
+    _sbFetchAll('ukuran'),
+    _sbFetchAll('riwayat_input'),
+    _sbFetchAll('riwayat_input_item'),
+    _sbFetchAll('transaksi'),
+    _sbFetchAll('transaksi_item'),
+    _sbFetchAll('pelunasan'),
+    sbClient.from('pengaturan').select('*'),
 ]);
 
             const backupData = {
@@ -8270,17 +8303,17 @@ ${docStyles}
                     tanggal_backup: new Date().toISOString(),
                     label: new Date().toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'medium' })
                 },
-                vendor:             v.data || [],
-                brand:              b.data || [],
-                model:              m.data || [],
-                warna:              w.data || [],
-                ukuran:             u.data || [],
-                riwayat_input:      ri.data || [],
-                riwayat_input_item: riItems.data || [],
-                transaksi:          trx.data || [],
-                transaksi_item:     trxItems.data || [],
-                pelunasan:          pel.data || [],
-                pengaturan:         pengaturan.data || [],
+                vendor:             vData || [],
+                brand:              bData || [],
+                model:              mData || [],
+                warna:              wData || [],
+                ukuran:             uData || [],
+                riwayat_input:      riData || [],
+                riwayat_input_item: riItemsData || [],
+                transaksi:          trxData || [],
+                transaksi_item:     trxItemsData || [],
+                pelunasan:          pelData || [],
+                pengaturan:         pengaturanRes.data || [],
             };
 
             const totalRec =
