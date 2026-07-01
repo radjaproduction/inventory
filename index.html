@@ -5592,6 +5592,20 @@ function updateSSK(tab, rowId) {
         });
         if (!valid) return;
 
+        // PERBAIKAN: gabungkan baris dengan warna+ukuran yang sama jadi satu baris (jumlahkan qty).
+        // Kalau dibiarkan jadi 2 baris terpisah untuk variasi yang sama, saat item baru belum
+        // punya id (misal edit/hapus qty langsung setelah simpan, sebelum realtime sync selesai),
+        // pencocokan fallback "transaksi_id + warna + ukuran" bisa kena 2 baris sekaligus dan
+        // bikin qty yang tampil di riwayat jadi salah/kosong.
+        const mergedMap = {};
+        const mergedOrder = [];
+        items.forEach(i => {
+            const k = i.warna + '||' + i.ukuran;
+            if (!mergedMap[k]) { mergedMap[k] = { ...i }; mergedOrder.push(k); }
+            else mergedMap[k].qty += i.qty;
+        });
+        items = mergedOrder.map(k => mergedMap[k]);
+
         const snapVendorId = trxState.vendorId;
         const snapVendorNama = trxState.vendorNama;
         const snapBrandId = trxState.brandId;
@@ -5659,14 +5673,18 @@ function updateSSK(tab, rowId) {
             harga: snapModelHarga, status: snapStatusBayar, tanggal, jam
         }).select().single();
         if (trxErr) { showToast('❌ Gagal simpan transaksi'); _trxIsSaving = false; return; }
-        const { error: itemErr } = await sbClient.from('transaksi_item').insert(items.map(i => ({ transaksi_id: trx.id, ...i })));
+        const { data: insertedTrxItems, error: itemErr } = await sbClient.from('transaksi_item').insert(items.map(i => ({ transaksi_id: trx.id, ...i }))).select();
         if (itemErr) {
             await sbClient.from('transaksi').delete().eq('id', trx.id);
             showToast('❌ Gagal simpan item transaksi. Dibatalkan.');
             _trxIsSaving = false;
             return;
         }
-        appData.riwayatTransaksi.unshift({ id: trx.id, vendor: snapVendorNama, brand: snapBrandNama, model: snapModelNama, harga: snapModelHarga, status: snapStatusBayar, tanggal, jam, items });
+        // PERBAIKAN: select id balik setelah insert (sama seperti simpanInputData), supaya edit/hapus qty
+        // yang dilakukan langsung setelah transaksi tersimpan tidak jatuh ke pencocokan warna+ukuran
+        // (yang berisiko kena 2 baris sekaligus kalau ada variasi ganda) melainkan pakai id yang pasti.
+        const itemsWithId = (insertedTrxItems || []).map(i => ({ id: i.id, warna: i.warna, ukuran: i.ukuran, qty: i.qty, ssk: i.ssk }));
+        appData.riwayatTransaksi.unshift({ id: trx.id, vendor: snapVendorNama, brand: snapBrandNama, model: snapModelNama, harga: snapModelHarga, status: snapStatusBayar, tanggal, jam, items: itemsWithId.length ? itemsWithId : items });
         trxState = { vendorId: null, vendorNama: '', brandId: null, brandNama: '', modelId: null, modelNama: '', modelHarga: 0, statusBayar: 'lunas' };
         document.getElementById('trx-vendor-display').textContent = 'Pilih vendor';
         document.getElementById('trx-brand-display').textContent = 'Pilih brand';
