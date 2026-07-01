@@ -822,7 +822,7 @@
                     <div class="h-[64px] flex flex-col justify-center px-4 flex-grow z-10 relative">
                         <h1 class="text-xl font-black text-[#000000] leading-none tracking-wide mb-1">DASHBOARD <span class="text-black">STOK</span></h1>
                         <h2 class="display-brand-name text-[9px] font-bold text-[#000000] tracking-[0.15em] leading-none uppercase">RADJA PRODUCTION</h2>
-                        <span id="app-version-badge" class="absolute inset-y-0 right-2 text-[#000000] select-none flex flex-col items-end justify-center leading-none gap-0.5" style="font-family:'Poppins',sans-serif;" title="Versi Aplikasi"><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">v2.1.1</span><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">RADJA PRODUCTION</span><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">@2026</span></span>
+                        <span id="app-version-badge" class="absolute inset-y-0 right-2 text-[#000000] select-none flex flex-col items-end justify-center leading-none gap-0.5" style="font-family:'Poppins',sans-serif;" title="Versi Aplikasi"><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">v2.1.2</span><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">RADJA PRODUCTION</span><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">@2026</span></span>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
@@ -4418,6 +4418,34 @@ function updateSSK(tab, rowId) {
         if (tab === 'model') renderBrandOptions();
     }
 
+    // ==== Mekanisme terpusat untuk menutup dropdown saat tap di luar area ====
+    // Pakai capture phase supaya tetap kedeteksi walau elemen lain memanggil
+    // event.stopPropagation() (tombol sort, pilih riwayat, edit, hapus, dll).
+    let _activeDropdownPopup = null;
+    let _activeDropdownTrigger = null;
+
+    function _clearActiveDropdownRefs() {
+        _activeDropdownPopup = null;
+        _activeDropdownTrigger = null;
+        if (window._genericDropdownCleanup) {
+            window._genericDropdownCleanup();
+            window._genericDropdownCleanup = null;
+        }
+    }
+
+    function _setActiveDropdown(popup, trigger) {
+        _activeDropdownPopup = popup;
+        _activeDropdownTrigger = trigger;
+    }
+
+    document.addEventListener('click', function(e) {
+        if (!_activeDropdownPopup || !_activeDropdownPopup.isConnected) return;
+        if (_activeDropdownPopup.contains(e.target)) return;
+        if (_activeDropdownTrigger && _activeDropdownTrigger.contains(e.target)) return;
+        _activeDropdownPopup.remove();
+        _clearActiveDropdownRefs();
+    }, true);
+
     function bukaDropdownWarna(tab, rowId) {
         const existing = document.getElementById('warna-dropdown-popup');
         if (existing) existing.remove();
@@ -4450,17 +4478,13 @@ function updateSSK(tab, rowId) {
             const item = document.createElement('div');
             item.className = 'flex items-center gap-3 px-5 py-4 cursor-pointer hover:bg-[#F6DBB6] transition-colors border-b border-[#eadfd0] last:border-0';
             item.innerHTML = `<div class="w-6 h-6 rounded flex-shrink-0 border border-white/20" style="background:${w.kode}"></div><span class="text-sm font-bold text-black capitalize">${w.nama}</span>`;
-            item.onclick = () => { pilihWarna(tab, rowId, w.nama, w.kode); popup.remove(); };
+            item.onclick = () => { pilihWarna(tab, rowId, w.nama, w.kode); popup.remove(); _clearActiveDropdownRefs(); };
             popup.appendChild(item);
         });
         const rect = trigger.getBoundingClientRect();
         popup.style.top = (rect.bottom + 4) + 'px'; popup.style.left = rect.left + 'px';
         document.body.appendChild(popup);
-        setTimeout(() => {
-            document.addEventListener('click', function handler(e) {
-                if (!popup.contains(e.target) && e.target !== trigger) { popup.remove(); document.removeEventListener('click', handler); }
-            });
-        }, 50);
+        _setActiveDropdown(popup, trigger);
     }
     function pilihWarna(tab, rowId, nama, kode) {
         const dot = document.getElementById(`${tab}-warna-dot-${rowId}`);
@@ -4508,17 +4532,13 @@ function updateSSK(tab, rowId) {
             const item = document.createElement('div');
             item.className = 'px-5 py-4 cursor-pointer hover:bg-[#F6DBB6] text-sm font-bold text-black transition-colors border-b border-[#eadfd0] last:border-0';
             item.textContent = u.nama;
-            item.onclick = () => { pilihUkuran(tab, rowId, u.nama); popup.remove(); };
+            item.onclick = () => { pilihUkuran(tab, rowId, u.nama); popup.remove(); _clearActiveDropdownRefs(); };
             popup.appendChild(item);
         });
         const rect = trigger.getBoundingClientRect();
         popup.style.top = (rect.bottom + 4) + 'px'; popup.style.left = rect.left + 'px';
         document.body.appendChild(popup);
-        setTimeout(() => {
-            document.addEventListener('click', function handler(e) {
-                if (!popup.contains(e.target) && e.target !== trigger) { popup.remove(); document.removeEventListener('click', handler); }
-            });
-        }, 50);
+        _setActiveDropdown(popup, trigger);
     }
     function pilihUkuran(tab, rowId, nama) {
         const label = document.getElementById(`${tab}-ukuran-label-${rowId}`);
@@ -4578,10 +4598,7 @@ function updateSSK(tab, rowId) {
             const el = document.getElementById(id);
             if (el) el.remove();
         });
-        if (window._genericDropdownCleanup) {
-            window._genericDropdownCleanup();
-            window._genericDropdownCleanup = null;
-        }
+        _clearActiveDropdownRefs();
     }
 
     function bukaGenericDropdown(items, trigger, onSelect) {
@@ -4598,7 +4615,7 @@ function updateSSK(tab, rowId) {
             const div = document.createElement('div');
             div.className = 'px-5 py-4 cursor-pointer hover:bg-[#F6DBB6] text-sm font-bold text-black transition-colors border-b border-[#eadfd0] last:border-0';
             div.textContent = item.label;
-            div.onclick = () => { onSelect(item); popup.remove(); };
+            div.onclick = () => { onSelect(item); popup.remove(); _clearActiveDropdownRefs(); };
             popup.appendChild(div);
         });
 
@@ -4646,16 +4663,7 @@ function updateSSK(tab, rowId) {
         window.addEventListener('resize', onResize);
         window._genericDropdownCleanup = () => window.removeEventListener('resize', onResize);
 
-        setTimeout(() => {
-            document.addEventListener('click', function handler(e) {
-                if (!popup.contains(e.target) && !trigger.contains(e.target)) {
-                    popup.remove();
-                    document.removeEventListener('click', handler);
-                    window.removeEventListener('resize', onResize);
-                    window._genericDropdownCleanup = null;
-                }
-            });
-        }, 50);
+        _setActiveDropdown(popup, trigger);
     }
 
     let inputState = { mode: 'masuk', brandId: null, brandNama: '', modelId: null, modelNama: '' };
