@@ -748,8 +748,8 @@
                         <svg id="stok-grafik-svg" width="100%" height="140" viewBox="0 0 300 140" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"></svg>
                     </div>
                 </div>
-                <div class="bg-cardBg rounded-xl p-4 border border-borderDark flex flex-col">
-                    <div class="brand-gradient-bg rounded-xl px-3 py-2.5 flex items-center gap-2 shadow-[0_2px_12px_rgba(255,140,0,0.25)] cursor-pointer" onclick="toggleStokAccordion('stok-brand-collapse','stok-brand-chevron')">
+                <div id="stok-brand-card" class="bg-cardBg rounded-xl border border-borderDark overflow-hidden flex flex-col transition-all duration-200">
+                    <div class="brand-gradient-bg rounded-xl px-3 py-2.5 flex items-center gap-2 shadow-[0_2px_12px_rgba(255,140,0,0.25)] cursor-pointer" onclick="toggleStokAccordion('stok-brand-collapse','stok-brand-chevron','stok-brand-card')">
     <i class="fa-solid fa-tags text-black text-sm"></i>
     <div class="flex-1">
         <div class="text-[13px] font-black text-black uppercase tracking-wide leading-none">STOK PER BRAND</div>
@@ -758,19 +758,19 @@
     <button type="button" onclick="event.stopPropagation(); toggleBrandSort()" class="w-7 h-7 rounded-lg bg-black/10 flex items-center justify-center flex-shrink-0">
         <i class="fa-solid fa-arrow-up-wide-short text-black text-sm" id="brand-sort-icon"></i>
     </button>
-    <i class="fa-solid fa-chevron-down text-black text-sm collapse-chevron rotated flex-shrink-0" id="stok-brand-chevron"></i>
+    <i class="fa-solid fa-chevron-down text-black text-sm collapse-chevron flex-shrink-0" id="stok-brand-chevron"></i>
 </div>
-                    <div id="stok-brand-collapse" class="collapse-body">
+                    <div id="stok-brand-collapse" class="collapse-body collapsed">
                         <div id="stok-brand-list" class="flex flex-col gap-2 pt-3"></div>
                     </div>
                 </div>
-                <div class="bg-cardBg rounded-xl p-4 border border-borderDark flex flex-col">
-                    <div class="brand-gradient-bg rounded-xl px-3 py-2.5 flex items-center gap-2 shadow-[0_2px_12px_rgba(255,140,0,0.25)] cursor-pointer" onclick="toggleStokAccordion('stok-vendor-collapse','stok-vendor-chevron')">
+                <div id="stok-vendor-card" class="bg-cardBg rounded-xl border border-borderDark overflow-hidden flex flex-col transition-all duration-200">
+                    <div class="brand-gradient-bg rounded-xl px-3 py-2.5 flex items-center gap-2 shadow-[0_2px_12px_rgba(255,140,0,0.25)] cursor-pointer" onclick="toggleStokAccordion('stok-vendor-collapse','stok-vendor-chevron','stok-vendor-card')">
                         <i class="fa-solid fa-handshake text-black text-sm"></i>
                         <div class="text-[13px] font-black text-black uppercase tracking-wide leading-none flex-1">TRANSAKSI VENDOR</div>
-                        <i class="fa-solid fa-chevron-down text-black text-sm collapse-chevron rotated flex-shrink-0" id="stok-vendor-chevron"></i>
+                        <i class="fa-solid fa-chevron-down text-black text-sm collapse-chevron flex-shrink-0" id="stok-vendor-chevron"></i>
                     </div>
-                    <div id="stok-vendor-collapse" class="collapse-body">
+                    <div id="stok-vendor-collapse" class="collapse-body collapsed">
                         <div id="stok-vendor-list" class="flex flex-col gap-2 pt-3"></div>
                     </div>
                 </div>
@@ -3283,12 +3283,18 @@ function updateSSK(tab, rowId) {
     }
 
     // Akordeon independen (tidak saling menutup) — dipakai untuk STOK PER BRAND & TRANSAKSI VENDOR
-    function toggleStokAccordion(bodyId, chevronId) {
+    function toggleStokAccordion(bodyId, chevronId, cardId) {
         const body = document.getElementById(bodyId);
         const chevron = document.getElementById(chevronId);
+        const card = cardId ? document.getElementById(cardId) : null;
         if (!body) return;
         body.classList.toggle('collapsed');
         if (chevron) chevron.classList.toggle('rotated');
+        if (card) {
+            const isNowCollapsed = body.classList.contains('collapsed');
+            card.classList.toggle('p-0', isNowCollapsed);
+            card.classList.toggle('p-4', !isNowCollapsed);
+        }
     }
 
     // ==================== BACKGROUND MODE ====================
