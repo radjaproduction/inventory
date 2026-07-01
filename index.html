@@ -765,7 +765,7 @@
     <i class="fa-solid fa-chevron-down text-black text-base collapse-chevron flex-shrink-0" id="stok-brand-chevron"></i>
 </div>
                     <div id="stok-brand-collapse" class="collapse-body collapsed">
-                        <div id="stok-brand-list" class="flex flex-col gap-2 pt-3"></div>
+                        <div id="stok-brand-list" class="flex flex-col gap-2 px-3 pt-3 pb-3"></div>
                     </div>
                 </div>
                 <div id="stok-vendor-card" class="bg-cardBg rounded-xl border border-borderDark overflow-hidden flex flex-col transition-all duration-200">
@@ -775,7 +775,7 @@
                         <i class="fa-solid fa-chevron-down text-black text-base collapse-chevron flex-shrink-0" id="stok-vendor-chevron"></i>
                     </div>
                     <div id="stok-vendor-collapse" class="collapse-body collapsed">
-                        <div id="stok-vendor-list" class="flex flex-col gap-2 pt-3"></div>
+                        <div id="stok-vendor-list" class="flex flex-col gap-2 px-3 pt-3 pb-3"></div>
                     </div>
                 </div>
             </div>
@@ -3290,15 +3290,9 @@ function updateSSK(tab, rowId) {
     function toggleStokAccordion(bodyId, chevronId, cardId) {
         const body = document.getElementById(bodyId);
         const chevron = document.getElementById(chevronId);
-        const card = cardId ? document.getElementById(cardId) : null;
         if (!body) return;
         body.classList.toggle('collapsed');
         if (chevron) chevron.classList.toggle('rotated');
-        if (card) {
-            const isNowCollapsed = body.classList.contains('collapsed');
-            card.classList.toggle('p-0', isNowCollapsed);
-            card.classList.toggle('p-4', !isNowCollapsed);
-        }
     }
 
     // ==================== BACKGROUND MODE ====================
