@@ -7,7 +7,7 @@
         .bg-darkBg{background-color:#F6DBB6 !important;}
         .bg-cardBg{background-color:#FFEFDB !important;}
         .bg-headerBox{background-color:#FFEFDB !important;}
-        .border-borderDark{border-color:#eadfd0 !important;}
+        .border-borderDark{border-color:#ff8c00 !important;}
         .bg-\[\#F6DBB6\]{background-color:#F6DBB6 !important;}
         .bg-\[\#fdf6ec\]{background-color:#fdf6ec !important;}
         .bg-\[\#ffffff\],.bg-white{background-color:#ffffff !important;}
@@ -123,7 +123,7 @@
             theme: {
                 extend: {
                     colors: {
-                        darkBg: '#F6DBB6', cardBg: '#FFEFDB', headerBox: '#FFEFDB', borderDark: '#eadfd0',
+                        darkBg: '#F6DBB6', cardBg: '#FFEFDB', headerBox: '#FFEFDB', borderDark: '#ff8c00',
                     }
                 }
             }
@@ -170,7 +170,7 @@
         .dashed-border-brand { border: 1px dashed var(--brand-main) !important; }
         /* Catatan: dulu ada rule border khusus mode gelap di sini, tapi fitur
            toggle mode gelap/terang sudah dihapus (body permanen class .bg-light,
-           lihat .border-borderDark#eadfd0 di blok style paling atas). */
+           lihat .border-borderDark#ff8c00 di blok style paling atas). */
 
         .divide-borderDark > * + * { border-color: rgba(255,140,0,0.25) !important; border-color: color-mix(in srgb, var(--brand-main) 25%, transparent) !important; }
         .border-b.border-borderDark,
@@ -181,7 +181,7 @@
         body.bg-light .bg-\[#ffffff\],
         body.bg-light .bg-\[#ffffff\] { background-color: #FFF4E3 !important; }
         body.bg-light .border-borderDark,
-        body.bg-light .border-\[#eadfd0\] { border-color: #eadfd0 !important; }
+        body.bg-light .border-\[#ff8c00\] { border-color: #ff8c00 !important; }
         body.bg-light .text-black { color: #1a1d24 !important; }
         body.bg-light .text-black { color:#000 !important; }
         body.bg-light .text-black { color:#000 !important; }
@@ -326,7 +326,7 @@
         .input-variation-card {
             width: 100%;
             border: 1px solid #eecca3;
-            border: 1px solid color-mix(in srgb, var(--brand-main) 28%, #eadfd0);
+            border: 1px solid color-mix(in srgb, var(--brand-main) 28%, #ff8c00);
             background: #fdf6ec;
             border-radius: 12px;
             padding: 10px;
@@ -338,7 +338,7 @@
         }
         .input-variation-card.is-filled {
             border-color: #f8a949;
-            border-color: color-mix(in srgb, var(--brand-main) 65%, #eadfd0);
+            border-color: color-mix(in srgb, var(--brand-main) 65%, #ff8c00);
             background: linear-gradient(180deg, rgba(255,140,0,0.11), #fdf6ec 72%);
         }
         .input-row-index {
@@ -355,7 +355,7 @@
             height: 24px;
             border-radius: 8px;
             background: #F6DBB6;
-            border: 1px solid #eadfd0;
+            border: 1px solid #ff8c00;
             display: inline-flex;
             align-items: center;
             gap: 4px;
@@ -405,7 +405,7 @@
         }
         .input-sheet-section {
             background: #fdf6ec;
-            border: 1px solid #eadfd0;
+            border: 1px solid #ff8c00;
             border-radius: 14px;
             padding: 12px;
         }
@@ -419,7 +419,7 @@
         .input-choice-btn {
             min-height: 46px;
             border-radius: 10px;
-            border: 1px solid #eadfd0;
+            border: 1px solid #ff8c00;
             background: #F6DBB6;
             color: #1a1d24;
             font-size: 11px;
@@ -452,7 +452,7 @@
             position: sticky;
             bottom: 0;
             background: #ffffff;
-            border-top: 1px solid #eadfd0;
+            border-top: 1px solid #ff8c00;
             padding: 12px 16px 14px;
             flex-shrink: 0;
         }
@@ -470,7 +470,7 @@
         .qty-numpad-btn {
             min-height: 50px;
             border-radius: 12px;
-            border: 1px solid #eadfd0;
+            border: 1px solid #ff8c00;
             background: #F6DBB6;
             color: #1a1d24;
             font-size: 18px;
@@ -727,7 +727,7 @@
                 <div class="text-2xl font-black text-[#000000]">⚙️ SETUP SUPABASE</div>
                 <div class="text-[10px] text-[#000000]/70 font-bold mt-1">Isi konfigurasi Supabase Anda</div>
             </div>
-            <div class="bg-white rounded-xl p-4 border border-[#eadfd0] flex flex-col gap-3 shadow-sm">
+            <div class="bg-white rounded-xl p-4 border border-[#ff8c00] flex flex-col gap-3 shadow-sm">
                 <div class="flex flex-col gap-1.5">
                     <label class="text-[10px] font-bold text-black tracking-wider">SUPABASE URL</label>
                     <input id="cfg-url" type="text" placeholder="https://xxxx.supabase.co"
@@ -809,7 +809,7 @@
                     <div class="h-[64px] flex flex-col justify-center px-4 flex-grow z-10 relative">
                         <h1 class="text-xl font-black text-[#000000] leading-none tracking-wide mb-1">DASHBOARD <span class="text-black">STOK</span></h1>
                         <h2 class="display-brand-name text-[9px] font-bold text-[#000000] tracking-[0.15em] leading-none uppercase">RADJA PRODUCTION</h2>
-                        <span id="app-version-badge" class="absolute inset-y-0 right-2 text-[#000000] select-none flex flex-col items-end justify-center leading-none gap-0.5" style="font-family:'Poppins',sans-serif;" title="Versi Aplikasi"><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">v2.1.4</span><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">RADJA PRODUCTION</span><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">@2026</span></span>
+                        <span id="app-version-badge" class="absolute inset-y-0 right-2 text-[#000000] select-none flex flex-col items-end justify-center leading-none gap-0.5" style="font-family:'Poppins',sans-serif;" title="Versi Aplikasi"><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">v2.1.5</span><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">RADJA PRODUCTION</span><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">@2026</span></span>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
@@ -915,7 +915,7 @@
 
         <!-- TAB INPUT DATA -->
         <div id="tab-input" class="tab-content hidden flex-col p-4 gap-4 relative z-10" >
-            <div class="flex items-stretch -mx-4 -mt-4 mb-2 shadow-[0_4px_16px_rgba(255,140,0,0.35)] brand-gradient-bg rounded-b-2xl overflow-hidden">
+            <div class="flex items-stretch -mx-4 -mt-4 mb-2 shadow-[0_4px_16px_rgba(255,140,0,0.35)] brand-gradient-bg rounded-b-2xl overflow-hidden flex-shrink-0">
                 <div class="w-20 h-[72px] flex items-center justify-center flex-shrink-0 z-10 relative bg-black/5 border-r border-black/10">
                     <svg class="w-12 h-auto" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3996.74 2715.33"><path fill="#000000" d="M1379.8 2078.49l-339.7 -450.38 -797.43 0 819.99 1087.21 369.69 0 427.79 0 778.91 0c746.73,0 1357.68,-610.94 1357.68,-1357.67 0,-746.72 -610.94,-1357.66 -1357.68,-1357.66l-685.55 0c242.92,127.17 422.11,359.81 476.47,636.83l209.08 0c396.43,0 720.83,324.36 720.83,720.83 0,396.44 -324.35,720.83 -720.83,720.83l-1259.26 0zm906.78 -104.15l-261.1 -346.23 -0.04 0 -84.57 -112.11c240.44,-141.62 402.14,-403.18 402.14,-701.94 0,-448.98 -365.11,-814.06 -814.05,-814.06l-1528.97 0 480.33 636.83 1048.65 0c97.46,0 177.22,79.74 177.22,177.22 0,97.51 -79.76,177.25 -177.22,177.25l-781.29 0 741.44 983.04 797.46 0z"/></svg>
                 </div>
@@ -925,11 +925,11 @@
                     <h2 class="display-brand-name text-[10px] font-bold text-[#000000] tracking-[0.15em] leading-none mt-0.5 uppercase">RADJA PRODUCTION</h2>
                 </div>
             </div>
-            <div class="bg-darkBg p-1 rounded-xl flex border border-borderDark gap-1">
-                <button id="input-mode-masuk" onclick="setInputMode('masuk')" class="flex-1 py-2.5 text-xs font-bold rounded-lg bg-cardBg brand-text shadow-sm transition-all flex items-center justify-center gap-2"><i class="fa-solid fa-arrow-down text-xs"></i> STOK MASUK</button>
+            <div class="bg-darkBg p-1 rounded-xl flex border border-borderDark gap-1 flex-shrink-0">
+                <button id="input-mode-masuk" onclick="setInputMode('masuk')" class="flex-1 py-2.5 text-xs font-bold rounded-lg brand-gradient-bg text-black shadow-sm transition-all flex items-center justify-center gap-2"><i class="fa-solid fa-arrow-down text-xs"></i> STOK MASUK</button>
                 <button id="input-mode-retur" onclick="setInputMode('retur')" class="flex-1 py-2.5 text-xs font-bold rounded-lg text-black hover:text-black transition-all flex items-center justify-center gap-2"><i class="fa-solid fa-rotate-left text-xs"></i> RETUR</button>
             </div>
-            <div id="retur-info-banner" class="hidden bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 flex items-start gap-3">
+            <div id="retur-info-banner" class="hidden bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 flex items-start gap-3 flex-shrink-0">
                 <i class="fa-solid fa-triangle-exclamation text-red-400 mt-0.5 flex-shrink-0"></i>
                 <div>
                     <p class="text-[11px] font-bold text-red-400 mb-0.5">MODE RETUR AKTIF</p>
@@ -937,14 +937,14 @@
                     <p class="text-[10px] font-black text-red-500 mt-1 tracking-wide">⚠️ RETUR TIDAK BISA DIKEMBALIKAN — terhapus di stok secara permanen.</p>
                 </div>
             </div>
-            <div id="retur-keterangan-wrapper" class="hidden flex-col gap-1.5">
+            <div id="retur-keterangan-wrapper" class="hidden flex-col gap-1.5 flex-shrink-0">
                 <label class="text-[10px] font-bold text-black tracking-wider">ALASAN RETUR</label>
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fa-solid fa-comment-dots text-black text-xs"></i></div>
                     <input id="input-retur-keterangan" type="text" class="w-full bg-cardBg border border-red-500/40 rounded-lg pl-9 pr-3 py-2.5 text-xs text-black placeholder-black focus:outline-none focus:border-red-500 transition-colors" placeholder="retur...">
                 </div>
             </div>
-            <div class="flex flex-col gap-3">
+            <div class="flex flex-col gap-3 flex-shrink-0">
                 <div id="input-brand-selector" onclick="bukaDropdownInput('brand')" class="bg-cardBg rounded-xl p-5 flex items-center justify-between border border-[color:var(--brand-main)] cursor-pointer hover:bg-[#fdf6ec] transition-colors" style="box-shadow:0 2px 12px rgba(255,140,0,0.15)">
                     <div class="flex items-center gap-4">
                         <div class="w-12 h-12 rounded-lg brand-gradient-bg flex items-center justify-center text-black"><i class="fa-solid fa-tags text-xl"></i></div>
@@ -990,6 +990,7 @@
             <div class="input-sheet-panel">
                 <div class="brand-gradient-bg text-black px-4 py-4 flex items-center justify-between flex-shrink-0">
                     <div>
+                        <div id="input-sheet-brand" class="text-[9px] font-black tracking-wider opacity-70 mb-0.5">BRAND</div>
                         <div class="text-[15px] font-black leading-none">DETAIL VARIASI</div>
                         <div id="input-sheet-subtitle" class="text-[9px] font-bold opacity-60 mt-1">Pilih data item</div>
                     </div>
@@ -1049,6 +1050,7 @@
             <div class="input-sheet-panel">
                 <div class="brand-gradient-bg text-black px-4 py-4 flex items-center justify-between flex-shrink-0">
                     <div>
+                        <div id="trx-sheet-brand" class="text-[9px] font-black tracking-wider opacity-70 mb-0.5">BRAND</div>
                         <div class="text-[15px] font-black leading-none">DETAIL TRANSAKSI</div>
                         <div id="trx-sheet-subtitle" class="text-[9px] font-bold opacity-60 mt-1">Pilih data item</div>
                     </div>
@@ -1115,15 +1117,15 @@
                 </div>
             </div>
             <div class="flex flex-col gap-3">
-                <div id="trx-vendor-selector" onclick="bukaDropdownTrx('vendor')" class="bg-cardBg rounded-xl p-5 flex items-center justify-between border border-borderDark cursor-pointer hover:bg-[#fdf6ec] transition-colors">
+                <div id="trx-vendor-selector" onclick="bukaDropdownTrx('vendor')" class="bg-cardBg rounded-xl p-5 flex items-center justify-between border border-[color:var(--brand-main)] cursor-pointer hover:bg-[#fdf6ec] transition-colors" style="box-shadow:0 2px 12px rgba(255,140,0,0.15)">
                     <div class="flex items-center gap-4"><div class="w-12 h-12 rounded-lg brand-gradient-bg flex items-center justify-center text-black"><i class="fa-solid fa-truck-fast text-xl"></i></div><div><h3 class="text-sm font-bold text-black mb-1">VENDOR</h3><p class="text-xs text-black" id="trx-vendor-display">Pilih vendor</p></div></div>
                     <i class="fa-solid fa-chevron-down text-black text-base"></i>
                 </div>
-                <div id="trx-brand-selector" onclick="bukaDropdownTrx('brand')" class="bg-cardBg rounded-xl p-5 flex items-center justify-between border border-borderDark cursor-pointer hover:bg-[#fdf6ec] transition-colors">
+                <div id="trx-brand-selector" onclick="bukaDropdownTrx('brand')" class="bg-cardBg rounded-xl p-5 flex items-center justify-between border border-[color:var(--brand-main)] cursor-pointer hover:bg-[#fdf6ec] transition-colors" style="box-shadow:0 2px 12px rgba(255,140,0,0.15)">
                     <div class="flex items-center gap-4"><div class="w-12 h-12 rounded-lg brand-gradient-bg flex items-center justify-center text-black"><i class="fa-solid fa-tags text-xl"></i></div><div><h3 class="text-sm font-bold text-black mb-1">BRAND</h3><p class="text-xs text-black" id="trx-brand-display">Pilih brand</p></div></div>
                     <i class="fa-solid fa-chevron-down text-black text-base"></i>
                 </div>
-                <div id="trx-model-selector" onclick="bukaDropdownTrx('model')" class="bg-cardBg rounded-xl p-5 flex items-center justify-between border border-borderDark cursor-pointer hover:bg-[#fdf6ec] transition-colors">
+                <div id="trx-model-selector" onclick="bukaDropdownTrx('model')" class="bg-cardBg rounded-xl p-5 flex items-center justify-between border border-[color:var(--brand-main)] cursor-pointer hover:bg-[#fdf6ec] transition-colors" style="box-shadow:0 2px 12px rgba(255,140,0,0.15)">
                     <div class="flex items-center gap-4"><div class="w-12 h-12 rounded-lg brand-gradient-bg flex items-center justify-center text-black"><i class="fa-solid fa-shirt text-xl"></i></div><div><h3 class="text-sm font-bold text-black mb-1">MODEL</h3><p class="text-xs text-black" id="trx-model-display">Pilih model</p></div></div>
                     <i class="fa-solid fa-chevron-down text-black text-base"></i>
                 </div>
@@ -1486,7 +1488,7 @@
                         <span class="text-[9px] text-black mt-0.5" id="pelunasan-limit-label">Aktif: Maks 2 minggu terakhir</span>
                     </div>
                     <!-- Toggle Switch -->
-                    <div id="pelunasan-limit-toggle" onclick="togglePelunasanLimit()" class="relative w-14 h-7 rounded-full cursor-pointer transition-all duration-300 flex items-center px-1" style="background:#eadfd0">
+                    <div id="pelunasan-limit-toggle" onclick="togglePelunasanLimit()" class="relative w-14 h-7 rounded-full cursor-pointer transition-all duration-300 flex items-center px-1" style="background:#d8c3a0">
                         <div id="pelunasan-limit-toggle-knob" class="w-5 h-5 rounded-full bg-white shadow-md transition-all duration-300 translate-x-0"></div>
                     </div>
                 </div>
@@ -2299,15 +2301,15 @@ END $$;`;
         modal.id = 'sql-modal';
         modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
         modal.innerHTML = `
-            <div style="background:#ffffff;border:1px solid #eadfd0;border-radius:16px;width:100%;max-width:480px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden">
+            <div style="background:#ffffff;border:1px solid #ff8c00;border-radius:16px;width:100%;max-width:480px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden">
                 <div style="background:var(--brand-gradient);padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
                     <div style="font-size:13px;font-weight:900;color:#ffffff"><i class="fa-solid fa-database mr-2"></i>SQL SETUP — COPY & JALANKAN</div>
                     <button onclick="document.getElementById('sql-modal').remove()" style="background:rgba(0,0,0,0.2);border:none;color:#ffffff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;font-weight:bold">✕</button>
                 </div>
-                <div style="padding:12px 16px;background:#F6DBB6;border-bottom:1px solid #eadfd0">
+                <div style="padding:12px 16px;background:#F6DBB6;border-bottom:1px solid #ff8c00">
                     <p style="font-size:10px;color:#000;margin:0">Langkah: <span style="color:#ff8c00;font-weight:bold">1)</span> Klik tombol buka SQL Editor &nbsp;<span style="color:#ff8c00;font-weight:bold">2)</span> Copy SQL di bawah &nbsp;<span style="color:#ff8c00;font-weight:bold">3)</span> Paste & Run di Supabase</p>
                 </div>
-                <div style="display:flex;gap:8px;padding:12px 16px;border-bottom:1px solid #eadfd0">
+                <div style="display:flex;gap:8px;padding:12px 16px;border-bottom:1px solid #ff8c00">
                     <a href="${sqlEditorUrl}" target="_blank" style="flex:1;background:var(--brand-gradient);color:#ffffff;font-weight:900;font-size:11px;padding:10px;border-radius:10px;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px"><i class="fa-solid fa-arrow-up-right-from-square"></i> BUKA SQL EDITOR</a>
                     <button onclick="copySQLSetup()" id="btn-copy-sql" style="flex:1;background:#1a2a1a;border:1px solid rgba(74,222,128,0.4);color:#4ade80;font-weight:900;font-size:11px;padding:10px;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px"><i class="fa-solid fa-copy"></i> COPY SQL</button>
                 </div>
@@ -3591,7 +3593,7 @@ function updateSSK(tab, rowId) {
             if (label) label.textContent = 'Aktif: Tampilkan semua riwayat';
         } else {
             if (toggle) toggle.classList.remove('is-light');
-            if (toggle) toggle.style.background = '#eadfd0';
+            if (toggle) toggle.style.background = '#d8c3a0';
             const knob = document.getElementById('pelunasan-limit-toggle-knob');
             if (knob) knob.style.transform = 'translateX(0)';
             if (label) label.textContent = 'Aktif: Maks 2 minggu terakhir';
@@ -4455,11 +4457,11 @@ function updateSSK(tab, rowId) {
 
         const popup = document.createElement('div');
         popup.id = 'warna-dropdown-popup';
-        popup.className = 'fixed z-[999] bg-[#ffffff] border border-[#eadfd0] rounded-xl shadow-2xl overflow-hidden';
+        popup.className = 'fixed z-[999] bg-[#ffffff] border border-[#ff8c00] rounded-xl shadow-2xl overflow-hidden';
         popup.style.minWidth = '200px'; popup.style.maxHeight = '300px'; popup.style.overflowY = 'auto';
         warnaList.forEach(w => {
             const item = document.createElement('div');
-            item.className = 'flex items-center gap-3 px-5 py-4 cursor-pointer hover:bg-[#F6DBB6] transition-colors border-b border-[#eadfd0] last:border-0';
+            item.className = 'flex items-center gap-3 px-5 py-4 cursor-pointer hover:bg-[#F6DBB6] transition-colors border-b border-[#ff8c00] last:border-0';
             item.innerHTML = `<div class="w-6 h-6 rounded flex-shrink-0 border border-white/20" style="background:${w.kode}"></div><span class="text-sm font-bold text-black capitalize">${w.nama}</span>`;
             item.onclick = () => { pilihWarna(tab, rowId, w.nama, w.kode); popup.remove(); _clearActiveDropdownRefs(); };
             popup.appendChild(item);
@@ -4510,11 +4512,11 @@ function updateSSK(tab, rowId) {
 
         const popup = document.createElement('div');
         popup.id = 'ukuran-dropdown-popup';
-        popup.className = 'fixed z-[999] bg-[#ffffff] border border-[#eadfd0] rounded-xl shadow-2xl overflow-hidden';
+        popup.className = 'fixed z-[999] bg-[#ffffff] border border-[#ff8c00] rounded-xl shadow-2xl overflow-hidden';
         popup.style.minWidth = '160px'; popup.style.maxHeight = '300px'; popup.style.overflowY = 'auto';
         sortUkuran(ukuranList).forEach(u => {
             const item = document.createElement('div');
-            item.className = 'px-5 py-4 cursor-pointer hover:bg-[#F6DBB6] text-sm font-bold text-black transition-colors border-b border-[#eadfd0] last:border-0';
+            item.className = 'px-5 py-4 cursor-pointer hover:bg-[#F6DBB6] text-sm font-bold text-black transition-colors border-b border-[#ff8c00] last:border-0';
             item.textContent = u.nama;
             item.onclick = () => { pilihUkuran(tab, rowId, u.nama); popup.remove(); _clearActiveDropdownRefs(); };
             popup.appendChild(item);
@@ -4592,13 +4594,13 @@ function updateSSK(tab, rowId) {
 
         const popup = document.createElement('div');
         popup.id = 'generic-dropdown-popup';
-        popup.className = 'fixed z-[999] bg-[#ffffff] border border-[#eadfd0] rounded-xl shadow-2xl overflow-hidden';
+        popup.className = 'fixed z-[999] bg-[#ffffff] border border-[#ff8c00] rounded-xl shadow-2xl overflow-hidden';
         popup.style.overflowY = 'auto';
         popup.style.WebkitOverflowScrolling = 'touch';
 
         items.forEach(item => {
             const div = document.createElement('div');
-            div.className = 'px-5 py-4 cursor-pointer hover:bg-[#F6DBB6] text-sm font-bold text-black transition-colors border-b border-[#eadfd0] last:border-0';
+            div.className = 'px-5 py-4 cursor-pointer hover:bg-[#F6DBB6] text-sm font-bold text-black transition-colors border-b border-[#ff8c00] last:border-0';
             div.textContent = item.label;
             div.onclick = () => { onSelect(item); popup.remove(); _clearActiveDropdownRefs(); };
             popup.appendChild(div);
@@ -4664,7 +4666,7 @@ function updateSSK(tab, rowId) {
         const headerTitle = document.getElementById('input-header-title');
         const btnText = document.getElementById('btn-simpan-input-text');
         if (mode === 'masuk') {
-            btnMasuk.className = "flex-1 py-2.5 text-xs font-bold rounded-lg bg-cardBg brand-text shadow-sm transition-all flex items-center justify-center gap-2";
+            btnMasuk.className = "flex-1 py-2.5 text-xs font-bold rounded-lg brand-gradient-bg text-black shadow-sm transition-all flex items-center justify-center gap-2";
             btnRetur.className = "flex-1 py-2.5 text-xs font-bold rounded-lg text-black hover:text-black transition-all flex items-center justify-center gap-2";
             banner.classList.add('hidden'); banner.classList.remove('flex');
             keteranganWrapper.classList.add('hidden'); keteranganWrapper.classList.remove('flex');
@@ -5011,6 +5013,8 @@ function updateSSK(tab, rowId) {
 	        const qtySheet = document.getElementById('input-sheet-qty');
 	        const subtitle = document.getElementById('input-sheet-subtitle');
 	        if (subtitle) subtitle.textContent = inputState.modelNama || 'Pilih data item';
+	        const brandLabel = document.getElementById('input-sheet-brand');
+	        if (brandLabel) brandLabel.textContent = inputState.brandNama || 'BRAND';
 	        if (qtySheet) qtySheet.value = inputSheetDraft.qty || 0;
 	        renderInputSheetOptions(rowId);
 	        refreshInputSheetSSK(rowId);
@@ -5456,6 +5460,8 @@ function updateSSK(tab, rowId) {
 	        const qtySheet = document.getElementById('trx-sheet-qty');
 	        const subtitle = document.getElementById('trx-sheet-subtitle');
 	        if (subtitle) subtitle.textContent = trxState.modelNama || 'Pilih data item';
+	        const brandLabel = document.getElementById('trx-sheet-brand');
+	        if (brandLabel) brandLabel.textContent = trxState.brandNama || 'BRAND';
 	        if (qtySheet) qtySheet.value = trxSheetDraft.qty || 0;
 	        renderTrxSheetOptions(rowId);
 	        refreshTrxSheetSSK(rowId);
@@ -6837,7 +6843,7 @@ function updateSSK(tab, rowId) {
             const stokSaatIni = hitungStokItem(trx.model, item.warna, item.ukuran, trx.brand);
             const maxQty = stokSaatIni + item.qty;
             const row = document.createElement('div');
-            row.style.cssText = 'background:#F6DBB6;border:1px solid #eadfd0;border-radius:8px;padding:8px 10px;';
+            row.style.cssText = 'background:#F6DBB6;border:1px solid #ff8c00;border-radius:8px;padding:8px 10px;';
             row.innerHTML = `
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
                     <span style="color:#1a1d24;font-size:11px;font-weight:700;">${item.warna} / ${item.ukuran}</span>
@@ -7017,7 +7023,7 @@ function updateSSK(tab, rowId) {
                             var row=document.getElementById('hapus-item-row-${idx}');
                             var lbl=document.getElementById('hapus-item-label-${idx}');
                             var sub=document.getElementById('hapus-item-sub-${idx}');
-                            row.style.borderColor=this.checked?'#dc2626':'#eadfd0';
+                            row.style.borderColor=this.checked?'#dc2626':'#ff8c00';
                             row.style.background=this.checked?'#1f0a0a':'#F6DBB6';
                             if(lbl) lbl.style.color=this.checked?'#fff':'#1a1d24';
                             if(sub) sub.style.color=this.checked?'#e5b8b8':'#000';
@@ -7444,7 +7450,7 @@ function updateSSK(tab, rowId) {
             </div>
             <div style="padding:8px 16px 16px;">
                 <button onclick="document.getElementById('popup-pilih-metode').remove()"
-                    style="width:100%;background:#F6DBB6;border:1px solid #eadfd0;border-radius:12px;padding:13px;font-family:Montserrat,sans-serif;font-weight:700;font-size:12px;color:#000;cursor:pointer;">
+                    style="width:100%;background:#F6DBB6;border:1px solid #ff8c00;border-radius:12px;padding:13px;font-family:Montserrat,sans-serif;font-weight:700;font-size:12px;color:#000;cursor:pointer;">
                     BATAL
                 </button>
             </div>
