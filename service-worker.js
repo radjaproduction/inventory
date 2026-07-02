@@ -2,8 +2,8 @@
 // SERVICE WORKER - RADJA PRODUCTION PWA
 // ============================================
 
-const CACHE_NAME = 'radja-production-v7.7';
-const STATIC_CACHE = 'radja-static-v7.7';
+const CACHE_NAME = 'radja-production-v7.8';
+const STATIC_CACHE = 'radja-static-v7.8';
 const BASE = '/inventory';
 
 const STATIC_ASSETS = [
@@ -57,9 +57,15 @@ self.addEventListener('fetch', event => {
     const { request } = event;
     const url = new URL(request.url);
 
-    // index.html — SELALU dari network, jangan pernah cache
+    // index.html — SELALU dari network, jangan pernah cache.
+    // PENTING: fetch(request) biasa TETAP boleh dijawab dari HTTP cache bawaan
+    // browser/WKWebView (terutama di PWA iOS yang di-install ke homescreen, itu
+    // sangat agresif nge-cache). Pakai cache:'reload' supaya request ini benar-benar
+    // memaksa revalidasi ke server dan mengabaikan HTTP cache sepenuhnya.
     if (url.pathname === BASE + '/' || url.pathname === BASE + '/index.html' || url.pathname === BASE) {
-        event.respondWith(fetch(request));
+        event.respondWith(
+            fetch(request, { cache: 'no-store' }).catch(() => caches.match(request))
+        );
         return;
     }
 
