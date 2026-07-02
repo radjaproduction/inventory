@@ -4780,11 +4780,11 @@ function updateSSK(tab, rowId) {
         if (!list.children.length || list.children[0].id !== 'input-row-' + id) return;
         const pristine = _isInputRowPristine(id);
         if (pristine) {
-            btn.className = 'w-7 h-7 rounded-lg flex items-center justify-center border border-borderDark bg-darkBg text-black/30 cursor-not-allowed transition-colors';
+            btn.className = 'w-10 h-10 rounded-lg flex items-center justify-center border border-borderDark bg-darkBg text-black/30 cursor-not-allowed transition-colors';
             btn.onclick = null;
         } else {
-            btn.className = 'w-7 h-7 rounded-lg flex items-center justify-center border border-yellow-500/60 bg-yellow-500/10 text-yellow-400 cursor-pointer hover:bg-yellow-500/20 transition-colors';
-            btn.onclick = () => clearRowInput(id);
+            btn.className = 'w-10 h-10 rounded-lg flex items-center justify-center border border-[#ff4d4d]/50 bg-[#ff4d4d]/15 text-[#ff4d4d] cursor-pointer hover:bg-[#ff4d4d]/25 transition-colors';
+            btn.onclick = () => hapusRowInput(id);
         }
     }
 
@@ -4843,8 +4843,8 @@ function updateSSK(tab, rowId) {
         row.className = 'input-variation-card';
 
         const delClass = isFirst
-            ? 'w-8 h-8 rounded-lg flex items-center justify-center border border-borderDark bg-darkBg text-black/30 cursor-not-allowed transition-colors'
-            : 'w-8 h-8 rounded-lg flex items-center justify-center border border-[#ff4d4d] bg-[#3a1c1c] text-[#ff4d4d] cursor-pointer hover:bg-[#4a2020] transition-colors';
+            ? 'w-10 h-10 rounded-lg flex items-center justify-center border border-borderDark bg-darkBg text-black/30 cursor-not-allowed transition-colors'
+            : 'w-10 h-10 rounded-lg flex items-center justify-center border border-[#ff4d4d]/50 bg-[#ff4d4d]/15 text-[#ff4d4d] cursor-pointer hover:bg-[#ff4d4d]/25 transition-colors';
         const delClick = isFirst ? '' : `onclick="hapusRowInput(${id})"`;
 
         row.innerHTML = `
@@ -4863,14 +4863,14 @@ function updateSSK(tab, rowId) {
                         <span class="input-summary-pill text-black"><i class="fa-solid fa-database text-[9px]"></i> SSK <span id="input-ssk-summary-${id}">-</span></span>
                     </div>
                 </div>
-                <div class="w-8 h-8 rounded-lg bg-black/20 border border-borderDark brand-text flex items-center justify-center flex-shrink-0">
-                    <i class="fa-solid fa-pen text-[11px]"></i>
+                <div class="w-10 h-10 rounded-lg bg-black/20 border border-borderDark brand-text flex items-center justify-center flex-shrink-0">
+                    <i class="fa-solid fa-pen text-sm"></i>
                 </div>
             </button>
             <input id="input-qty-${id}" type="number" inputmode="numeric" pattern="[0-9]*" min="0" value="0" class="hidden" style="text-transform:none;" oninput="onQtyInputTab(this,${id})" onblur="onQtyInputTabBlur(this,${id})">
             <input id="input-ssk-${id}" type="number" readonly class="hidden" style="text-transform:none;" title="Sisa Stok (otomatis)">
             <div id="input-del-btn-${id}" ${delClick} class="${delClass}">
-                <i class="fa-regular fa-trash-can text-xs"></i>
+                <i class="fa-regular fa-trash-can text-sm"></i>
             </div>`;
         row.classList.add('hidden');
         list.appendChild(row);
@@ -5318,11 +5318,11 @@ function updateSSK(tab, rowId) {
         if (!list.children.length || list.children[0].id !== 'trx-row-' + id) return;
         const pristine = _isTrxRowPristine(id);
         if (pristine) {
-            btn.className = 'w-7 h-7 rounded-lg flex items-center justify-center border border-borderDark bg-darkBg text-black/30 cursor-not-allowed transition-colors';
+            btn.className = 'w-10 h-10 rounded-lg flex items-center justify-center border border-borderDark bg-darkBg text-black/30 cursor-not-allowed transition-colors';
             btn.onclick = null;
         } else {
-            btn.className = 'w-7 h-7 rounded-lg flex items-center justify-center border border-yellow-500/60 bg-yellow-500/10 text-yellow-400 cursor-pointer hover:bg-yellow-500/20 transition-colors';
-            btn.onclick = () => clearRowTrx(id);
+            btn.className = 'w-10 h-10 rounded-lg flex items-center justify-center border border-[#ff4d4d]/50 bg-[#ff4d4d]/15 text-[#ff4d4d] cursor-pointer hover:bg-[#ff4d4d]/25 transition-colors';
+            btn.onclick = () => hapusRowTrx(id);
         }
     }
 
@@ -5560,8 +5560,8 @@ function updateSSK(tab, rowId) {
 	        row.className = 'input-variation-card';
 
         const delClass = isFirst
-            ? 'w-8 h-8 rounded-lg flex items-center justify-center border border-borderDark bg-darkBg text-black/30 cursor-not-allowed transition-colors'
-            : 'w-8 h-8 rounded-lg flex items-center justify-center border border-[#ff4d4d] bg-[#3a1c1c] text-[#ff4d4d] cursor-pointer hover:bg-[#4a2020] transition-colors';
+            ? 'w-10 h-10 rounded-lg flex items-center justify-center border border-borderDark bg-darkBg text-black/30 cursor-not-allowed transition-colors'
+            : 'w-10 h-10 rounded-lg flex items-center justify-center border border-[#ff4d4d]/50 bg-[#ff4d4d]/15 text-[#ff4d4d] cursor-pointer hover:bg-[#ff4d4d]/25 transition-colors';
 	        const delClick = isFirst ? '' : `onclick="hapusRowTrx(${id})"`;
 
 	        row.innerHTML = `
@@ -5580,14 +5580,14 @@ function updateSSK(tab, rowId) {
 	                        <span class="input-summary-pill text-black"><i class="fa-solid fa-database text-[9px]"></i> SSK <span id="trx-ssk-summary-${id}">-</span></span>
 	                    </div>
 	                </div>
-	                <div class="w-8 h-8 rounded-lg bg-black/20 border border-borderDark brand-text flex items-center justify-center flex-shrink-0">
-	                    <i class="fa-solid fa-pen text-[11px]"></i>
+	                <div class="w-10 h-10 rounded-lg bg-black/20 border border-borderDark brand-text flex items-center justify-center flex-shrink-0">
+	                    <i class="fa-solid fa-pen text-sm"></i>
 	                </div>
 	            </button>
 	            <input id="trx-qty-${id}" type="number" min="0" value="0" class="hidden" style="text-transform:none;" oninput="onQtyTrxInput(this,${id})" onblur="onQtyTrxBlur(this,${id})">
 	            <input id="trx-ssk-${id}" type="number" readonly class="hidden" style="text-transform:none;" title="Sisa Stok (otomatis)">
 	            <div id="trx-del-btn-${id}" ${delClick} class="${delClass}">
-	                <i class="fa-regular fa-trash-can text-xs"></i>
+	                <i class="fa-regular fa-trash-can text-sm"></i>
 	            </div>`;
 	        row.classList.add('hidden');
 	        list.appendChild(row);
@@ -6273,7 +6273,7 @@ function updateSSK(tab, rowId) {
             const vendorKey = (vendorLabel || 'vendor_tidak_diketahui').replace(/\s+/g,'_');
             const cards = trxList.map((d, idx) => {
                 const isLunas = d.status === 'lunas';
-                const statusClass = isLunas ? 'bg-green-500/20 text-green-400 border-green-500/40' : 'bg-red-500/20 text-red-400 border-red-500/40';
+                const statusClass = isLunas ? 'bg-green-600 text-white border-green-700' : 'bg-red-600 text-white border-red-700';
                 const totalQty = d.items.reduce((s, i) => s + i.qty, 0);
                 const totalNominal = totalQty * d.harga;
                 const uid = 'rt-' + (d.id || idx);
@@ -7231,7 +7231,7 @@ function updateSSK(tab, rowId) {
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-1.5 mb-0.5">
                                     <span class="text-[10px] font-black text-black truncate">${t.brand} / ${t.model}</span>
-                                    <span class="text-[8px] px-1.5 py-0.5 rounded border font-black flex-shrink-0 ${isLunas ? 'bg-green-500/20 text-green-400 border-green-500/40' : 'bg-red-500/20 text-red-400 border-red-500/40'}">${isLunas ? 'LUNAS' : 'CREDIT'}</span>
+                                    <span class="text-[8px] px-1.5 py-0.5 rounded border font-black flex-shrink-0 ${isLunas ? 'bg-green-600 text-white border-green-700' : 'bg-red-600 text-white border-red-700'}">${isLunas ? 'LUNAS' : 'CREDIT'}</span>
                                 </div>
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="text-[8px] text-black">${t.tanggal} • ${totalQty} pcs</span>
@@ -7248,7 +7248,7 @@ function updateSSK(tab, rowId) {
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-1.5 mb-0.5">
                                 <span class="text-[10px] font-black text-black truncate">${t.brand} / ${t.model}</span>
-                                <span class="text-[8px] px-1.5 py-0.5 rounded border font-black flex-shrink-0 ${isLunas ? 'bg-green-500/20 text-green-400 border-green-500/40' : 'bg-red-500/20 text-red-400 border-red-500/40'}">${isLunas ? 'LUNAS' : 'CREDIT'}</span>
+                                <span class="text-[8px] px-1.5 py-0.5 rounded border font-black flex-shrink-0 ${isLunas ? 'bg-green-600 text-white border-green-700' : 'bg-red-600 text-white border-red-700'}">${isLunas ? 'LUNAS' : 'CREDIT'}</span>
                             </div>
                             <div class="flex items-center gap-2">
                                 <span class="text-[8px] text-black">${t.tanggal} • ${totalQty} pcs</span>
