@@ -5217,7 +5217,9 @@ function updateSSK(tab, rowId) {
 	        }
 	    }
 
+    let _inputIsSaving = false;
     async function simpanInputData() {
+        if (_inputIsSaving) { showToast('⚠️ Sedang menyimpan, harap tunggu...'); return; }
         if (!inputState.brandId) { showAlert('Pilih brand terlebih dahulu!', {type:'warning'}); return; }
         if (!inputState.modelId) { showAlert('Pilih model terlebih dahulu!', {type:'warning'}); return; }
 	        const rows = Array.from(document.querySelectorAll('#input-variasi-list > div')).filter(row => {
@@ -5251,37 +5253,46 @@ function updateSSK(tab, rowId) {
             items.push({ warna, ukuran, qty });
         });
         if (!valid) return;
-        const now = new Date();
-        const tanggal = now.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' });
-        const jam = now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
-        const { data: ri, error: riErr } = await sbClient.from('riwayat_input').insert({
-            mode: inputState.mode, brand: inputState.brandNama, model: inputState.modelNama,
-            keterangan, tanggal, jam
-        }).select().single();
-        if (riErr) { showToast('❌ Gagal simpan input'); return; }
-       
-        const { data: insertedItems, error: itemErr } = await sbClient.from('riwayat_input_item').insert(items.map(i => ({ riwayat_input_id: ri.id, ...i }))).select();
-        if (itemErr) {
-            await sbClient.from('riwayat_input').delete().eq('id', ri.id);
-            showToast('❌ Gagal simpan detail item. Dibatalkan.');
-            return;
+
+        _inputIsSaving = true;
+        const btnSimpanInput = document.getElementById('btn-simpan-input');
+        if (btnSimpanInput) btnSimpanInput.disabled = true;
+        try {
+            const now = new Date();
+            const tanggal = now.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' });
+            const jam = now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
+            const { data: ri, error: riErr } = await sbClient.from('riwayat_input').insert({
+                mode: inputState.mode, brand: inputState.brandNama, model: inputState.modelNama,
+                keterangan, tanggal, jam
+            }).select().single();
+            if (riErr) { showToast('❌ Gagal simpan input'); return; }
+
+            const { data: insertedItems, error: itemErr } = await sbClient.from('riwayat_input_item').insert(items.map(i => ({ riwayat_input_id: ri.id, ...i }))).select();
+            if (itemErr) {
+                await sbClient.from('riwayat_input').delete().eq('id', ri.id);
+                showToast('❌ Gagal simpan detail item. Dibatalkan.');
+                return;
+            }
+            const itemsWithId = (insertedItems || []).map(i => ({ id: i.id, warna: i.warna, ukuran: i.ukuran, qty: i.qty }));
+
+            appData.riwayatInput.unshift({ id: ri.id, mode: inputState.mode, brand: inputState.brandNama, model: inputState.modelNama, keterangan, tanggal, jam, items: itemsWithId.length ? itemsWithId : items });
+
+            inputState.brandId = null; inputState.brandNama = ''; inputState.modelId = null; inputState.modelNama = '';
+            document.getElementById('input-brand-display').textContent = 'Pilih brand';
+            document.getElementById('input-model-display').textContent = 'Pilih model';
+            const savedMode = inputState.mode;
+            document.getElementById('input-variasi-list').innerHTML = '';
+            document.getElementById('input-retur-keterangan').value = '';
+            inputRowCount = 0;
+            setInputMode('masuk');
+            tambahVariasiInput();
+            renderRiwayatInput();
+            renderStokDashboard();
+            showToast(savedMode === 'retur' ? '🔄 Retur disimpan!' : '✅ Data masuk disimpan!');
+        } finally {
+            _inputIsSaving = false;
+            if (btnSimpanInput) btnSimpanInput.disabled = false;
         }
-        const itemsWithId = (insertedItems || []).map(i => ({ id: i.id, warna: i.warna, ukuran: i.ukuran, qty: i.qty }));
-        
-        appData.riwayatInput.unshift({ id: ri.id, mode: inputState.mode, brand: inputState.brandNama, model: inputState.modelNama, keterangan, tanggal, jam, items: itemsWithId.length ? itemsWithId : items });
-        
-        inputState.brandId = null; inputState.brandNama = ''; inputState.modelId = null; inputState.modelNama = '';
-        document.getElementById('input-brand-display').textContent = 'Pilih brand';
-        document.getElementById('input-model-display').textContent = 'Pilih model';
-        const savedMode = inputState.mode;
-        document.getElementById('input-variasi-list').innerHTML = '';
-        document.getElementById('input-retur-keterangan').value = '';
-        inputRowCount = 0;
-        setInputMode('masuk');
-        tambahVariasiInput();
-        renderRiwayatInput();
-        renderStokDashboard();
-        showToast(savedMode === 'retur' ? '🔄 Retur disimpan!' : '✅ Data masuk disimpan!');
     }
 
     let trxState = { vendorId: null, vendorNama: '', brandId: null, brandNama: '', modelId: null, modelNama: '', modelHarga: 0, statusBayar: 'credit' };
