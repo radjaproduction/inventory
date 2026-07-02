@@ -4849,7 +4849,7 @@ function updateSSK(tab, rowId) {
 
         row.innerHTML = `
             <button type="button" id="input-row-open-${id}" onclick="openInputVariasiSheet(${id})" class="min-w-0 flex-1 flex items-center gap-3 text-left opacity-40 pointer-events-none select-none">
-                <div class="input-row-index">${id}</div>
+                <div class="input-row-index" id="input-row-num-${id}">${id}</div>
                 <div id="input-warna-dot-${id}" class="w-11 h-11 rounded-xl flex-shrink-0 border border-white/20 shadow-inner" style="background:#888"></div>
                 <div class="min-w-0 flex-1">
                     <div class="text-[9px] font-black text-black tracking-wider mb-1">VARIASI</div>
@@ -4876,6 +4876,7 @@ function updateSSK(tab, rowId) {
         list.appendChild(row);
         updateInputVariasiState();
         refreshInputRowSummary(id);
+        _renumberInputRows();
         if (inputState.modelId) openInputVariasiSheet(id);
     }
     function changeQtyInput(id, delta) {
@@ -4894,6 +4895,16 @@ function updateSSK(tab, rowId) {
             const firstId = list.children[0].id.replace('input-row-', '');
             _updateInputRowBtn(firstId);
         }
+        _renumberInputRows();
+    }
+    function _renumberInputRows() {
+        const list = document.getElementById('input-variasi-list');
+        if (!list) return;
+        Array.from(list.children).forEach((row, idx) => {
+            const rowId = row.id.replace('input-row-', '');
+            const numEl = document.getElementById('input-row-num-' + rowId);
+            if (numEl) numEl.textContent = idx + 1;
+        });
     }
 
 	    let activeInputSheetRowId = null;
@@ -5566,7 +5577,7 @@ function updateSSK(tab, rowId) {
 
 	        row.innerHTML = `
 	            <button type="button" id="trx-row-open-${id}" onclick="openTrxVariasiSheet(${id})" class="min-w-0 flex-1 flex items-center gap-3 text-left opacity-40 pointer-events-none select-none">
-	                <div class="input-row-index">${id}</div>
+	                <div class="input-row-index" id="trx-row-num-${id}">${id}</div>
 	                <div id="trx-warna-dot-${id}" class="w-11 h-11 rounded-xl flex-shrink-0 border border-white/20 shadow-inner" style="background:#888"></div>
 	                <div class="min-w-0 flex-1">
 	                    <div class="text-[9px] font-black text-black tracking-wider mb-1">VARIASI</div>
@@ -5593,7 +5604,17 @@ function updateSSK(tab, rowId) {
 	        list.appendChild(row);
 	        if (trxState.modelNama) _updateTrxRowsLockState();
 	        refreshTrxRowSummary(id);
+	        _renumberTrxRows();
 	        if (trxState.modelNama) openTrxVariasiSheet(id);
+	    }
+	    function _renumberTrxRows() {
+	        const list = document.getElementById('trx-variasi-list');
+	        if (!list) return;
+	        Array.from(list.children).forEach((row, idx) => {
+	            const rowId = row.id.replace('trx-row-', '');
+	            const numEl = document.getElementById('trx-row-num-' + rowId);
+	            if (numEl) numEl.textContent = idx + 1;
+	        });
 	    }
     function _getMaxStokTrx(id) {
         const modelNama = trxState.modelNama;
@@ -5673,6 +5694,7 @@ function updateSSK(tab, rowId) {
             const firstId = list.children[0].id.replace('trx-row-', '');
             _updateTrxRowBtn(firstId);
         }
+        _renumberTrxRows();
     }
 
     let _trxIsSaving = false; 
