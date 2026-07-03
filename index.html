@@ -6498,25 +6498,25 @@ function updateSSK(tab, rowId) {
                 : `<div id="vg-badge-${vendorKey}"></div>`;
 
             return `<div class="mb-1" data-vendor-group="${vendor}">
-                <div class="brand-gradient-bg rounded-xl px-3 py-4 flex items-center justify-between cursor-pointer select-none shadow-[0_2px_12px_rgba(255,140,0,0.25)]"
+                <div class="brand-gradient-bg rounded-xl px-3 py-9 flex items-center justify-between cursor-pointer select-none shadow-[0_2px_12px_rgba(255,140,0,0.25)]"
                      onclick="toggleVendorGroup('${vendorKey}')">
                     <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-truck-fast text-black text-sm"></i>
+                        <i class="fa-solid fa-truck-fast text-black text-base"></i>
                         <div>
                             <div class="flex items-center gap-1.5">
-                                <div class="text-[13px] font-black text-black uppercase tracking-wide leading-none">${vendorLabel}</div>
-                                ${hasBayarSebagianTrx ? '<span style="background:rgba(220,38,38,0.85);border:1px solid rgba(220,38,38,0.9);" class="text-[7px] font-black text-black px-1.5 py-0.5 rounded-md tracking-wide flex items-center gap-0.5 whitespace-nowrap"><i class="fa-solid fa-hand-holding-dollar text-[6px]"></i> CICIL</span>' : ''}
+                                <div class="text-[16px] font-black text-black uppercase tracking-wide leading-none">${vendorLabel}</div>
+                                ${hasBayarSebagianTrx ? '<span style="background:rgba(220,38,38,0.85);border:1px solid rgba(220,38,38,0.9);" class="text-[10px] font-black text-black px-1.5 py-0.5 rounded-md tracking-wide flex items-center gap-0.5 whitespace-nowrap"><i class="fa-solid fa-hand-holding-dollar text-[9px]"></i> CICIL</span>' : ''}
                             </div>
-                            <div class="text-[9px] text-black/60 font-bold mt-0.5">${trxCount} transaksi • ${lunasCount} lunas • Rp ${totalNominalVendor.toLocaleString('id-ID')}</div>
+                            <div class="text-[12px] text-black/60 font-bold mt-0.5">${trxCount} transaksi • ${lunasCount} lunas • Rp ${totalNominalVendor.toLocaleString('id-ID')}</div>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
                         ${badgeHtml}
                         <button id="pilih-semua-${vendorKey}" onclick="event.stopPropagation();pilihSemuaVendor('${vendor}')"
-                            class="text-[8px] font-black px-2.5 py-1 rounded-lg bg-black/20 text-black hover:bg-black/30 transition-colors whitespace-nowrap">
+                            class="text-[11px] font-black px-2.5 py-1 rounded-lg bg-black/20 text-black hover:bg-black/30 transition-colors whitespace-nowrap">
                             ✓ Semua
                         </button>
-                        <i id="vg-chevron-${vendorKey}" class="fa-solid fa-chevron-down text-black text-xs transition-transform ml-10"></i>
+                        <i id="vg-chevron-${vendorKey}" class="fa-solid fa-chevron-down text-black text-sm transition-transform ml-10"></i>
                     </div>
                 </div>
                 <div id="vg-body-${vendorKey}" class="hidden flex-col gap-2 mt-2">${cards}</div>
@@ -7470,27 +7470,27 @@ function updateSSK(tab, rowId) {
                 : `<div id="pvg-badge-${vendorKey}"></div>`;
 
             return `<div class="mb-1">
-                <div class="brand-gradient-bg rounded-xl px-3 py-4 flex items-center justify-between cursor-pointer select-none shadow-[0_2px_12px_rgba(255,140,0,0.25)]"
+                <div class="brand-gradient-bg rounded-xl px-3 py-9 flex items-center justify-between cursor-pointer select-none shadow-[0_2px_12px_rgba(255,140,0,0.25)]"
                      onclick="togglePelunasanVendorGroup('${vendorKey}','${vendor}')">
                     <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-money-bill-wave text-black text-sm"></i>
+                        <i class="fa-solid fa-money-bill-wave text-black text-base"></i>
                         <div>
                             <div class="flex items-center gap-1.5">
-                                <div class="text-[13px] font-black text-black uppercase tracking-wide leading-none">${vendor}</div>
-                                ${hasBayarSebagian ? '<span style="background:rgba(220,38,38,0.85);border:1px solid rgba(220,38,38,0.9);" class="text-[7px] font-black text-black px-1.5 py-0.5 rounded-md tracking-wide flex items-center gap-0.5 whitespace-nowrap"><i class="fa-solid fa-hand-holding-dollar text-[6px]"></i> CICIL</span>' : ''}
+                                <div class="text-[16px] font-black text-black uppercase tracking-wide leading-none">${vendor}</div>
+                                ${hasBayarSebagian ? '<span style="background:rgba(220,38,38,0.85);border:1px solid rgba(220,38,38,0.9);" class="text-[10px] font-black text-black px-1.5 py-0.5 rounded-md tracking-wide flex items-center gap-0.5 whitespace-nowrap"><i class="fa-solid fa-hand-holding-dollar text-[9px]"></i> CICIL</span>' : ''}
                             </div>
-                            <div class="text-[9px] text-black/60 font-bold mt-0.5">${jumlahCredit > 0 ? jumlahCredit + ' belum lunas' : '✓ Semua lunas'}${totalHutang > 0 ? ' • Hutang Rp ' + totalHutang.toLocaleString('id-ID') : ''}</div>
+                            <div class="text-[12px] text-black/60 font-bold mt-0.5">${jumlahCredit > 0 ? jumlahCredit + ' belum lunas' : '✓ Semua lunas'}${totalHutang > 0 ? ' • Hutang Rp ' + totalHutang.toLocaleString('id-ID') : ''}</div>
                         </div>
                     </div>
                     <div class="flex items-center gap-3">
                         ${badgeHtml}
                         ${totalHutang > 0 ? `
                         <button onclick="event.stopPropagation();lunasSemuaVendor('${vendorEncoded}', ${totalHutang})"
-                            class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-black/20 text-black font-black text-[9px] hover:bg-black/30 transition-colors whitespace-nowrap">
-                            <i class="fa-solid fa-check-double text-[8px]"></i> LUNAS SEMUA
-                        </button>` : `<span class="text-[9px] font-black text-black/70 flex items-center gap-1 bg-black/10 px-2 py-1 rounded-lg"><i class="fa-solid fa-circle-check"></i> Lunas</span>`}
+                            class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-black/20 text-black font-black text-[12px] hover:bg-black/30 transition-colors whitespace-nowrap">
+                            <i class="fa-solid fa-check-double text-[11px]"></i> LUNAS SEMUA
+                        </button>` : `<span class="text-[12px] font-black text-black/70 flex items-center gap-1 bg-black/10 px-2 py-1 rounded-lg"><i class="fa-solid fa-circle-check"></i> Lunas</span>`}
                         <div class="ml-8 w-8 h-8 flex items-center justify-center rounded-lg bg-black/20 hover:bg-black/30 transition-colors flex-shrink-0">
-                            <i id="pvg-chevron-${vendorKey}" class="fa-solid fa-chevron-down text-black text-xs transition-transform"></i>
+                            <i id="pvg-chevron-${vendorKey}" class="fa-solid fa-chevron-down text-black text-sm transition-transform"></i>
                         </div>
                     </div>
                 </div>
