@@ -1673,18 +1673,21 @@
     // akan diam-diam terpotong dan bisa jadi baris TERBARU yang hilang dari hasil
     // (karena tanpa .order() urutan tidak terjamin) — inilah penyebab "stok tidak
     // bertambah walau input berhasil": data sudah tersimpan di DB, tapi saat di-fetch
-    // ulang (initial load / realtime sync), baris barunya tidak ikut kebawa sehingga
-    // appData ke-overwrite jadi seperti belum bertambah.
-    // Fungsi ini fetch SEMUA baris dengan cara looping .range() per 1000 baris.
-    async function fetchAllRows(table, selectStr = '*', orderCol = 'id', ascending = true) {
+    // ulang, baris barunya tidak ikut terbawa.
+    //
+    // PERBAIKAN: Fungsi ini sekarang SELALU mengurutkan berdasarkan 'id' secara ascending
+    // untuk menjamin urutan yang konsisten saat melakukan paginasi, mencegah data
+    // terlewat (race condition) jika ada data baru masuk saat proses fetch berjalan.
+    async function fetchAllRows(table, selectStr = '*') {
         const PAGE = 1000;
         let from = 0;
         let all = [];
         while (true) {
+            // Selalu order by id ASC untuk paginasi yang stabil
             const { data, error } = await sbClient
                 .from(table)
                 .select(selectStr)
-                .order(orderCol, { ascending })
+                .order('id', { ascending: true })
                 .range(from, from + PAGE - 1);
             if (error) { console.warn('fetchAllRows gagal:', table, error.message); break; }
             all = all.concat(data || []);
@@ -2533,6 +2536,21 @@ END $$;`;
         }));
     }
 
+async function fetchBayarSebagianData() {
+    try {
+        const bsData = await fetchAllRows('bayar_sebagian', '*', 'id', true);
+        appData.bayarSebagian = bsData.sort((a, b) => b.id - a.id).map(bs => ({
+            id: bs.id,
+            vendor: bs.vendor,
+            jumlah_bayar: bs.jumlah_bayar || 0,
+            total_tagihan: bs.total_tagihan || 0,
+            sisa: bs.sisa || 0,
+            keterangan: bs.keterangan || '',
+            tanggal: bs.tanggal, jam: bs.jam
+        }));
+    } catch(e) { console.warn('Tabel bayar_sebagian belum ada.'); appData.bayarSebagian = []; }
+}
+
     // ==================== REALTIME SYNC (Supabase) ====================
     // Sinkron otomatis antar device: kalau ada perubahan data (input/transaksi/master/pelunasan)
     // dari HP/device lain, tampilan di sini ikut ter-update otomatis tanpa perlu refresh manual.
@@ -2548,7 +2566,7 @@ END $$;`;
         pengaturan: 'pengaturan',
         riwayat_input: 'riwayatInput', riwayat_input_item: 'riwayatInput',
         transaksi: 'transaksi', transaksi_item: 'transaksi',
-        pelunasan: 'pelunasan',
+    pelunasan: 'pelunasan', bayar_sebagian: 'bayarSebagian',
     };
 
     // Tiap grup: fungsi fetch (tarik ulang data grup ini SAJA) + fungsi render
@@ -2563,6 +2581,7 @@ END $$;`;
         riwayatInput: { fetch: fetchRiwayatInputData, render: () => { renderStokDashboard(); if (typeof _renderRiwayatInputOri === 'function') _renderRiwayatInputOri(); } },
         transaksi:    { fetch: fetchTransaksiData,    render: () => { renderStokDashboard(); if (typeof _renderRiwayatTransaksiOri === 'function') _renderRiwayatTransaksiOri(); if (typeof _renderPelunasanViewOri === 'function') _renderPelunasanViewOri(); } },
         pelunasan:    { fetch: fetchPelunasanData,    render: () => { if (typeof _renderPelunasanViewOri === 'function') _renderPelunasanViewOri(); } },
+    bayarSebagian:{ fetch: fetchBayarSebagianData,render: () => { if (typeof _renderBayarSebagianViewOri === 'function') _renderBayarSebagianViewOri(); } },
     };
 
     function initRealtimeSync() {
@@ -5959,6 +5978,9 @@ function updateSSK(tab, rowId) {
     }
 
     const BULAN_ID = { jan:0,feb:1,mar:2,apr:3,mei:4,jun:5,jul:6,agu:7,sep:8,okt:9,nov:10,des:11 };
+    // PERBAIKAN: Fungsi ini sekarang mengonversi tanggal ke zona waktu lokal
+    // dengan mengatur jam ke tengah hari (12:00) untuk menghindari masalah
+    // perbandingan tanggal akibat perbedaan zona waktu (UTC vs lokal).
     function parseTanggalID(str) {
         if (!str) return null;
         const parts = str.trim().toLowerCase().split(' ');
@@ -5967,7 +5989,9 @@ function updateSSK(tab, rowId) {
         const m = BULAN_ID[parts[1].substring(0,3)];
         const y = parseInt(parts[2]);
         if (isNaN(d) || m === undefined || isNaN(y)) return null;
-        return new Date(y, m, d);
+        // Set ke jam 12 siang untuk menghindari masalah zona waktu
+        const localDate = new Date(y, m, d, 12, 0, 0);
+        return localDate;
     }
 
     function getFilterRange() {
@@ -6347,6 +6371,7 @@ function updateSSK(tab, rowId) {
         // LUNAS -> sub-tab LUNAS (list transaksi lunas) / PELUNASAN / BAYAR SEBAGIAN, default ke LUNAS.
         if (mode === 'kredit') {
             switchRiwayatSubTab('kredit');
+            renderRiwayatTransaksi(); // PERBAIKAN: Panggil render secara eksplisit
         } else if (mode === 'lunas') {
             switchRiwayatSubTab('lunas');
         }
@@ -6371,19 +6396,20 @@ function updateSSK(tab, rowId) {
         }
 
         const { dari: fDari, sampai: fSampai } = getFilterRange();
-        let filteredTrx;
+        let filteredTrx = appData.riwayatTransaksi.filter(d => tanggalDalamRange(d.tanggal, fDari, fSampai));
+
         if (_filterTrxStatus === 'kredit') {
-            // KREDIT: filter tanggal dinonaktifkan, semua transaksi berstatus belum lunas selalu tampil
-            filteredTrx = appData.riwayatTransaksi.filter(d => d.status !== 'lunas');
+            filteredTrx = filteredTrx.filter(d => d.status !== 'lunas');
         } else if (_filterTrxStatus === 'lunas') {
-            filteredTrx = appData.riwayatTransaksi.filter(d => tanggalDalamRange(d.tanggal, fDari, fSampai) && d.status === 'lunas');
-        } else {
-            filteredTrx = appData.riwayatTransaksi.filter(d => tanggalDalamRange(d.tanggal, fDari, fSampai));
+            filteredTrx = filteredTrx.filter(d => d.status === 'lunas');
         }
 
         // Auto-hide LUNAS >2 minggu (KREDIT selalu tetap tampil), hanya kalau tidak ada filter tanggal manual aktif
         let hiddenOldCount = 0;
-        if (!fDari && !fSampai && !_trxShowAllOld) {
+        // PERBAIKAN: Logika filter tanggal untuk transaksi kredit.
+        // Sekarang, filter tanggal berlaku untuk SEMUA status.
+        // Filter "show all old" hanya berlaku jika tidak ada filter tanggal manual.
+        if (!fDari && !fSampai && !_trxShowAllOld && _filterTrxStatus !== 'kredit') {
             const beforeCount = filteredTrx.length;
             filteredTrx = filteredTrx.filter(d => d.status !== 'lunas' || !isTrxLebihDari2Minggu(d.tanggal));
             hiddenOldCount = beforeCount - filteredTrx.length;
@@ -6406,6 +6432,8 @@ function updateSSK(tab, rowId) {
             </div>` : '');
 
         if (filteredTrx.length === 0) {
+            // PERBAIKAN: Tampilkan banner "show all" bahkan jika hasil filter kosong.
+            // Ini penting jika semua data yang cocok tersembunyi oleh filter "show all".
             list.innerHTML = bannerHiddenOld + '<div class="text-center text-black text-xs mt-10"><i class="fa-solid fa-calendar-xmark text-3xl mb-2 opacity-50"></i><br>Tidak ada transaksi di rentang tanggal ini.</div>';
             return;
         }
@@ -6435,61 +6463,17 @@ function updateSSK(tab, rowId) {
 
         _vendorGroupCache = vendorGroups;
 
-        const seenData = JSON.parse(localStorage.getItem('trx_seen_vendor') || '{}');
+        // PERBAIKAN PERFORMA: Render kerangka vendor dulu, lalu isi detailnya secara bertahap.
+        // Ini mencegah UI freeze saat data transaksi sangat banyak.
+        const sortedVendors = Object.keys(vendorGroups).sort((a, b) => a.localeCompare(b, 'id', { sensitivity: 'base' }));
 
-        list.innerHTML = bannerHiddenOld + bannerKorup + Object.entries(vendorGroups).sort(([a], [b]) => a.localeCompare(b, 'id', { sensitivity: 'base' })).map(([vendor, trxList]) => {
+        list.innerHTML = bannerHiddenOld + bannerKorup + sortedVendors.map(vendor => {
             const vendorLabel = String(vendor || '').trim() ? vendor : 'VENDOR TIDAK DIKETAHUI';
             const vendorKey = (vendorLabel || 'vendor_tidak_diketahui').replace(/\s+/g,'_');
-            const cards = trxList.map((d, idx) => {
-                const isLunas = d.status === 'lunas';
-                const statusClass = isLunas ? 'bg-green-600 text-white border-green-700' : 'bg-red-600 text-white border-red-700';
-                const totalQty = d.items.reduce((s, i) => s + i.qty, 0);
-                const totalNominal = totalQty * d.harga;
-                const uid = 'rt-' + (d.id || idx);
-                const itemsPreview = d.items.slice(0,2).map(i => `<span class="text-[8px] bg-darkBg border-2 border-borderDark rounded px-1.5 py-0.5 text-black">${i.warna}/${i.ukuran}:<b class="text-black">${i.qty}</b></span>`).join('') + (d.items.length > 2 ? `<span class="text-[8px] text-black">+${d.items.length-2} lagi</span>` : '');
-                return `<div id="card-${uid}" class="bg-cardBg rounded-lg border-2 border-borderDark overflow-hidden transition-all">
-                    <div class="flex items-center gap-2.5 px-3 py-2.5">
-                        <div onclick="event.stopPropagation();togglePilihTrx(${d.id},'${uid}')"
-                             id="chk-${uid}"
-                             class="w-5 h-5 rounded border-4 border-gray-600 flex items-center justify-center flex-shrink-0 cursor-pointer transition-all">
-                        </div>
-                        <div class="flex-1 min-w-0 cursor-pointer" onclick="toggleRiwayatCard('${uid}')">
-                            <div class="flex items-center gap-2">
-                                <span class="px-2 py-0.5 ${statusClass} border-2 text-[9px] font-black rounded tracking-wider flex-shrink-0">${isLunas ? 'LUNAS' : 'CREDIT'}</span>
-                                <span class="text-[11px] font-black text-black uppercase truncate">${d.brand || '-'} / ${d.model || '-'}</span>
-                            </div>
-                            <div class="flex items-center gap-2 mt-0.5 flex-wrap">
-                                <span class="text-[10px] brand-text font-black">${totalQty} pcs${totalNominal > 0 ? ' • Rp ' + totalNominal.toLocaleString('id-ID') : ''}</span>
-                                <div class="flex gap-1 flex-wrap" id="${uid}-preview">${itemsPreview}</div>
-                                <span class="text-[9px] text-black ml-auto">${d.tanggal} ${d.jam}</span>
-                            </div>
-                        </div>
-                        <i id="${uid}-chevron" class="fa-solid fa-chevron-down text-[10px] text-black flex-shrink-0 transition-transform cursor-pointer ml-2" onclick="toggleRiwayatCard('${uid}')"></i>
-                    </div>
-                    <div id="${uid}-body" class="hidden px-3 pb-2.5 border-t-2 border-borderDark">
-                        <div class="flex flex-wrap gap-1 pt-2">
-                            ${d.items.map((i, iIdx) => `<span class="text-[10px] bg-darkBg border-2 border-borderDark rounded px-2 py-0.5 text-black">${i.warna} / ${i.ukuran}: <span class="text-black font-bold">${i.qty}</span></span>`).join('')}
-                        </div>
-                        <div class="flex gap-2 mt-2.5">
-                            <button onclick="event.stopPropagation();bukaEditQtyTrx(${d.id})" 
-                                class="${isLunas ? 'opacity-30 cursor-not-allowed' : 'hover:bg-blue-500/20 cursor-pointer'} flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border-2 border-blue-500/40 bg-blue-500/10 text-blue-400 text-[10px] font-bold transition-colors"
-                                ${isLunas ? 'disabled' : ''}>
-                                <i class="fa-solid fa-pen-to-square text-[9px]"></i> EDIT QTY
-                            </button>
-                            <button onclick="event.stopPropagation();hapusTrxRiwayat(${d.id})"
-                                class="${isLunas ? 'opacity-30 cursor-not-allowed' : 'hover:bg-red-500/20 cursor-pointer'} flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border-2 border-red-500/40 bg-red-500/10 text-red-400 text-[10px] font-bold transition-colors"
-                                ${isLunas ? 'disabled' : ''}>
-                                <i class="fa-regular fa-trash-can text-[9px]"></i> HAPUS
-                            </button>
-                        </div>
-                        ${isLunas ? '<p class="text-[9px] text-black text-center mt-1"><i class="fa-solid fa-lock text-[8px] mr-1"></i>Transaksi LUNAS tidak dapat diedit atau dihapus.</p>' : ''}
-                    </div>
-                </div>`;
-            }).join('');
-
+            const trxList = vendorGroups[vendor] || [];
             const trxCount = trxList.length;
-            const lunasCount = trxList.filter(d => d.status === 'lunas').length;
             const totalNominalVendor = trxList.reduce((s, d) => s + d.items.reduce((si, i) => si + i.qty, 0) * d.harga, 0);
+            const seenData = JSON.parse(localStorage.getItem('trx_seen_vendor') || '{}');
             const lastSeenId = seenData[vendor] || 0;
             const newCount = trxList.filter(t => t.id > lastSeenId).length;
             const hasBayarSebagianTrx = appData.pelunasan.some(p => p.vendor === vendor && (p.transaksi_id === null || p.transaksi_id === undefined));
@@ -6519,9 +6503,64 @@ function updateSSK(tab, rowId) {
                         <i id="vg-chevron-${vendorKey}" class="fa-solid fa-chevron-down text-black text-sm transition-transform ml-10"></i>
                     </div>
                 </div>
-                <div id="vg-body-${vendorKey}" class="hidden flex-col gap-2 mt-2">${cards}</div>
+                <div id="vg-body-${vendorKey}" class="hidden flex-col gap-2 mt-2">
+                    <div class="text-center text-black text-xs py-4">Memuat...</div>
+                </div>
             </div>`;
         }).join('');
+
+        // Batalkan render detail sebelumnya jika ada
+        if (_renderTrxVendorTimeout) clearTimeout(_renderTrxVendorTimeout);
+
+        // Render detail transaksi per vendor secara bertahap
+        let vendorIndex = 0;
+        function renderNextVendor() {
+            if (vendorIndex >= sortedVendors.length) return;
+            const vendor = sortedVendors[vendorIndex];
+            const vendorKey = (vendor || 'vendor_tidak_diketahui').replace(/\s+/g,'_');
+            const bodyEl = document.getElementById(`vg-body-${vendorKey}`);
+            if (bodyEl) {
+                const trxList = vendorGroups[vendor] || [];
+                const cards = trxList.map((d, idx) => {
+                    const isLunas = d.status === 'lunas';
+                    const statusClass = isLunas ? 'bg-green-600 text-white border-green-700' : 'bg-red-600 text-white border-red-700';
+                    const totalQty = d.items.reduce((s, i) => s + i.qty, 0);
+                    const totalNominal = totalQty * d.harga;
+                    const uid = 'rt-' + (d.id || idx);
+                    const itemsPreview = d.items.slice(0,2).map(i => `<span class="text-[8px] bg-darkBg border-2 border-borderDark rounded px-1.5 py-0.5 text-black">${i.warna}/${i.ukuran}:<b class="text-black">${i.qty}</b></span>`).join('') + (d.items.length > 2 ? `<span class="text-[8px] text-black">+${d.items.length-2} lagi</span>` : '');
+                    return `<div id="card-${uid}" class="bg-cardBg rounded-lg border-2 border-borderDark overflow-hidden transition-all">
+                        <div class="flex items-center gap-2.5 px-3 py-2.5">
+                            <div onclick="event.stopPropagation();togglePilihTrx(${d.id},'${uid}')" id="chk-${uid}" class="w-5 h-5 rounded border-4 border-gray-600 flex items-center justify-center flex-shrink-0 cursor-pointer transition-all"></div>
+                            <div class="flex-1 min-w-0 cursor-pointer" onclick="toggleRiwayatCard('${uid}')">
+                                <div class="flex items-center gap-2">
+                                    <span class="px-2 py-0.5 ${statusClass} border-2 text-[9px] font-black rounded tracking-wider flex-shrink-0">${isLunas ? 'LUNAS' : 'CREDIT'}</span>
+                                    <span class="text-[11px] font-black text-black uppercase truncate">${d.brand || '-'} / ${d.model || '-'}</span>
+                                </div>
+                                <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                                    <span class="text-[10px] brand-text font-black">${totalQty} pcs${totalNominal > 0 ? ' • Rp ' + totalNominal.toLocaleString('id-ID') : ''}</span>
+                                    <div class="flex gap-1 flex-wrap" id="${uid}-preview">${itemsPreview}</div>
+                                    <span class="text-[9px] text-black ml-auto">${d.tanggal} ${d.jam}</span>
+                                </div>
+                            </div>
+                            <i id="${uid}-chevron" class="fa-solid fa-chevron-down text-[10px] text-black flex-shrink-0 transition-transform cursor-pointer ml-2" onclick="toggleRiwayatCard('${uid}')"></i>
+                        </div>
+                        <div id="${uid}-body" class="hidden px-3 pb-2.5 border-t-2 border-borderDark">
+                            <div class="flex flex-wrap gap-1 pt-2">${d.items.map((i, iIdx) => `<span class="text-[10px] bg-darkBg border-2 border-borderDark rounded px-2 py-0.5 text-black">${i.warna} / ${i.ukuran}: <span class="text-black font-bold">${i.qty}</span></span>`).join('')}</div>
+                            <div class="flex gap-2 mt-2.5">
+                                <button onclick="event.stopPropagation();bukaEditQtyTrx(${d.id})" class="${isLunas ? 'opacity-30 cursor-not-allowed' : 'hover:bg-blue-500/20 cursor-pointer'} flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border-2 border-blue-500/40 bg-blue-500/10 text-blue-400 text-[10px] font-bold transition-colors" ${isLunas ? 'disabled' : ''}><i class="fa-solid fa-pen-to-square text-[9px]"></i> EDIT QTY</button>
+                                <button onclick="event.stopPropagation();hapusTrxRiwayat(${d.id})" class="${isLunas ? 'opacity-30 cursor-not-allowed' : 'hover:bg-red-500/20 cursor-pointer'} flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border-2 border-red-500/40 bg-red-500/10 text-red-400 text-[10px] font-bold transition-colors" ${isLunas ? 'disabled' : ''}><i class="fa-regular fa-trash-can text-[9px]"></i> HAPUS</button>
+                            </div>
+                            ${isLunas ? '<p class="text-[9px] text-black text-center mt-1"><i class="fa-solid fa-lock text-[8px] mr-1"></i>Transaksi LUNAS tidak dapat diedit atau dihapus.</p>' : ''}
+                        </div>
+                    </div>`;
+                }).join('');
+                bodyEl.innerHTML = cards || '<div class="text-center text-black text-xs py-4">Tidak ada transaksi untuk vendor ini.</div>';
+            }
+            vendorIndex++;
+            _renderTrxVendorTimeout = setTimeout(() => requestAnimationFrame(renderNextVendor), 16);
+        }
+        requestAnimationFrame(renderNextVendor);
+
         if (_openVendorKey) {
             const body = document.getElementById('vg-body-' + _openVendorKey);
             const chev = document.getElementById('vg-chevron-' + _openVendorKey);
@@ -7322,11 +7361,14 @@ function updateSSK(tab, rowId) {
     function renderPelunasanView() {
         const list = document.getElementById('riwayat-pelunasan-list');
         if (!list) return;
+        // PERBAIKAN: Ambil rentang tanggal dari filter
+        const { dari, sampai } = getFilterRange();
 
         const gabungan = appData.riwayatTransaksi.filter(t => {
             if (t.status === 'lunas') return false;
             const totalQty = t.items.reduce((s, i) => s + i.qty, 0);
             const totalNominal = totalQty * t.harga;
+            if (!tanggalDalamRange(t.tanggal, dari, sampai)) return false;
             const totalBayar = appData.pelunasan.filter(p => Number(p.transaksi_id) === Number(t.id)).reduce((s, p) => s + p.jumlah, 0);
             return totalBayar < totalNominal;
         });
@@ -7358,7 +7400,7 @@ function updateSSK(tab, rowId) {
             // Hitung sudah bayar: per-transaksi + bayar sebagian level vendor (transaksi_id null)
             const sudahBayarPerTrx = trxList.reduce((sum, t) => {
                 return sum + appData.pelunasan.filter(p => Number(p.transaksi_id) === Number(t.id)).reduce((s, p) => s + p.jumlah, 0);
-            }, 0);
+            }, 0); // Transaksi sudah difilter tanggal, jadi pembayaran per-transaksi tidak perlu difilter lagi.
             const sudahBayarSebagianVendor = appData.pelunasan.filter(p => p.vendor === vendor && (p.transaksi_id === null || p.transaksi_id === undefined)).reduce((s, p) => s + p.jumlah, 0);
             const totalHutang = Math.max(0, totalNominalVendor - sudahBayarPerTrx - sudahBayarSebagianVendor);
             // Riwayat bayar sebagian vendor level untuk ditampilkan
@@ -7848,6 +7890,9 @@ function updateSSK(tab, rowId) {
         const list = document.getElementById('riwayat-bayar-sebagian-list');
         if (!list) return;
 
+        // PERBAIKAN: Ambil rentang tanggal dari filter
+        const { dari, sampai } = getFilterRange();
+
         // Ambil semua vendor yg punya pembayaran sebagian (transaksi_id null) dari appData
         const semua = appData.pelunasan.filter(p => p.transaksi_id === null || p.transaksi_id === undefined);
 
@@ -7861,7 +7906,8 @@ function updateSSK(tab, rowId) {
         }
 
         // Tidak perlu group by vendor lama - langsung render dari appData
-        const riwayat = semua;
+        // PERBAIKAN: Filter riwayat pembayaran berdasarkan tanggal
+        const riwayat = semua.filter(r => tanggalDalamRange(r.tanggal, dari, sampai));
 
         // Group by vendor dari appData langsung
         const vendorGroups = {};
