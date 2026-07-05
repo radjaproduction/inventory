@@ -7470,39 +7470,38 @@ function updateSSK(tab, rowId) {
 
                 // Jika vendor punya bayar sebagian → card readonly (tidak bisa buka, tidak ada tombol lunas)
                 if (hasBayarSebagian) {
-                    return `<div id="card-${uid}" class="bg-cardBg rounded-xl border-2 ${isLunas ? 'border-green-500/30' : 'border-borderDark'} overflow-hidden opacity-80">
-                        <div class="flex items-center gap-2 px-3 py-2.5 select-none">
+                    return `<div id="card-${uid}" class="bg-cardBg rounded-lg border-2 ${isLunas ? 'border-green-500/30' : 'border-borderDark'} overflow-hidden opacity-80">
+                        <div class="flex items-center gap-2.5 px-3 py-2.5 select-none">
                             <div class="flex-1 min-w-0">
-                                <div class="flex items-center gap-1.5 mb-0.5">
-                                    <span class="text-[10px] font-black text-black truncate">${t.brand} / ${t.model}</span>
-                                    <span class="text-[8px] px-1.5 py-0.5 rounded border-2 font-black flex-shrink-0 ${isLunas ? 'bg-green-600 text-white border-green-700' : 'bg-red-600 text-white border-red-700'}">${isLunas ? 'LUNAS' : 'CREDIT'}</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="px-2 py-0.5 ${isLunas ? 'bg-green-600 text-white border-green-700' : 'bg-red-600 text-white border-red-700'} border-2 text-[9px] font-black rounded tracking-wider flex-shrink-0">${isLunas ? 'LUNAS' : 'CREDIT'}</span>
+                                    <span class="text-[11px] font-black text-black uppercase truncate">${t.brand} / ${t.model}</span>
                                 </div>
-                                <div class="flex items-center justify-between gap-2">
-                                    <span class="text-[8px] text-black">${t.tanggal} • ${totalQty} pcs</span>
-                                    <span class="text-[8px] brand-text font-bold">Rp ${totalNominal.toLocaleString('id-ID')}</span>
+                                <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                                    <span class="text-[10px] brand-text font-black">${totalQty} pcs • Rp ${totalNominal.toLocaleString('id-ID')}</span>
+                                    <span class="text-[9px] text-black ml-auto">${t.tanggal}</span>
                                 </div>
                             </div>
-                            <i class="fa-solid fa-lock text-[9px] text-black flex-shrink-0"></i>
+                            <i class="fa-solid fa-lock text-[10px] text-black flex-shrink-0 ml-2"></i>
                         </div>
                     </div>`;
                 }
 
                 // FITUR BARU: Tambahkan checkbox untuk pelunasan parsial
-                return `<div id="card-${uid}" class="bg-cardBg rounded-xl border-2 ${isLunas ? 'border-green-500/30' : 'border-borderDark'} overflow-hidden transition-all">
-                    <div class="flex items-center gap-2 px-3 py-2.5 select-none">
+                return `<div id="card-${uid}" class="bg-cardBg rounded-lg border-2 ${isLunas ? 'border-green-500/30' : 'border-borderDark'} overflow-hidden transition-all">
+                    <div class="flex items-center gap-2.5 px-3 py-2.5 select-none">
                         <div onclick="event.stopPropagation();togglePilihPelunasan(${t.id}, ${sisaHutang}, '${t.vendor}', '${uid}')"
                              id="chk-${uid}"
                              class="w-5 h-5 rounded border-4 border-gray-600 flex items-center justify-center flex-shrink-0 cursor-pointer transition-all">
                         </div>
                         <div class="flex-1 min-w-0 cursor-pointer" onclick="toggleRiwayatCard('${uid}')">
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-1.5 mb-0.5">
-                                <span class="text-[10px] font-black text-black truncate">${t.brand} / ${t.model}</span>
-                                <span class="text-[8px] px-1.5 py-0.5 rounded border-2 font-black flex-shrink-0 ${isLunas ? 'bg-green-600 text-white border-green-700' : 'bg-red-600 text-white border-red-700'}">${isLunas ? 'LUNAS' : 'CREDIT'}</span>
-                            </div>
                             <div class="flex items-center gap-2">
-                                <span class="text-[8px] text-black">${t.tanggal} • ${totalQty} pcs</span>
-                                <span class="text-[8px] brand-text font-bold">Rp ${totalNominal.toLocaleString('id-ID')}</span>
+                                <span class="px-2 py-0.5 ${isLunas ? 'bg-green-600 text-white border-green-700' : 'bg-red-600 text-white border-red-700'} border-2 text-[9px] font-black rounded tracking-wider flex-shrink-0">${isLunas ? 'LUNAS' : 'CREDIT'}</span>
+                                <span class="text-[11px] font-black text-black uppercase truncate">${t.brand} / ${t.model}</span>
+                            </div>
+                            <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                                <span class="text-[10px] brand-text font-black">${totalQty} pcs • Rp ${totalNominal.toLocaleString('id-ID')}</span>
+                                <span class="text-[9px] text-black ml-auto">${t.tanggal}</span>
                             </div>
                             ${!isLunas ? `
                             <div class="mt-1.5">
@@ -7515,7 +7514,7 @@ function updateSSK(tab, rowId) {
                                 </div>
                             </div>` : ''}
                         </div>
-                        <i id="${uid}-chevron" class="fa-solid fa-chevron-down text-[9px] text-black flex-shrink-0 transition-transform"></i>
+                        <i id="${uid}-chevron" class="fa-solid fa-chevron-down text-[10px] text-black flex-shrink-0 transition-transform cursor-pointer ml-2" onclick="toggleRiwayatCard('${uid}')"></i>
                     </div>
                     <div id="${uid}-body" class="hidden border-t-2 border-borderDark px-3 pb-3">
                         <div class="pt-2 mb-2">
