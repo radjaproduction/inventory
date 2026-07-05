@@ -1053,12 +1053,12 @@
         </div>
 
         <div id="trx-variasi-sheet" class="input-sheet-overlay" onclick="if(event.target.id==='trx-variasi-sheet') closeTrxVariasiSheet()">
-            <div class="input-sheet-panel">
+            <div class="input-sheet-panel" id="generic-sheet-panel">
                 <div class="brand-gradient-bg text-black px-4 py-4 flex items-center justify-between flex-shrink-0">
                     <div>
-                        <div id="trx-sheet-brand" class="text-[9px] font-black tracking-wider opacity-70 mb-0.5">BRAND</div>
-                        <div class="text-[15px] font-black leading-none">DETAIL TRANSAKSI</div>
-                        <div id="trx-sheet-subtitle" class="text-[9px] font-bold opacity-60 mt-1">Pilih data item</div>
+                        <div id="sheet-brand" class="text-[9px] font-black tracking-wider opacity-70 mb-0.5">BRAND</div>
+                        <div id="sheet-title" class="text-[15px] font-black leading-none">DETAIL VARIASI</div>
+                        <div id="sheet-subtitle" class="text-[9px] font-bold opacity-60 mt-1">Pilih data item</div>
                     </div>
                     <button type="button" onclick="closeTrxVariasiSheet()" class="w-9 h-9 rounded-full bg-black/10 flex items-center justify-center active:scale-95">
                         <i class="fa-solid fa-xmark text-base"></i>
@@ -1069,45 +1069,45 @@
                     <div class="input-sheet-section">
                         <div class="flex items-center justify-between mb-2">
                             <div class="text-[10px] font-black text-black tracking-wider">WARNA</div>
-                            <div id="trx-sheet-warna-active" class="text-[10px] font-black brand-text truncate max-w-[150px]">Pilih</div>
+                            <div id="sheet-warna-active" class="text-[10px] font-black brand-text truncate max-w-[150px]">Pilih</div>
                         </div>
-                        <div id="trx-sheet-warna-list" class="input-choice-grid"></div>
+                        <div id="sheet-warna-list" class="input-choice-grid"></div>
                     </div>
                     <div class="input-sheet-section">
                         <div class="flex items-center justify-between mb-2">
                             <div class="text-[10px] font-black text-black tracking-wider">UKURAN</div>
-                            <div id="trx-sheet-ukuran-active" class="text-[10px] font-black brand-text truncate max-w-[150px]">Pilih</div>
+                            <div id="sheet-ukuran-active" class="text-[10px] font-black brand-text truncate max-w-[150px]">Pilih</div>
                         </div>
-                        <div id="trx-sheet-ukuran-list" class="input-choice-grid"></div>
+                        <div id="sheet-ukuran-list" class="input-choice-grid"></div>
                     </div>
                     <div class="input-sheet-section">
                         <div class="text-[10px] font-black text-black tracking-wider mb-2">QTY</div>
                         <div class="grid grid-cols-[1fr_82px] gap-2 items-center">
-                            <input id="trx-sheet-qty" class="input-sheet-qty" type="text" inputmode="numeric" pattern="[0-9]*" value="0" readonly style="text-transform:none;cursor:default;">
+                            <input id="sheet-qty" class="input-sheet-qty" type="text" inputmode="numeric" pattern="[0-9]*" value="0" readonly style="text-transform:none;cursor:default;">
                             <div>
                                 <div class="text-[9px] font-black text-black mb-1 text-center">SSK</div>
-                                <div id="trx-sheet-ssk" class="h-[42px] rounded-xl bg-darkBg border-2 border-borderDark flex items-center justify-center text-sm font-black text-black">-</div>
+                                <div id="sheet-ssk" class="h-[42px] rounded-xl bg-darkBg border-2 border-borderDark flex items-center justify-center text-sm font-black text-black">-</div>
                             </div>
                         </div>
-                        <div class="qty-numpad-grid" id="trx-sheet-numpad-grid">
-                            <button type="button" onclick="qtyNumpadPress('trx','1')" class="qty-numpad-btn">1</button>
-                            <button type="button" onclick="qtyNumpadPress('trx','2')" class="qty-numpad-btn">2</button>
-                            <button type="button" onclick="qtyNumpadPress('trx','3')" class="qty-numpad-btn">3</button>
-                            <button type="button" onclick="qtyNumpadPress('trx','4')" class="qty-numpad-btn">4</button>
-                            <button type="button" onclick="qtyNumpadPress('trx','5')" class="qty-numpad-btn">5</button>
-                            <button type="button" onclick="qtyNumpadPress('trx','6')" class="qty-numpad-btn">6</button>
-                            <button type="button" onclick="qtyNumpadPress('trx','7')" class="qty-numpad-btn">7</button>
-                            <button type="button" onclick="qtyNumpadPress('trx','8')" class="qty-numpad-btn">8</button>
-                            <button type="button" onclick="qtyNumpadPress('trx','9')" class="qty-numpad-btn">9</button>
-                            <button type="button" onclick="qtyNumpadPress('trx','C')" class="qty-numpad-btn qty-numpad-clear">C</button>
-                            <button type="button" onclick="qtyNumpadPress('trx','0')" class="qty-numpad-btn">0</button>
-                            <button type="button" onclick="qtyNumpadPress('trx','DEL')" class="qty-numpad-btn qty-numpad-del"><i class="fa-solid fa-delete-left"></i></button>
+                        <div class="qty-numpad-grid" id="sheet-numpad-grid">
+                            <button type="button" onclick="qtyNumpadPress('1')" class="qty-numpad-btn">1</button>
+                            <button type="button" onclick="qtyNumpadPress('2')" class="qty-numpad-btn">2</button>
+                            <button type="button" onclick="qtyNumpadPress('3')" class="qty-numpad-btn">3</button>
+                            <button type="button" onclick="qtyNumpadPress('4')" class="qty-numpad-btn">4</button>
+                            <button type="button" onclick="qtyNumpadPress('5')" class="qty-numpad-btn">5</button>
+                            <button type="button" onclick="qtyNumpadPress('6')" class="qty-numpad-btn">6</button>
+                            <button type="button" onclick="qtyNumpadPress('7')" class="qty-numpad-btn">7</button>
+                            <button type="button" onclick="qtyNumpadPress('8')" class="qty-numpad-btn">8</button>
+                            <button type="button" onclick="qtyNumpadPress('9')" class="qty-numpad-btn">9</button>
+                            <button type="button" onclick="qtyNumpadPress('C')" class="qty-numpad-btn qty-numpad-clear">C</button>
+                            <button type="button" onclick="qtyNumpadPress('0')" class="qty-numpad-btn">0</button>
+                            <button type="button" onclick="qtyNumpadPress('DEL')" class="qty-numpad-btn qty-numpad-del"><i class="fa-solid fa-delete-left"></i></button>
                         </div>
                     </div>
                 </div>
                 <div class="input-sheet-actions grid grid-cols-[0.85fr_1.15fr] gap-2">
                     <button type="button" onclick="closeTrxVariasiSheet()" class="py-3.5 rounded-xl bg-darkBg border-2 border-borderDark text-black font-black text-[12px] active:scale-95 transition-transform"><i class="fa-solid fa-arrow-left mr-1"></i> BACK</button>
-                    <button type="button" id="trx-sheet-save-btn" onclick="saveTrxVariasiSheet()" class="py-3.5 rounded-xl brand-gradient-bg text-black font-black text-[12px] active:scale-95 transition-transform"><i class="fa-solid fa-check mr-1"></i> TAMBAHKAN</button>
+                    <button type="button" id="sheet-save-btn" onclick="saveTrxVariasiSheet()" class="py-3.5 rounded-xl brand-gradient-bg text-black font-black text-[12px] active:scale-95 transition-transform"><i class="fa-solid fa-check mr-1"></i> TAMBAHKAN</button>
                 </div>
             </div>
         </div>
@@ -5064,7 +5064,7 @@ function updateSSK(tab, rowId) {
 	        const warnaAktif = inputSheetDraft?.warna || '';
 	        const ukuranAktif = inputSheetDraft?.ukuran || '';
 	        const warnaActiveLabel = document.getElementById('input-sheet-warna-active');
-	        const ukuranActiveLabel = document.getElementById('input-sheet-ukuran-active');
+	        const ukuranActiveLabel = document.getElementById('sheet-ukuran-active');
 	        if (warnaActiveLabel) warnaActiveLabel.textContent = _isInputPlaceholder(warnaAktif) ? 'Pilih' : warnaAktif;
         if (ukuranActiveLabel) ukuranActiveLabel.textContent = _isInputPlaceholder(ukuranAktif) ? 'Pilih' : ukuranAktif;
         updateQtyNumpadState('input', warnaAktif, ukuranAktif);
@@ -5166,21 +5166,20 @@ function updateSSK(tab, rowId) {
 
     // ==================== NUMPAD CUSTOM UNTUK QTY (Input Data & Transaksi) ====================
     // Numpad terkunci sampai WARNA dan UKURAN sudah dipilih.
-    function updateQtyNumpadState(tab, warnaAktif, ukuranAktif) {
-        const gridId = tab === 'trx' ? 'trx-sheet-numpad-grid' : 'input-sheet-numpad-grid';
+    function updateQtyNumpadState(warnaAktif, ukuranAktif) {
+        const gridId = 'sheet-numpad-grid';
         const grid = document.getElementById(gridId);
         if (!grid) return;
         const ready = !_isInputPlaceholder(warnaAktif) && !_isInputPlaceholder(ukuranAktif);
         grid.classList.toggle('disabled', !ready);
     }
-
-    function qtyNumpadPress(tab, key) {
-        const fieldId = tab === 'trx' ? 'trx-sheet-qty' : 'input-sheet-qty';
+    function qtyNumpadPress(key) {
+        const fieldId = 'sheet-qty';
         const qtySheet = document.getElementById(fieldId);
         if (!qtySheet) return;
 
         // Pengaman: blokir juga di level JS, bukan cuma CSS pointer-events
-        const draft = tab === 'trx' ? trxSheetDraft : inputSheetDraft;
+        const draft = _activeSheet.draft;
         if (_isInputPlaceholder(draft?.warna) || _isInputPlaceholder(draft?.ukuran)) {
             showToast('⚠️ Pilih warna & ukuran dulu sebelum isi qty');
             return;
@@ -5200,11 +5199,7 @@ function updateSSK(tab, rowId) {
         }
 
         qtySheet.value = val;
-        if (tab === 'trx') {
-            onTrxSheetQtyChange();
-        } else {
-            onInputSheetQtyChange();
-        }
+        _activeSheet.onQtyChange();
     }
 
 	    function onInputSheetQtyChange() {
@@ -5516,10 +5511,10 @@ function updateSSK(tab, rowId) {
 	    function renderTrxSheetOptions(rowId) {
 	        const warnaWrap = document.getElementById('trx-sheet-warna-list');
 	        const ukuranWrap = document.getElementById('trx-sheet-ukuran-list');
-	        const warnaAktif = trxSheetDraft?.warna || '';
-	        const ukuranAktif = trxSheetDraft?.ukuran || '';
-	        const warnaActiveLabel = document.getElementById('trx-sheet-warna-active');
-	        const ukuranActiveLabel = document.getElementById('trx-sheet-ukuran-active');
+	        const warnaAktif = _activeSheet.draft?.warna || '';
+	        const ukuranAktif = _activeSheet.draft?.ukuran || '';
+	        const warnaActiveLabel = document.getElementById('sheet-warna-active');
+	        const ukuranActiveLabel = document.getElementById('sheet-ukuran-active');
 	        if (warnaActiveLabel) warnaActiveLabel.textContent = _isInputPlaceholder(warnaAktif) ? 'Pilih' : warnaAktif;
 	        if (ukuranActiveLabel) ukuranActiveLabel.textContent = _isInputPlaceholder(ukuranAktif) ? 'Pilih' : ukuranAktif;
 	        updateQtyNumpadState('trx', warnaAktif, ukuranAktif);
@@ -5533,9 +5528,9 @@ function updateSSK(tab, rowId) {
 	            btn.className = 'input-choice-btn' + (!_isInputPlaceholder(warnaAktif) && warnaAktif.toUpperCase() === w.nama.toUpperCase() ? ' active' : '');
 	            btn.innerHTML = `<span class="w-5 h-5 rounded-md border-2 border-white/20 flex-shrink-0" style="background:${w.kode}"></span><span class="truncate">${w.nama}</span>`;
 	            btn.onclick = () => {
-	                if (!trxSheetDraft) trxSheetDraft = getTrxRowData(rowId);
-	                trxSheetDraft.warna = w.nama;
-	                trxSheetDraft.kode = w.kode;
+	                if (!_activeSheet.draft) _activeSheet.draft = getTrxRowData(rowId);
+	                _activeSheet.draft.warna = w.nama;
+	                _activeSheet.draft.kode = w.kode;
 	                renderTrxSheetOptions(rowId);
 	                refreshTrxSheetSSK(rowId);
 	            };
@@ -5551,9 +5546,9 @@ function updateSSK(tab, rowId) {
 	            btn.className = 'input-choice-btn justify-center text-center' + (!_isInputPlaceholder(ukuranAktif) && ukuranAktif.toUpperCase() === u.nama.toUpperCase() ? ' active' : '');
 	            btn.textContent = u.nama;
 	            btn.onclick = () => {
-	                if (!trxSheetDraft) trxSheetDraft = getTrxRowData(rowId);
-	                trxSheetDraft.ukuran = u.nama;
-	                renderTrxSheetOptions(rowId);
+	                if (!_activeSheet.draft) _activeSheet.draft = getTrxRowData(rowId);
+	                _activeSheet.draft.ukuran = u.nama;
+	                _activeSheet.renderOptions(rowId);
 	                refreshTrxSheetSSK(rowId);
 	            };
 	            ukuranWrap.appendChild(btn);
@@ -5562,42 +5557,42 @@ function updateSSK(tab, rowId) {
 	    }
 
 	    function refreshTrxSheetSSK(rowId) {
-	        if (!trxSheetDraft) trxSheetDraft = getTrxRowData(rowId);
-	        const warna = trxSheetDraft.warna;
-	        const ukuran = trxSheetDraft.ukuran;
+	        if (!_activeSheet.draft) _activeSheet.draft = getTrxRowData(rowId);
+	        const warna = _activeSheet.draft.warna;
+	        const ukuran = _activeSheet.draft.ukuran;
 	        let sskValue = '-';
 	        if (!_isInputPlaceholder(warna) && !_isInputPlaceholder(ukuran)) {
 	            const maxStok = Math.max(0, hitungStokEfektifTrx(trxState.modelNama, warna, ukuran, rowId, trxState.brandNama, trxState.brandId));
-	            if ((parseInt(trxSheetDraft.qty) || 0) > maxStok) {
-	                trxSheetDraft.qty = maxStok;
-	                const qtySheet = document.getElementById('trx-sheet-qty');
+	            if ((parseInt(_activeSheet.draft.qty) || 0) > maxStok) {
+	                _activeSheet.draft.qty = maxStok;
+	                const qtySheet = document.getElementById('sheet-qty');
 	                if (qtySheet) qtySheet.value = maxStok;
 	            }
-	            sskValue = maxStok - (parseInt(trxSheetDraft.qty) || 0);
+	            sskValue = maxStok - (parseInt(_activeSheet.draft.qty) || 0);
 	        }
-	        trxSheetDraft.ssk = sskValue === '-' ? '' : sskValue;
-	        const sheetSSK = document.getElementById('trx-sheet-ssk');
+	        _activeSheet.draft.ssk = sskValue === '-' ? '' : sskValue;
+	        const sheetSSK = document.getElementById('sheet-ssk');
 	        if (sheetSSK) sheetSSK.textContent = sskValue;
 	        updateTrxSheetSaveState();
 	    }
 
 	    function updateTrxSheetSaveState() {
-	        const btn = document.getElementById('trx-sheet-save-btn');
+	        const btn = document.getElementById('sheet-save-btn');
 	        if (!btn) return;
-	        const warna = trxSheetDraft?.warna;
-	        const ukuran = trxSheetDraft?.ukuran;
-	        const qty = parseInt(trxSheetDraft?.qty) || 0;
+	        const warna = _activeSheet.draft?.warna;
+	        const ukuran = _activeSheet.draft?.ukuran;
+	        const qty = parseInt(_activeSheet.draft?.qty) || 0;
 	        const ready = !_isInputPlaceholder(warna) && !_isInputPlaceholder(ukuran) && qty > 0;
 	        btn.classList.toggle('opacity-50', !ready);
 	    }
 
 	    function openTrxVariasiSheet(rowId) {
 	        if (!trxState.modelNama) { showToast('⚠️ Pilih MODEL terlebih dahulu!'); return; }
-	        activeTrxSheetRowId = rowId;
-	        trxSheetDraft = getTrxRowData(rowId);
-	        const sheet = document.getElementById('trx-variasi-sheet');
-	        const qtySheet = document.getElementById('trx-sheet-qty');
-	        const subtitle = document.getElementById('trx-sheet-subtitle');
+	        _activeSheet.rowId = rowId;
+	        _activeSheet.draft = getTrxRowData(rowId);
+	        const sheet = document.getElementById('generic-sheet-panel').parentElement;
+	        const qtySheet = document.getElementById('sheet-qty');
+	        const subtitle = document.getElementById('sheet-subtitle');
 	        if (subtitle) subtitle.textContent = trxState.modelNama || 'Pilih data item';
 	        const brandLabel = document.getElementById('trx-sheet-brand');
 	        if (brandLabel) brandLabel.textContent = trxState.brandNama || 'BRAND';
@@ -5610,27 +5605,27 @@ function updateSSK(tab, rowId) {
 	    }
 
 	    function closeTrxVariasiSheet() {
-	        const closingRowId = activeTrxSheetRowId;
-	        const sheet = document.getElementById('trx-variasi-sheet');
+	        const closingRowId = _activeSheet.rowId;
+	        const sheet = document.getElementById('generic-sheet-panel').parentElement;
 	        if (sheet) sheet.classList.remove('active');
 	        document.body.classList.remove('sheet-open-lock');
-	        activeTrxSheetRowId = null;
-	        trxSheetDraft = null;
+	        _activeSheet.rowId = null;
+	        _activeSheet.draft = null;
 	        const list = document.getElementById('trx-variasi-list');
 	        if (closingRowId && list && list.children.length > 1 && _isTrxRowPristine(closingRowId)) {
 	            hapusRowTrx(closingRowId);
 	        }
 	    }
 
-	    function onTrxSheetQtyChange() {
-	        if (!activeTrxSheetRowId) return;
-	        const qtySheet = document.getElementById('trx-sheet-qty');
+	    function onTrxSheetQtyChange(rowId) {
+	        if (!_activeSheet.rowId) return;
+	        const qtySheet = document.getElementById('sheet-qty');
 	        const rawValue = String(qtySheet?.value || '').replace(/\D/g, '');
 	        const value = Math.max(0, parseInt(rawValue) || 0);
-	        if (!trxSheetDraft) trxSheetDraft = getTrxRowData(activeTrxSheetRowId);
-	        trxSheetDraft.qty = value;
+	        if (!_activeSheet.draft) _activeSheet.draft = getTrxRowData(_activeSheet.rowId);
+	        _activeSheet.draft.qty = value;
 	        if (qtySheet) qtySheet.value = value;
-	        refreshTrxSheetSSK(activeTrxSheetRowId);
+	        refreshTrxSheetSSK(_activeSheet.rowId);
 	    }
 
 	    function saveTrxVariasiSheet() {
