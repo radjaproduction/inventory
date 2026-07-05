@@ -5180,20 +5180,24 @@ function updateSSK(tab, rowId) {
 
     // ==================== NUMPAD CUSTOM UNTUK QTY (Input Data & Transaksi) ====================
     // Numpad terkunci sampai WARNA dan UKURAN sudah dipilih.
-    function updateQtyNumpadState(warnaAktif, ukuranAktif) {
-        const gridId = 'sheet-numpad-grid';
+    function updateQtyNumpadState(sheetType, warnaAktif, ukuranAktif) {
+        const gridId = sheetType === 'input' ? 'input-sheet-numpad-grid' : 'sheet-numpad-grid';
         const grid = document.getElementById(gridId);
         if (!grid) return;
         const ready = !_isInputPlaceholder(warnaAktif) && !_isInputPlaceholder(ukuranAktif);
         grid.classList.toggle('disabled', !ready);
     }
-    function qtyNumpadPress(key) {
-        const fieldId = 'sheet-qty';
+    // Dipanggil dari 2 tempat berbeda: qtyNumpadPress('input', key) dari sheet Input Data,
+    // dan qtyNumpadPress(key) dari sheet Transaksi. Dibedakan lewat jumlah argumen.
+    function qtyNumpadPress(a, b) {
+        const isInputSheet = (b !== undefined);
+        const key = isInputSheet ? b : a;
+        const fieldId = isInputSheet ? 'input-sheet-qty' : 'sheet-qty';
         const qtySheet = document.getElementById(fieldId);
         if (!qtySheet) return;
 
         // Pengaman: blokir juga di level JS, bukan cuma CSS pointer-events
-        const draft = _activeSheet.draft;
+        const draft = isInputSheet ? inputSheetDraft : trxSheetDraft;
         if (_isInputPlaceholder(draft?.warna) || _isInputPlaceholder(draft?.ukuran)) {
             showToast('⚠️ Pilih warna & ukuran dulu sebelum isi qty');
             return;
@@ -5213,7 +5217,11 @@ function updateSSK(tab, rowId) {
         }
 
         qtySheet.value = val;
-        _activeSheet.onQtyChange();
+        if (isInputSheet) {
+            onInputSheetQtyChange();
+        } else {
+            onTrxSheetQtyChange();
+        }
     }
 
 	    function onInputSheetQtyChange() {
@@ -5525,8 +5533,8 @@ function updateSSK(tab, rowId) {
 	    function renderTrxSheetOptions(rowId) {
 	        const warnaWrap = document.getElementById('trx-sheet-warna-list');
 	        const ukuranWrap = document.getElementById('trx-sheet-ukuran-list');
-	        const warnaAktif = _activeSheet.draft?.warna || '';
-	        const ukuranAktif = _activeSheet.draft?.ukuran || '';
+	        const warnaAktif = trxSheetDraft?.warna || '';
+	        const ukuranAktif = trxSheetDraft?.ukuran || '';
 	        const warnaActiveLabel = document.getElementById('sheet-warna-active');
 	        const ukuranActiveLabel = document.getElementById('sheet-ukuran-active');
 	        if (warnaActiveLabel) warnaActiveLabel.textContent = _isInputPlaceholder(warnaAktif) ? 'Pilih' : warnaAktif;
@@ -5542,9 +5550,9 @@ function updateSSK(tab, rowId) {
 	            btn.className = 'input-choice-btn' + (!_isInputPlaceholder(warnaAktif) && warnaAktif.toUpperCase() === w.nama.toUpperCase() ? ' active' : '');
 	            btn.innerHTML = `<span class="w-5 h-5 rounded-md border-2 border-white/20 flex-shrink-0" style="background:${w.kode}"></span><span class="truncate">${w.nama}</span>`;
 	            btn.onclick = () => {
-	                if (!_activeSheet.draft) _activeSheet.draft = getTrxRowData(rowId);
-	                _activeSheet.draft.warna = w.nama;
-	                _activeSheet.draft.kode = w.kode;
+	                if (!trxSheetDraft) trxSheetDraft = getTrxRowData(rowId);
+	                trxSheetDraft.warna = w.nama;
+	                trxSheetDraft.kode = w.kode;
 	                renderTrxSheetOptions(rowId);
 	                refreshTrxSheetSSK(rowId);
 	            };
@@ -5560,9 +5568,9 @@ function updateSSK(tab, rowId) {
 	            btn.className = 'input-choice-btn justify-center text-center' + (!_isInputPlaceholder(ukuranAktif) && ukuranAktif.toUpperCase() === u.nama.toUpperCase() ? ' active' : '');
 	            btn.textContent = u.nama;
 	            btn.onclick = () => {
-	                if (!_activeSheet.draft) _activeSheet.draft = getTrxRowData(rowId);
-	                _activeSheet.draft.ukuran = u.nama;
-	                _activeSheet.renderOptions(rowId);
+	                if (!trxSheetDraft) trxSheetDraft = getTrxRowData(rowId);
+	                trxSheetDraft.ukuran = u.nama;
+	                renderTrxSheetOptions(rowId);
 	                refreshTrxSheetSSK(rowId);
 	            };
 	            ukuranWrap.appendChild(btn);
@@ -5571,20 +5579,20 @@ function updateSSK(tab, rowId) {
 	    }
 
 	    function refreshTrxSheetSSK(rowId) {
-	        if (!_activeSheet.draft) _activeSheet.draft = getTrxRowData(rowId);
-	        const warna = _activeSheet.draft.warna;
-	        const ukuran = _activeSheet.draft.ukuran;
+	        if (!trxSheetDraft) trxSheetDraft = getTrxRowData(rowId);
+	        const warna = trxSheetDraft.warna;
+	        const ukuran = trxSheetDraft.ukuran;
 	        let sskValue = '-';
 	        if (!_isInputPlaceholder(warna) && !_isInputPlaceholder(ukuran)) {
 	            const maxStok = Math.max(0, hitungStokEfektifTrx(trxState.modelNama, warna, ukuran, rowId, trxState.brandNama, trxState.brandId));
-	            if ((parseInt(_activeSheet.draft.qty) || 0) > maxStok) {
-	                _activeSheet.draft.qty = maxStok;
+	            if ((parseInt(trxSheetDraft.qty) || 0) > maxStok) {
+	                trxSheetDraft.qty = maxStok;
 	                const qtySheet = document.getElementById('sheet-qty');
 	                if (qtySheet) qtySheet.value = maxStok;
 	            }
-	            sskValue = maxStok - (parseInt(_activeSheet.draft.qty) || 0);
+	            sskValue = maxStok - (parseInt(trxSheetDraft.qty) || 0);
 	        }
-	        _activeSheet.draft.ssk = sskValue === '-' ? '' : sskValue;
+	        trxSheetDraft.ssk = sskValue === '-' ? '' : sskValue;
 	        const sheetSSK = document.getElementById('sheet-ssk');
 	        if (sheetSSK) sheetSSK.textContent = sskValue;
 	        updateTrxSheetSaveState();
@@ -5593,17 +5601,17 @@ function updateSSK(tab, rowId) {
 	    function updateTrxSheetSaveState() {
 	        const btn = document.getElementById('sheet-save-btn');
 	        if (!btn) return;
-	        const warna = _activeSheet.draft?.warna;
-	        const ukuran = _activeSheet.draft?.ukuran;
-	        const qty = parseInt(_activeSheet.draft?.qty) || 0;
+	        const warna = trxSheetDraft?.warna;
+	        const ukuran = trxSheetDraft?.ukuran;
+	        const qty = parseInt(trxSheetDraft?.qty) || 0;
 	        const ready = !_isInputPlaceholder(warna) && !_isInputPlaceholder(ukuran) && qty > 0;
 	        btn.classList.toggle('opacity-50', !ready);
 	    }
 
 	    function openTrxVariasiSheet(rowId) {
 	        if (!trxState.modelNama) { showToast('⚠️ Pilih MODEL terlebih dahulu!'); return; }
-	        _activeSheet.rowId = rowId;
-	        _activeSheet.draft = getTrxRowData(rowId);
+	        activeTrxSheetRowId = rowId;
+	        trxSheetDraft = getTrxRowData(rowId);
 	        const sheet = document.getElementById('generic-sheet-panel').parentElement;
 	        const qtySheet = document.getElementById('sheet-qty');
 	        const subtitle = document.getElementById('sheet-subtitle');
@@ -5619,12 +5627,12 @@ function updateSSK(tab, rowId) {
 	    }
 
 	    function closeTrxVariasiSheet() {
-	        const closingRowId = _activeSheet.rowId;
+	        const closingRowId = activeTrxSheetRowId;
 	        const sheet = document.getElementById('generic-sheet-panel').parentElement;
 	        if (sheet) sheet.classList.remove('active');
 	        document.body.classList.remove('sheet-open-lock');
-	        _activeSheet.rowId = null;
-	        _activeSheet.draft = null;
+	        activeTrxSheetRowId = null;
+	        trxSheetDraft = null;
 	        const list = document.getElementById('trx-variasi-list');
 	        if (closingRowId && list && list.children.length > 1 && _isTrxRowPristine(closingRowId)) {
 	            hapusRowTrx(closingRowId);
@@ -5632,14 +5640,14 @@ function updateSSK(tab, rowId) {
 	    }
 
 	    function onTrxSheetQtyChange(rowId) {
-	        if (!_activeSheet.rowId) return;
+	        if (!activeTrxSheetRowId) return;
 	        const qtySheet = document.getElementById('sheet-qty');
 	        const rawValue = String(qtySheet?.value || '').replace(/\D/g, '');
 	        const value = Math.max(0, parseInt(rawValue) || 0);
-	        if (!_activeSheet.draft) _activeSheet.draft = getTrxRowData(_activeSheet.rowId);
-	        _activeSheet.draft.qty = value;
+	        if (!trxSheetDraft) trxSheetDraft = getTrxRowData(activeTrxSheetRowId);
+	        trxSheetDraft.qty = value;
 	        if (qtySheet) qtySheet.value = value;
-	        refreshTrxSheetSSK(_activeSheet.rowId);
+	        refreshTrxSheetSSK(activeTrxSheetRowId);
 	    }
 
 	    function saveTrxVariasiSheet() {
@@ -6596,6 +6604,7 @@ function updateSSK(tab, rowId) {
     const selectedTrxIds = new Set();
     let _vendorGroupCache = {};
     let _openVendorKey = null;
+    let _renderTrxVendorTimeout = null;
 
     function filterVendorGroups(query) {
         const q = query.trim().toLowerCase();
