@@ -6617,6 +6617,7 @@ function updateSSK(tab, rowId) {
             try {
                 if (bodyEl) {
                     const trxList = vendorGroups[vendor] || [];
+                    const hasBayarSebagianTrx = appData.pelunasan.some(p => p.vendor === vendor && (p.transaksi_id === null || p.transaksi_id === undefined));
                     const cards = trxList.map((d, idx) => {
                         try {
                             const items = Array.isArray(d.items) ? d.items : [];
@@ -6648,7 +6649,12 @@ function updateSSK(tab, rowId) {
                                         <button onclick="event.stopPropagation();bukaEditQtyTrx(${d.id})" class="${isLunas ? 'opacity-30 cursor-not-allowed' : 'hover:bg-blue-500/20 cursor-pointer'} flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border-2 border-blue-500/40 bg-blue-500/10 text-blue-400 text-[10px] font-bold transition-colors" ${isLunas ? 'disabled' : ''}><i class="fa-solid fa-pen-to-square text-[9px]"></i> EDIT QTY</button>
                                         <button onclick="event.stopPropagation();hapusTrxRiwayat(${d.id})" class="${isLunas ? 'opacity-30 cursor-not-allowed' : 'hover:bg-red-500/20 cursor-pointer'} flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border-2 border-red-500/40 bg-red-500/10 text-red-400 text-[10px] font-bold transition-colors" ${isLunas ? 'disabled' : ''}><i class="fa-regular fa-trash-can text-[9px]"></i> HAPUS</button>
                                     </div>
-                                    ${isLunas ? '<p class="text-[9px] text-black text-center mt-1"><i class="fa-solid fa-lock text-[8px] mr-1"></i>Transaksi LUNAS tidak dapat diedit atau dihapus.</p>' : ''}
+                                    ${isLunas ? (
+                                        hasBayarSebagianTrx
+                                        ? '<p class="text-[9px] text-black text-center mt-1"><i class="fa-solid fa-lock text-[8px] mr-1"></i>Transaksi LUNAS tidak dapat diedit atau dihapus. Vendor ini pakai Bayar Sebagian &mdash; kembalikan lewat tab BAYAR SEBAGIAN.</p>'
+                                        : `<button onclick="event.stopPropagation();kembalikanKeKredit(${d.id})" class="w-full mt-2 flex items-center justify-center gap-1.5 py-2 rounded-lg border-2 border-orange-500/40 bg-orange-500/10 text-orange-400 text-[10px] font-bold hover:bg-orange-500/20 transition-colors"><i class="fa-solid fa-rotate-left text-[9px]"></i> KEMBALIKAN KE KREDIT</button>
+                                           <p class="text-[9px] text-black text-center mt-1"><i class="fa-solid fa-lock text-[8px] mr-1"></i>Transaksi LUNAS tidak dapat diedit atau dihapus.</p>`
+                                    ) : ''}
                                 </div>
                             </div>`;
                         } catch (cardErr) {
@@ -8302,6 +8308,40 @@ function updateSSK(tab, rowId) {
             renderRiwayatTransaksi();
             showToast('🗑️ Catatan pembayaran dihapus.');
         }, {title:'HAPUS PEMBAYARAN', type:'danger', icon:'🗑️', ok:'YA, HAPUS'});
+    }
+
+    // Undo: kembalikan transaksi LUNAS ke status KREDIT (misal admin salah klik lunas).
+    // Menghapus SEMUA record pelunasan milik transaksi ini (bisa lebih dari 1 kalau dibayar bertahap),
+    // lalu set status transaksi balik ke 'credit'. Tidak berlaku untuk vendor yang pakai
+    // Bayar Sebagian borongan (transaksi_id null) karena pembayarannya tidak terikat ke 1 invoice.
+    async function kembalikanKeKredit(trxId) {
+        trxId = Number(trxId);
+        const trx = appData.riwayatTransaksi.find(t => Number(t.id) === trxId);
+        if (!trx) { showToast('❌ Transaksi tidak ditemukan'); return; }
+
+        const hasBayarSebagianVendor = appData.pelunasan.some(p => p.vendor === trx.vendor && (p.transaksi_id === null || p.transaksi_id === undefined));
+        if (hasBayarSebagianVendor) {
+            showToast('⚠️ Vendor ini pakai Bayar Sebagian borongan. Kembalikan lewat tab BAYAR SEBAGIAN.');
+            return;
+        }
+
+        const pelTerkait = appData.pelunasan.filter(p => Number(p.transaksi_id) === trxId);
+
+        showConfirm('Kembalikan transaksi ini ke status KREDIT?\nSemua catatan pembayaran untuk transaksi ini akan ikut dihapus.', async function() {
+            for (const p of pelTerkait) {
+                const { error } = await sbClient.from('pelunasan').delete().eq('id', p.id);
+                if (error) { showToast('❌ Gagal hapus catatan pembayaran, coba lagi'); return; }
+            }
+            appData.pelunasan = appData.pelunasan.filter(p => Number(p.transaksi_id) !== trxId);
+
+            const { error: updErr } = await sbClient.from('transaksi').update({ status: 'credit' }).eq('id', trxId);
+            if (updErr) { showToast('⚠️ Pembayaran dihapus tapi gagal update status transaksi'); return; }
+            trx.status = 'credit';
+
+            renderRiwayatTransaksi();
+            renderPelunasanView();
+            showToast('↩️ Transaksi dikembalikan ke KREDIT.');
+        }, {title:'KEMBALIKAN KE KREDIT', type:'warning', icon:'↩️', ok:'YA, KEMBALIKAN'});
     }
 
     async function cetakTagihanSebagian(vendorEncoded) {
