@@ -6532,42 +6532,53 @@ function updateSSK(tab, rowId) {
             const vendor = sortedVendors[vendorIndex];
             const vendorKey = (vendor || 'vendor_tidak_diketahui').replace(/\s+/g,'_');
             const bodyEl = document.getElementById(`vg-body-${vendorKey}`);
-            if (bodyEl) {
-                const trxList = vendorGroups[vendor] || [];
-                const cards = trxList.map((d, idx) => {
-                    const isLunas = d.status === 'lunas';
-                    const statusClass = isLunas ? 'bg-green-600 text-white border-green-700' : 'bg-red-600 text-white border-red-700';
-                    const totalQty = d.items.reduce((s, i) => s + i.qty, 0);
-                    const totalNominal = totalQty * d.harga;
-                    const uid = 'rt-' + (d.id || idx);
-                    const itemsPreview = d.items.slice(0,2).map(i => `<span class="text-[8px] bg-darkBg border-2 border-borderDark rounded px-1.5 py-0.5 text-black">${i.warna}/${i.ukuran}:<b class="text-black">${i.qty}</b></span>`).join('') + (d.items.length > 2 ? `<span class="text-[8px] text-black">+${d.items.length-2} lagi</span>` : '');
-                    return `<div id="card-${uid}" class="bg-cardBg rounded-lg border-2 border-borderDark overflow-hidden transition-all">
-                        <div class="flex items-center gap-2.5 px-3 py-2.5">
-                            <div onclick="event.stopPropagation();togglePilihTrx(${d.id},'${uid}')" id="chk-${uid}" class="w-5 h-5 rounded border-4 border-gray-600 flex items-center justify-center flex-shrink-0 cursor-pointer transition-all"></div>
-                            <div class="flex-1 min-w-0 cursor-pointer" onclick="toggleRiwayatCard('${uid}')">
-                                <div class="flex items-center gap-2">
-                                    <span class="px-2 py-0.5 ${statusClass} border-2 text-[9px] font-black rounded tracking-wider flex-shrink-0">${isLunas ? 'LUNAS' : 'CREDIT'}</span>
-                                    <span class="text-[11px] font-black text-black uppercase truncate">${d.brand || '-'} / ${d.model || '-'}</span>
+            try {
+                if (bodyEl) {
+                    const trxList = vendorGroups[vendor] || [];
+                    const cards = trxList.map((d, idx) => {
+                        try {
+                            const items = Array.isArray(d.items) ? d.items : [];
+                            const isLunas = d.status === 'lunas';
+                            const statusClass = isLunas ? 'bg-green-600 text-white border-green-700' : 'bg-red-600 text-white border-red-700';
+                            const totalQty = items.reduce((s, i) => s + (i.qty || 0), 0);
+                            const totalNominal = totalQty * (d.harga || 0);
+                            const uid = 'rt-' + (d.id || idx);
+                            const itemsPreview = items.slice(0,2).map(i => `<span class="text-[8px] bg-darkBg border-2 border-borderDark rounded px-1.5 py-0.5 text-black">${i.warna}/${i.ukuran}:<b class="text-black">${i.qty}</b></span>`).join('') + (items.length > 2 ? `<span class="text-[8px] text-black">+${items.length-2} lagi</span>` : '');
+                            return `<div id="card-${uid}" class="bg-cardBg rounded-lg border-2 border-borderDark overflow-hidden transition-all">
+                                <div class="flex items-center gap-2.5 px-3 py-2.5">
+                                    <div onclick="event.stopPropagation();togglePilihTrx(${d.id},'${uid}')" id="chk-${uid}" class="w-5 h-5 rounded border-4 border-gray-600 flex items-center justify-center flex-shrink-0 cursor-pointer transition-all"></div>
+                                    <div class="flex-1 min-w-0 cursor-pointer" onclick="toggleRiwayatCard('${uid}')">
+                                        <div class="flex items-center gap-2">
+                                            <span class="px-2 py-0.5 ${statusClass} border-2 text-[9px] font-black rounded tracking-wider flex-shrink-0">${isLunas ? 'LUNAS' : 'CREDIT'}</span>
+                                            <span class="text-[11px] font-black text-black uppercase truncate">${d.brand || '-'} / ${d.model || '-'}</span>
+                                        </div>
+                                        <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                                            <span class="text-[10px] brand-text font-black">${totalQty} pcs${totalNominal > 0 ? ' • Rp ' + totalNominal.toLocaleString('id-ID') : ''}</span>
+                                            <div class="flex gap-1 flex-wrap" id="${uid}-preview">${itemsPreview}</div>
+                                            <span class="text-[9px] text-black ml-auto">${d.tanggal || ''} ${d.jam || ''}</span>
+                                        </div>
+                                    </div>
+                                    <i id="${uid}-chevron" class="fa-solid fa-chevron-down text-[10px] text-black flex-shrink-0 transition-transform cursor-pointer ml-2" onclick="toggleRiwayatCard('${uid}')"></i>
                                 </div>
-                                <div class="flex items-center gap-2 mt-0.5 flex-wrap">
-                                    <span class="text-[10px] brand-text font-black">${totalQty} pcs${totalNominal > 0 ? ' • Rp ' + totalNominal.toLocaleString('id-ID') : ''}</span>
-                                    <div class="flex gap-1 flex-wrap" id="${uid}-preview">${itemsPreview}</div>
-                                    <span class="text-[9px] text-black ml-auto">${d.tanggal} ${d.jam}</span>
+                                <div id="${uid}-body" class="hidden px-3 pb-2.5 border-t-2 border-borderDark">
+                                    <div class="flex flex-wrap gap-1 pt-2">${items.map((i, iIdx) => `<span class="text-[10px] bg-darkBg border-2 border-borderDark rounded px-2 py-0.5 text-black">${i.warna} / ${i.ukuran}: <span class="text-black font-bold">${i.qty}</span></span>`).join('')}</div>
+                                    <div class="flex gap-2 mt-2.5">
+                                        <button onclick="event.stopPropagation();bukaEditQtyTrx(${d.id})" class="${isLunas ? 'opacity-30 cursor-not-allowed' : 'hover:bg-blue-500/20 cursor-pointer'} flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border-2 border-blue-500/40 bg-blue-500/10 text-blue-400 text-[10px] font-bold transition-colors" ${isLunas ? 'disabled' : ''}><i class="fa-solid fa-pen-to-square text-[9px]"></i> EDIT QTY</button>
+                                        <button onclick="event.stopPropagation();hapusTrxRiwayat(${d.id})" class="${isLunas ? 'opacity-30 cursor-not-allowed' : 'hover:bg-red-500/20 cursor-pointer'} flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border-2 border-red-500/40 bg-red-500/10 text-red-400 text-[10px] font-bold transition-colors" ${isLunas ? 'disabled' : ''}><i class="fa-regular fa-trash-can text-[9px]"></i> HAPUS</button>
+                                    </div>
+                                    ${isLunas ? '<p class="text-[9px] text-black text-center mt-1"><i class="fa-solid fa-lock text-[8px] mr-1"></i>Transaksi LUNAS tidak dapat diedit atau dihapus.</p>' : ''}
                                 </div>
-                            </div>
-                            <i id="${uid}-chevron" class="fa-solid fa-chevron-down text-[10px] text-black flex-shrink-0 transition-transform cursor-pointer ml-2" onclick="toggleRiwayatCard('${uid}')"></i>
-                        </div>
-                        <div id="${uid}-body" class="hidden px-3 pb-2.5 border-t-2 border-borderDark">
-                            <div class="flex flex-wrap gap-1 pt-2">${d.items.map((i, iIdx) => `<span class="text-[10px] bg-darkBg border-2 border-borderDark rounded px-2 py-0.5 text-black">${i.warna} / ${i.ukuran}: <span class="text-black font-bold">${i.qty}</span></span>`).join('')}</div>
-                            <div class="flex gap-2 mt-2.5">
-                                <button onclick="event.stopPropagation();bukaEditQtyTrx(${d.id})" class="${isLunas ? 'opacity-30 cursor-not-allowed' : 'hover:bg-blue-500/20 cursor-pointer'} flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border-2 border-blue-500/40 bg-blue-500/10 text-blue-400 text-[10px] font-bold transition-colors" ${isLunas ? 'disabled' : ''}><i class="fa-solid fa-pen-to-square text-[9px]"></i> EDIT QTY</button>
-                                <button onclick="event.stopPropagation();hapusTrxRiwayat(${d.id})" class="${isLunas ? 'opacity-30 cursor-not-allowed' : 'hover:bg-red-500/20 cursor-pointer'} flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border-2 border-red-500/40 bg-red-500/10 text-red-400 text-[10px] font-bold transition-colors" ${isLunas ? 'disabled' : ''}><i class="fa-regular fa-trash-can text-[9px]"></i> HAPUS</button>
-                            </div>
-                            ${isLunas ? '<p class="text-[9px] text-black text-center mt-1"><i class="fa-solid fa-lock text-[8px] mr-1"></i>Transaksi LUNAS tidak dapat diedit atau dihapus.</p>' : ''}
-                        </div>
-                    </div>`;
-                }).join('');
-                bodyEl.innerHTML = cards || '<div class="text-center text-black text-xs py-4">Tidak ada transaksi untuk vendor ini.</div>';
+                            </div>`;
+                        } catch (cardErr) {
+                            console.warn('Lewati 1 transaksi rusak (vendor: ' + vendor + ', id: ' + (d && d.id) + '):', cardErr.message);
+                            return '';
+                        }
+                    }).join('');
+                    bodyEl.innerHTML = cards || '<div class="text-center text-black text-xs py-4">Tidak ada transaksi untuk vendor ini.</div>';
+                }
+            } catch (vendorErr) {
+                console.warn('Gagal render vendor "' + vendor + '":', vendorErr.message);
+                if (bodyEl) bodyEl.innerHTML = '<div class="text-center text-red-400 text-xs py-4">Gagal memuat sebagian data. Coba refresh.</div>';
             }
             vendorIndex++;
             _renderTrxVendorTimeout = setTimeout(() => requestAnimationFrame(renderNextVendor), 16);
