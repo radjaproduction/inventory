@@ -1006,6 +1006,10 @@
                 </div>
                 <div class="input-sheet-body p-4 flex flex-col gap-3">
                     <div class="w-12 h-1 rounded-full bg-gray-700 mx-auto -mt-1 mb-1"></div>
+                    <div id="input-sheet-added-wrap" class="hidden rounded-xl border-2 border-borderDark bg-[#fdf6ec] p-2.5">
+                        <div class="text-[9px] font-black text-black/60 tracking-wider mb-1.5"><i class="fa-solid fa-list-check text-[9px] mr-1"></i>SUDAH DITAMBAHKAN (<span id="input-sheet-added-count">0</span>)</div>
+                        <div id="input-sheet-added-list" class="flex flex-col gap-1.5 max-h-[110px] overflow-y-auto pr-1"></div>
+                    </div>
                     <div class="input-sheet-section">
                         <div class="flex items-center justify-between mb-2">
                             <div class="text-[10px] font-black text-black tracking-wider">WARNA</div>
@@ -1066,6 +1070,10 @@
                 </div>
                 <div class="input-sheet-body p-4 flex flex-col gap-3">
                     <div class="w-12 h-1 rounded-full bg-gray-700 mx-auto -mt-1 mb-1"></div>
+                    <div id="trx-sheet-added-wrap" class="hidden rounded-xl border-2 border-borderDark bg-[#fdf6ec] p-2.5">
+                        <div class="text-[9px] font-black text-black/60 tracking-wider mb-1.5"><i class="fa-solid fa-list-check text-[9px] mr-1"></i>SUDAH DITAMBAHKAN (<span id="trx-sheet-added-count">0</span>)</div>
+                        <div id="trx-sheet-added-list" class="flex flex-col gap-1.5 max-h-[110px] overflow-y-auto pr-1"></div>
+                    </div>
                     <div class="input-sheet-section">
                         <div class="flex items-center justify-between mb-2">
                             <div class="text-[10px] font-black text-black tracking-wider">WARNA</div>
@@ -5160,10 +5168,41 @@ function updateSSK(tab, rowId) {
 	        if (qtySheet) qtySheet.value = inputSheetDraft.qty || 0;
 	        renderInputSheetOptions(rowId);
 	        refreshInputSheetSSK(rowId);
+        renderInputSheetAddedList(rowId);
         if (sheet) sheet.classList.add('active');
         document.body.classList.add('sheet-open-lock');
         if (qtySheet) qtySheet.focus();
     }
+
+    function renderInputSheetAddedList(excludeId) {
+        const wrap = document.getElementById('input-sheet-added-wrap');
+        const listEl = document.getElementById('input-sheet-added-list');
+        const countEl = document.getElementById('input-sheet-added-count');
+        if (!wrap || !listEl) return;
+        const list = document.getElementById('input-variasi-list');
+        const rows = list ? Array.from(list.children) : [];
+        const items = rows
+            .map(row => row.id.replace('input-row-', ''))
+            .filter(id => id !== String(excludeId) && !_isInputRowPristine(id))
+            .map(id => ({ id, ...getInputRowData(id) }));
+        if (items.length === 0) {
+            wrap.classList.add('hidden');
+            listEl.innerHTML = '';
+            if (countEl) countEl.textContent = '0';
+            return;
+        }
+        wrap.classList.remove('hidden');
+        if (countEl) countEl.textContent = items.length;
+        listEl.innerHTML = items.map(it => `
+            <button type="button" onclick="openInputVariasiSheet(${it.id})" class="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-white border-2 border-borderDark text-left hover:border-[#FFB144] transition-colors">
+                <div class="w-5 h-5 rounded-md flex-shrink-0 border border-black/10" style="background:${it.kode || '#888'}"></div>
+                <div class="min-w-0 flex-1 flex items-center gap-1 text-[10px] font-bold text-black truncate">
+                    <span class="truncate">${it.warna}</span><span class="text-black/40">/</span><span class="truncate">${it.ukuran}</span>
+                </div>
+                <span class="text-[9px] font-black brand-text flex-shrink-0">${it.qty} pcs</span>
+            </button>`).join('');
+    }
+
 
 	    function closeInputVariasiSheet() {
 	        const closingRowId = activeInputSheetRowId;
@@ -5621,9 +5660,39 @@ function updateSSK(tab, rowId) {
 	        if (qtySheet) qtySheet.value = trxSheetDraft.qty || 0;
 	        renderTrxSheetOptions(rowId);
 	        refreshTrxSheetSSK(rowId);
+	        renderTrxSheetAddedList(rowId);
 	        if (sheet) sheet.classList.add('active');
 	        document.body.classList.add('sheet-open-lock');
 	        if (qtySheet) qtySheet.focus();
+	    }
+
+	    function renderTrxSheetAddedList(excludeId) {
+	        const wrap = document.getElementById('trx-sheet-added-wrap');
+	        const listEl = document.getElementById('trx-sheet-added-list');
+	        const countEl = document.getElementById('trx-sheet-added-count');
+	        if (!wrap || !listEl) return;
+	        const list = document.getElementById('trx-variasi-list');
+	        const rows = list ? Array.from(list.children) : [];
+	        const items = rows
+	            .map(row => row.id.replace('trx-row-', ''))
+	            .filter(id => id !== String(excludeId) && !_isTrxRowPristine(id))
+	            .map(id => ({ id, ...getTrxRowData(id) }));
+	        if (items.length === 0) {
+	            wrap.classList.add('hidden');
+	            listEl.innerHTML = '';
+	            if (countEl) countEl.textContent = '0';
+	            return;
+	        }
+	        wrap.classList.remove('hidden');
+	        if (countEl) countEl.textContent = items.length;
+	        listEl.innerHTML = items.map(it => `
+	            <button type="button" onclick="openTrxVariasiSheet(${it.id})" class="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-white border-2 border-borderDark text-left hover:border-[#FFB144] transition-colors">
+	                <div class="w-5 h-5 rounded-md flex-shrink-0 border border-black/10" style="background:${it.kode || '#888'}"></div>
+	                <div class="min-w-0 flex-1 flex items-center gap-1 text-[10px] font-bold text-black truncate">
+	                    <span class="truncate">${it.warna}</span><span class="text-black/40">/</span><span class="truncate">${it.ukuran}</span>
+	                </div>
+	                <span class="text-[9px] font-black brand-text flex-shrink-0">${it.qty} pcs</span>
+	            </button>`).join('');
 	    }
 
 	    function closeTrxVariasiSheet() {
@@ -6093,6 +6162,11 @@ function updateSSK(tab, rowId) {
     function resetFilterTanggal() {
         document.getElementById('filter-dari-tanggal').value = '';
         document.getElementById('filter-sampai-tanggal').value = '';
+        applyFilterTanggal();
+        tutupPopupFilterTanggal();
+    }
+
+    function terapkanFilterTanggalDanTutup() {
         applyFilterTanggal();
         tutupPopupFilterTanggal();
     }
@@ -9257,6 +9331,9 @@ ${docStyles}
                         <i class="fa-solid fa-rotate-left text-[9px]"></i> SEMUA
                     </button>
                 </div>
+                <button onclick="terapkanFilterTanggalDanTutup()" class="w-full py-3 text-[11px] font-black rounded-lg text-white transition-colors flex items-center justify-center gap-1.5" style="background:linear-gradient(90deg,#16a34a,#22c55e);">
+                    <i class="fa-solid fa-check"></i> OK
+                </button>
             </div>
         </div>
     </div>
