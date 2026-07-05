@@ -1153,7 +1153,7 @@
                     <div class="text-[13px] font-black leading-none">VARIASI ITEM</div>
                     <div class="text-[9px] font-bold opacity-65 mt-1">Tap item untuk isi warna, ukuran, dan qty</div>
                 </div>
-                <div id="trx-variasi-list" class="flex flex-col variasi-list-grow"></div>
+                <div id="trx-variasi-list" class="flex flex-col gap-2 p-3 variasi-list-grow"></div>
                 <div class="p-3 flex-shrink-0"><button id="btn-tambah-variasi-trx" onclick="tambahVariasiTrx()" class="w-full py-4 rounded-lg dashed-border-brand brand-text font-medium text-sm flex items-center justify-center gap-2 hover:bg-[#fdf6ec] opacity-40 cursor-not-allowed pointer-events-none" disabled><i class="fa-solid fa-plus"></i> Tambah Item</button></div>
             </div>
         <div class="tab-bottom-spacer" style="height:90px;flex-shrink:0;"></div>
@@ -5570,8 +5570,8 @@ function updateSSK(tab, rowId) {
 	    }
 
 	    function renderTrxSheetOptions(rowId) {
-	        const warnaWrap = document.getElementById('trx-sheet-warna-list');
-	        const ukuranWrap = document.getElementById('trx-sheet-ukuran-list');
+	        const warnaWrap = document.getElementById('sheet-warna-list');
+	        const ukuranWrap = document.getElementById('sheet-ukuran-list');
 	        const warnaAktif = trxSheetDraft?.warna || '';
 	        const ukuranAktif = trxSheetDraft?.ukuran || '';
 	        const warnaActiveLabel = document.getElementById('sheet-warna-active');
@@ -5655,7 +5655,7 @@ function updateSSK(tab, rowId) {
 	        const qtySheet = document.getElementById('sheet-qty');
 	        const subtitle = document.getElementById('sheet-subtitle');
 	        if (subtitle) subtitle.textContent = trxState.modelNama || 'Pilih data item';
-	        const brandLabel = document.getElementById('trx-sheet-brand');
+	        const brandLabel = document.getElementById('sheet-brand');
 	        if (brandLabel) brandLabel.textContent = trxState.brandNama || 'BRAND';
 	        if (qtySheet) qtySheet.value = trxSheetDraft.qty || 0;
 	        renderTrxSheetOptions(rowId);
