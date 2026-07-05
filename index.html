@@ -1700,11 +1700,25 @@
     // Sembunyikan loading overlay setelah memberi waktu Tailwind CDN
     // memproses class warna pada elemen yang baru dirender (mencegah flash putih)
     function hideLoadingOverlay() {
+        // Guard: jangan pasang lebih dari satu jadwal hide sekaligus
+        if (window._hideOverlayScheduled) return;
+        window._hideOverlayScheduled = true;
+
+        const doHide = function () {
+            window._hideOverlayScheduled = false;
+            const ov = document.getElementById('loading-overlay');
+            if (ov) ov.style.display = 'none';
+        };
+
+        // Fallback WAJIB: kalau rAF di-throttle browser (tab/webview tidak aktif,
+        // layar terkunci, dsb), overlay tetap dijamin hilang maks. 400ms.
+        const fallbackTimer = setTimeout(doHide, 400);
+
         requestAnimationFrame(function () {
             requestAnimationFrame(function () {
                 requestAnimationFrame(function () {
-                    const ov = document.getElementById('loading-overlay');
-                    if (ov) ov.style.display = 'none';
+                    clearTimeout(fallbackTimer);
+                    doHide();
                 });
             });
         });
@@ -7582,13 +7596,16 @@ function updateSSK(tab, rowId) {
                     ${cards}</div>
             </div>`;
         }).join('');
+
+        // Action bar untuk pelunasan terpilih (dibuat sekali saja, hindari duplikat tiap render)
+        if (!document.getElementById('pelunasan-action-bar')) {
+            list.insertAdjacentHTML('afterend', `
+                <div id="pelunasan-action-bar" class="hidden fixed bottom-[84px] left-0 right-0 w-full bg-[#F6DBB6]/95 backdrop-blur-md border-t-4 border-[#16a34a] px-3 pb-3 pt-3 z-40">
+                    <div id="pelunasan-action-bar-inner" class="w-full max-w-lg mx-auto flex gap-2"></div>
+                </div>
+            `);
+        }
     }
-    // Action bar untuk pelunasan terpilih
-    list.insertAdjacentHTML('afterend', `
-        <div id="pelunasan-action-bar" class="hidden fixed bottom-[84px] left-0 right-0 w-full bg-[#F6DBB6]/95 backdrop-blur-md border-t-4 border-[#16a34a] px-3 pb-3 pt-3 z-40">
-            <div id="pelunasan-action-bar-inner" class="w-full max-w-lg mx-auto flex gap-2"></div>
-        </div>
-    `);
 
 
     function togglePelunasanVendorGroup(vendorKey, vendor) {
@@ -9029,6 +9046,29 @@ ${docStyles}
             }
         }, 8000);
         window._loadingHintTimer = _loadingHintTimer;
+
+        // Safety net: jika karena sebab apapun overlay masih nyangkut di depan
+        // setelah 25 detik (init gagal total / error tak tertangkap), paksa hilang
+        // agar app tidak terkunci selamanya di layar loading.
+        setTimeout(function() {
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay && overlay.style.display !== 'none') {
+                console.warn('Loading overlay dipaksa hilang (safety net timeout).');
+                overlay.style.display = 'none';
+                const configScreen = document.getElementById('config-screen');
+                const pinLogin = document.getElementById('pin-login-screen');
+                const pinSetup = document.getElementById('pin-setup-screen');
+                const mainApp = document.getElementById('main-app');
+                const anyOtherVisible = (configScreen && configScreen.style.display === 'flex') ||
+                    (pinLogin && pinLogin.style.display === 'flex') ||
+                    (pinSetup && pinSetup.style.display === 'flex') ||
+                    (mainApp && mainApp.style.display === 'block');
+                if (!anyOtherVisible && configScreen) {
+                    configScreen.style.display = 'flex';
+                    showToast('⚠️ Gagal memuat otomatis. Cek koneksi/konfigurasi.');
+                }
+            }
+        }, 25000);
 
         initApp();
         initPinTouchButtons();
