@@ -3555,6 +3555,9 @@ function updateSSK(tab, rowId) {
         const listPelunasan = document.getElementById('riwayat-pelunasan-list');
         const listBayarSebagian = document.getElementById('riwayat-bayar-sebagian-list');
         const totalBar = document.getElementById('sticky-total-bar');
+        const pelunasanBar = document.getElementById('pelunasan-action-bar');
+        if (pelunasanBar) pelunasanBar.classList.add('hidden');
+
         const inactiveClass = "flex-1 py-4 rounded-xl text-[11px] font-black tracking-wide flex items-center justify-center gap-2 transition-all text-black/45";
         const activeClass = "flex-1 py-4 rounded-xl text-[11px] font-black tracking-wide flex items-center justify-center gap-2 transition-all brand-gradient-bg text-black shadow-[0_3px_10px_rgba(255,140,0,0.35)]";
 
@@ -3608,6 +3611,7 @@ function updateSSK(tab, rowId) {
                 else renderRiwayatTransaksi();
             } else if (subTab === 'pelunasan') {
                 if (listPelunasan) { listPelunasan.classList.remove('hidden'); listPelunasan.classList.add('flex'); }
+                if (pelunasanBar) pelunasanBar.classList.remove('hidden');
                 renderPelunasanView();
             } else if (subTab === 'bayar-sebagian') {
                 if (listBayarSebagian) { listBayarSebagian.classList.remove('hidden'); listBayarSebagian.classList.add('flex'); }
@@ -7359,6 +7363,7 @@ function updateSSK(tab, rowId) {
     }
 
     function renderPelunasanView() {
+        selectedPelunasan.clear(); updatePelunasanActionBar();
         const list = document.getElementById('riwayat-pelunasan-list');
         if (!list) return;
         // PERBAIKAN: Ambil rentang tanggal dari filter
@@ -7419,7 +7424,7 @@ function updateSSK(tab, rowId) {
                 const sisaHutang = Math.max(0, totalNominal - sudahBayar);
                 const persen = totalNominal > 0 ? Math.min(100, Math.round(sudahBayar / totalNominal * 100)) : 0;
                 const isLunas = t.status === 'lunas';
-                const uid = 'pel-' + t.id;
+                const uid = 'pel-' + t.id; // Unique ID untuk elemen DOM
 
                 const adaTersembunyi = riwayatBayar.length > riwayatBayarTampil.length;
                 const riwayatBayarHtml = (riwayatBayarTampil.length > 0
@@ -7453,8 +7458,14 @@ function updateSSK(tab, rowId) {
                     </div>`;
                 }
 
-                return `<div id="card-${uid}" class="bg-cardBg rounded-xl border-2 ${isLunas ? 'border-green-500/30' : 'border-borderDark'} overflow-hidden">
-                    <div class="flex items-center gap-2 px-3 py-2.5 cursor-pointer select-none" onclick="toggleRiwayatCard('${uid}')">
+                // FITUR BARU: Tambahkan checkbox untuk pelunasan parsial
+                return `<div id="card-${uid}" class="bg-cardBg rounded-xl border-2 ${isLunas ? 'border-green-500/30' : 'border-borderDark'} overflow-hidden transition-all">
+                    <div class="flex items-center gap-2 px-3 py-2.5 select-none">
+                        <div onclick="event.stopPropagation();togglePilihPelunasan(${t.id}, ${sisaHutang}, '${t.vendor}', '${uid}')"
+                             id="chk-${uid}"
+                             class="w-5 h-5 rounded border-4 border-gray-600 flex items-center justify-center flex-shrink-0 cursor-pointer transition-all">
+                        </div>
+                        <div class="flex-1 min-w-0 cursor-pointer" onclick="toggleRiwayatCard('${uid}')">
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-1.5 mb-0.5">
                                 <span class="text-[10px] font-black text-black truncate">${t.brand} / ${t.model}</span>
@@ -7539,6 +7550,11 @@ function updateSSK(tab, rowId) {
                 <div id="pvg-body-${vendorKey}" class="hidden flex-col gap-2 mt-2">
                     ${riwayatBayarSebagianVendor.length > 0 ? `
                     <div class="bg-cardBg rounded-xl border-2 border-borderDark overflow-hidden mb-1">
+                        <div class="p-2 bg-yellow-500/10 border-b-2 border-borderDark text-center text-[9px] text-black font-bold">
+                            <i class="fa-solid fa-lock text-[8px] mr-1"></i>
+                            Vendor ini memiliki riwayat "Bayar Sebagian". Pelunasan individual dinonaktifkan.
+                            Gunakan tombol "LUNAS SEMUA" untuk melunasi sisa tagihan.
+                        </div>
                         <div class="px-3 py-2.5 border-b-2 border-borderDark flex items-center gap-2">
                             <i class="fa-solid fa-hand-holding-dollar text-[10px] brand-text"></i>
                             <div class="text-[9px] font-black text-black tracking-wider">RIWAYAT BAYAR SEBAGIAN</div>
@@ -7572,6 +7588,13 @@ function updateSSK(tab, rowId) {
             </div>`;
         }).join('');
     }
+    // Action bar untuk pelunasan terpilih
+    list.insertAdjacentHTML('afterend', `
+        <div id="pelunasan-action-bar" class="hidden fixed bottom-[84px] left-0 right-0 w-full bg-[#F6DBB6]/95 backdrop-blur-md border-t-4 border-[#16a34a] px-3 pb-3 pt-3 z-40">
+            <div id="pelunasan-action-bar-inner" class="w-full max-w-lg mx-auto flex gap-2"></div>
+        </div>
+    `);
+
 
     function togglePelunasanVendorGroup(vendorKey, vendor) {
         const body = document.getElementById('pvg-body-' + vendorKey);
@@ -7999,6 +8022,101 @@ function updateSSK(tab, rowId) {
             renderRiwayatTransaksi();
             showToast('🗑️ Catatan dihapus.');
         }, {title:'HAPUS CATATAN', type:'danger', icon:'🗑️', ok:'YA, HAPUS'});
+    }
+
+    // ==================== PELUNASAN TERPILIH (CEKLIS) ====================
+    const selectedPelunasan = new Map(); // { trxId => sisaHutang }
+
+    function togglePilihPelunasan(trxId, sisaHutang, vendor, uid) {
+        // Cek apakah sudah ada vendor lain yang dipilih
+        if (selectedPelunasan.size > 0) {
+            const firstSelectedId = selectedPelunasan.keys().next().value;
+            const trxPertama = appData.riwayatTransaksi.find(t => t.id === firstSelectedId);
+            if (trxPertama && trxPertama.vendor !== vendor) {
+                showToast(`⚠️ Hanya bisa melunasi transaksi dari vendor ${trxPertama.vendor} sekaligus.`);
+                return;
+            }
+        }
+
+        const chk = document.getElementById('chk-' + uid);
+        const card = document.getElementById('card-' + uid);
+        if (selectedPelunasan.has(trxId)) {
+            selectedPelunasan.delete(trxId);
+            if (chk) { chk.classList.remove('bg-green-500','border-green-600'); chk.innerHTML = ''; }
+            if (card) { card.classList.remove('border-green-500/50'); card.classList.add('border-borderDark'); }
+        } else {
+            selectedPelunasan.set(trxId, sisaHutang);
+            if (chk) { chk.classList.add('bg-green-500','border-green-600'); chk.innerHTML = '<i class="fa-solid fa-check text-white text-[9px]"></i>'; }
+            if (card) { card.classList.add('border-green-500/50'); card.classList.remove('border-borderDark'); }
+        }
+        updatePelunasanActionBar();
+    }
+
+    function updatePelunasanActionBar() {
+        const bar = document.getElementById('pelunasan-action-bar-inner');
+        if (!bar) return;
+
+        if (selectedPelunasan.size === 0) {
+            bar.parentElement.classList.add('hidden');
+            return;
+        }
+
+        let total = 0;
+        selectedPelunasan.forEach(sisa => total += sisa);
+
+        bar.parentElement.classList.remove('hidden');
+        bar.innerHTML = `
+            <button onclick="batalPilihPelunasan()" class="flex-1 justify-center text-black font-black text-[13px] py-3.5 rounded-xl flex items-center gap-2 active:scale-95 transition-transform" style="background:#fdf6ec; border:2px solid #FFB144;">
+                BATAL
+            </button>
+            <button onclick="lunasTerpilih()" class="flex-[2] justify-center text-white font-black text-[13px] py-3.5 rounded-xl flex items-center gap-2 active:scale-95 transition-transform" style="background:linear-gradient(90deg,#16a34a,#22c55e);box-shadow:0 4px 15px rgba(22,163,74,0.35)">
+                <i class="fa-solid fa-check-double"></i> LUNASI ${selectedPelunasan.size} ITEM (Rp ${total.toLocaleString('id-ID')})
+            </button>
+        `;
+    }
+
+    function batalPilihPelunasan() {
+        selectedPelunasan.forEach((sisa, trxId) => {
+            const uid = 'pel-' + trxId;
+            const chk = document.getElementById('chk-' + uid);
+            const card = document.getElementById('card-' + uid);
+            if (chk) { chk.classList.remove('bg-green-500','border-green-600'); chk.innerHTML = ''; }
+            if (card) { card.classList.remove('border-green-500/50'); card.classList.add('border-borderDark'); }
+        });
+        selectedPelunasan.clear();
+        updatePelunasanActionBar();
+    }
+
+    async function lunasTerpilih() {
+        if (selectedPelunasan.size === 0) return;
+
+        let total = 0;
+        selectedPelunasan.forEach(sisa => total += sisa);
+
+        showConfirm(`Lunasi ${selectedPelunasan.size} transaksi terpilih?\nTotal: Rp ${total.toLocaleString('id-ID')}`, async function() {
+            const now = new Date();
+            const tanggal = now.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' });
+            const jam = now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
+            const keterangan = 'LUNAS TERPILIH';
+
+            for (const [trxId, sisaHutang] of selectedPelunasan.entries()) {
+                const trx = appData.riwayatTransaksi.find(t => t.id === trxId);
+                if (!trx || sisaHutang <= 0) continue;
+
+                const { data, error } = await sbClient.from('pelunasan').insert({
+                    transaksi_id: trxId, vendor: trx.vendor, jumlah: sisaHutang, keterangan, tanggal, jam
+                }).select().single();
+                if (error) continue;
+
+                appData.pelunasan.unshift({ id: data.id, transaksi_id: trxId, vendor: trx.vendor, jumlah: sisaHutang, keterangan, tanggal, jam });
+                await sbClient.from('transaksi').update({ status: 'lunas' }).eq('id', trxId);
+                trx.status = 'lunas';
+            }
+
+            renderPelunasanView();
+            renderRiwayatTransaksi();
+            showToast(`🎉 ${selectedPelunasan.size} transaksi berhasil dilunasi!`);
+        }, {title:'LUNASI TERPILIH', type:'success', icon:'💰', ok:'YA, LUNASI'});
     }
 
     let _pelIsSaving = false; 
