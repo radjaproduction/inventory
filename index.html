@@ -6965,14 +6965,9 @@ function updateSSK(tab, rowId) {
             }
         }
     
-        const { dari, sampai } = getFilterRange();
-        const trxVendor = appData.riwayatTransaksi.filter(d => {
-            if (d.vendor !== vendor) return false;
-            if (_filterTrxStatus === 'kredit') return d.status !== 'lunas';
-            if (!tanggalDalamRange(d.tanggal, dari, sampai)) return false;
-            if (_filterTrxStatus === 'lunas') return d.status === 'lunas';
-            return true;
-        });
+        // PERBAIKAN: pakai daftar transaksi yang SAMA PERSIS dengan yang sedang tampil di layar
+        // (hasil filter tanggal + status dari renderRiwayatTransaksi), bukan filter ulang yang bisa out-of-sync.
+        const trxVendor = _vendorGroupCache[vendor] || [];
         const allSelected = trxVendor.every(d => selectedTrxIds.has(d.id));
         trxVendor.forEach(d => {
             const uid = 'rt-' + d.id;
