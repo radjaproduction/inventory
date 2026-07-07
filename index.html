@@ -815,7 +815,7 @@
                     <div class="h-[64px] flex flex-col justify-center px-4 flex-grow z-10 relative">
                         <h1 class="text-xl font-black text-[#000000] leading-none tracking-wide mb-1">DASHBOARD <span class="text-black">STOK</span></h1>
                         <h2 class="display-brand-name text-[9px] font-bold text-[#000000] tracking-[0.15em] leading-none uppercase">RADJA PRODUCTION</h2>
-                        <span id="app-version-badge" class="absolute inset-y-0 right-2 text-[#000000] select-none flex flex-col items-end justify-center leading-none gap-0.5" style="font-family:'Poppins',sans-serif;" title="Versi Aplikasi"><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">v3.0.1</span><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">RADJA PRODUCTION</span><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">@2026</span></span>
+                        <span id="app-version-badge" class="absolute inset-y-0 right-2 text-[#000000] select-none flex flex-col items-end justify-center leading-none gap-0.5" style="font-family:'Poppins',sans-serif;" title="Versi Aplikasi"><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">v3.0.2</span><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">RADJA PRODUCTION</span><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">@2026</span></span>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
@@ -8554,6 +8554,7 @@ function updateSSK(tab, rowId) {
     });
 
     let _printFilename = 'tagihan.jpg';
+    let _printBgRestore = null; // menyimpan fungsi restore warna bg, dipanggil saat overlay ditutup
 
     function showPrintOverlay(innerHtml, title, sub, filename) {
         _printFilename = filename || 'dokumen.jpg';
@@ -8566,6 +8567,11 @@ function updateSSK(tab, rowId) {
     }
 
     function closePrintOverlay() {
+        // Kembalikan warna bg yang sempat dipaksa putih untuk cetak (lihat forceWhiteBg
+        // di printOverlayCetak) — ditunda sampai overlay benar-benar ditutup user, karena
+        // di Android dialog print sistem butuh waktu lebih dari beberapa detik untuk selesai
+        // (pilih printer/salinan dsb), jadi tidak bisa dikembalikan otomatis lebih cepat.
+        if (_printBgRestore) { _printBgRestore(); _printBgRestore = null; }
         document.getElementById('print-overlay').style.display = 'none';
         document.getElementById('print-doc-inner').innerHTML = '';
     }
@@ -8778,7 +8784,11 @@ function updateSSK(tab, rowId) {
                     function doPrintNow() {
                         if (_printed) return;
                         _printed = true;
-                        const restoreBg = forceWhiteBg();
+                        // Simpan fungsi restore-nya di variabel global (bukan setTimeout pendek),
+                        // supaya bg tetap putih selama user masih berinteraksi dengan dialog print
+                        // sistem Android (yang bisa makan waktu lebih dari beberapa detik).
+                        // Baru dikembalikan saat closePrintOverlay() dipanggil.
+                        _printBgRestore = forceWhiteBg();
                         try {
                             iframe.contentWindow.focus();
                             iframe.contentWindow.print();
@@ -8788,7 +8798,6 @@ function updateSSK(tab, rowId) {
                         }
                         restoreUI();
                         setTimeout(function() {
-                            restoreBg();
                             if (iframe.parentNode) document.body.removeChild(iframe);
                         }, 3000);
                     }
