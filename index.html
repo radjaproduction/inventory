@@ -3,23 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <style>
-        html,body{background-color:#F6DBB6 !important;}
-        .bg-darkBg{background-color:#F6DBB6 !important;}
-        .bg-cardBg{background-color:#FFEFDB !important;}
-        .bg-headerBox{background-color:#FFEFDB !important;}
-        .border-borderDark{border-color:#FFB144 !important;}
-        .bg-\[\#F6DBB6\]{background-color:#F6DBB6 !important;}
-        .bg-\[\#fdf6ec\]{background-color:#fdf6ec !important;}
-        .bg-\[\#ffffff\],.bg-white{background-color:#ffffff !important;}
-        .bg-\[\#f8f8fa\]{background-color:#f8f8fa !important;}
-        .bg-\[\#f0faf2\]{background-color:#f0faf2 !important;}
-        .bg-\[\#ff8c00\]{background-color:#ff8c00 !important;}
-        .bg-\[\#2563eb\]{background-color:#2563eb !important;}
-        .bg-\[\#10b981\]{background-color:#10b981 !important;}
-        .bg-\[\#ef4444\]{background-color:#ef4444 !important;}
-        .bg-\[\#d946ef\]{background-color:#d946ef !important;}
-        .bg-\[\#3a1c1c\]{background-color:#3a1c1c !important;}
-        .bg-\[\#4a2020\]{background-color:#4a2020 !important;}
+        /* Dibatasi ke @media screen supaya warna tema krem/gelap ini TIDAK PERNAH ikut
+           kebawa ke hasil print/PDF, apapun cara pencetakannya (native print, screenshot,
+           atau print-service Android yang kadang tidak konsisten menerapkan @media print). */
+        @media screen {
+            html,body{background-color:#F6DBB6 !important;}
+            .bg-darkBg{background-color:#F6DBB6 !important;}
+            .bg-cardBg{background-color:#FFEFDB !important;}
+            .bg-headerBox{background-color:#FFEFDB !important;}
+            .border-borderDark{border-color:#FFB144 !important;}
+            .bg-\[\#F6DBB6\]{background-color:#F6DBB6 !important;}
+            .bg-\[\#fdf6ec\]{background-color:#fdf6ec !important;}
+            .bg-\[\#ffffff\],.bg-white{background-color:#ffffff !important;}
+            .bg-\[\#f8f8fa\]{background-color:#f8f8fa !important;}
+            .bg-\[\#f0faf2\]{background-color:#f0faf2 !important;}
+            .bg-\[\#ff8c00\]{background-color:#ff8c00 !important;}
+            .bg-\[\#2563eb\]{background-color:#2563eb !important;}
+            .bg-\[\#10b981\]{background-color:#10b981 !important;}
+            .bg-\[\#ef4444\]{background-color:#ef4444 !important;}
+            .bg-\[\#d946ef\]{background-color:#d946ef !important;}
+            .bg-\[\#3a1c1c\]{background-color:#3a1c1c !important;}
+            .bg-\[\#4a2020\]{background-color:#4a2020 !important;}
+        }
+        @media print {
+            html, body { background: #ffffff !important; }
+        }
     </style>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
     <title>Radja Production - App</title>
@@ -8663,58 +8671,131 @@ function updateSSK(tab, rowId) {
     }
 
     function printOverlayCetak() {
+        // CATATAN PENTING (fix bug "terpotong saat cetak"):
+        // Pendekatan lama pakai iframe + CSS @page{size:A5} lalu window.print().
+        // Masalahnya: banyak printer/print-service Android (driver bawaan HP/Epson/Canon,
+        // atau app share-to-print) TIDAK menghormati ukuran @page dari HTML — mereka pakai
+        // ukuran kertas default sistem (A4/F4/Letter), sehingga layout yang dibuat untuk
+        // lebar 148mm jadi kepotong di sisi kanan / menyisakan banyak ruang kosong di bawah.
+        // Solusinya: generate PDF asli berukuran A5 (ukuran ter-"bake" di dalam file PDF-nya
+        // sendiri), lalu buka dengan autoPrint(). Cara ini konsisten di printer apa pun karena
+        // tidak bergantung pada printer/print-service menghormati CSS.
+        const btn = document.getElementById('print-btn-cetak');
+        const toolbar = document.getElementById('print-toolbar');
         const inner = document.getElementById('print-doc-inner');
+        const scrollContainer = document.getElementById('print-content-scroll');
         if (!inner || !inner.innerHTML.trim()) { window.print(); return; }
 
-        let docStyles = '';
-        inner.querySelectorAll('style').forEach(s => { docStyles += s.outerHTML; });
+        const originalBtnHtml = btn ? btn.innerHTML : '';
+        if (btn) { btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyiapkan...'; btn.disabled = true; }
+        if (toolbar) toolbar.style.display = 'none';
+        if (scrollContainer) scrollContainer.scrollTop = 0;
 
-        const iframeDoc = `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; background: #fff; }
-  @page { size: A5 portrait; margin: 8mm 10mm 10mm 10mm; }
-</style>
-${docStyles}
-</head>
-<body>${inner.innerHTML}</body>
-</html>`;
-
-        const iframe = document.createElement('iframe');
-        iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:148mm;height:210mm;border:none;opacity:0;';
-
-        let _printed = false;
-        function doPrintNow() {
-            if (_printed) return;
-            _printed = true;
-            try {
-                iframe.contentWindow.focus();
-                iframe.contentWindow.print();
-            } catch(e) {
-                window.print(); // fallback
-            }
-            setTimeout(function() {
-                if (iframe.parentNode) document.body.removeChild(iframe);
-            }, 2000);
+        function restoreUI() {
+            if (toolbar) toolbar.style.display = 'flex';
+            if (btn) { btn.innerHTML = originalBtnHtml; btn.disabled = false; }
         }
 
-        // Pasang onload SEBELUM menulis konten, supaya tidak ada race condition
-        // (event load bisa sudah lewat sebelum handler terpasang jika dipasang setelah write()).
-        iframe.onload = function() {
-            setTimeout(doPrintNow, 300);
-        };
+        function doPrint() {
+            let docEl = null;
+            for (let i = 0; i < inner.children.length; i++) {
+                if (inner.children[i].tagName !== 'STYLE') { docEl = inner.children[i]; break; }
+            }
+            if (!docEl) docEl = inner;
 
-        document.body.appendChild(iframe);
-        iframe.contentDocument.open();
-        iframe.contentDocument.write(iframeDoc);
-        iframe.contentDocument.close();
+            const docWidth = docEl.scrollWidth || docEl.offsetWidth;
+            const offscreen = document.createElement('div');
+            offscreen.style.cssText = [
+                'position:fixed', 'top:0', 'left:0', 'width:' + docWidth + 'px',
+                'background:#ffffff', 'z-index:-9999', 'pointer-events:none', 'overflow:visible', 'opacity:0'
+            ].join(';');
+            const clone = docEl.cloneNode(true);
+            clone.style.cssText = (clone.getAttribute('style') || '') +
+                ';position:static!important;transform:none!important;margin:0!important;';
+            offscreen.appendChild(clone);
+            document.body.appendChild(offscreen);
 
-        // Fallback: jika event onload tidak pernah terpanggil (mis. dibuka dari file:// atau
-        // browser tertentu yang tidak refire 'load' setelah document.write), tetap cetak setelah delay.
-        setTimeout(doPrintNow, 600);
+            setTimeout(function() {
+                html2canvas(clone, {
+                    scale: 3,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    scrollX: 0,
+                    scrollY: 0,
+                    x: 0,
+                    y: 0,
+                    width: docWidth,
+                    height: clone.scrollHeight || docEl.scrollHeight,
+                    windowWidth: docWidth,
+                    windowHeight: clone.scrollHeight || docEl.scrollHeight
+                }).then(function(canvas) {
+                    document.body.removeChild(offscreen);
+                    restoreUI();
+                    try {
+                        const jsPDFCtor = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : window.jsPDF;
+                        const pageW = 148, pageH = 210; // A5 portrait, mm
+                        const marginMM = 6;
+                        const maxW = pageW - marginMM * 2;
+                        const maxH = pageH - marginMM * 2;
+                        const imgRatio = canvas.height / canvas.width;
+                        let renderW = maxW;
+                        let renderH = renderW * imgRatio;
+                        if (renderH > maxH) { renderH = maxH; renderW = renderH / imgRatio; }
+                        const offsetX = (pageW - renderW) / 2;
+                        const offsetY = marginMM;
+
+                        const pdf = new jsPDFCtor({ orientation: 'portrait', unit: 'mm', format: 'a5' });
+                        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                        pdf.addImage(imgData, 'JPEG', offsetX, offsetY, renderW, renderH);
+                        pdf.autoPrint();
+                        const blobUrl = pdf.output('bloburl');
+                        const printWin = window.open(blobUrl, '_blank');
+                        if (!printWin) {
+                            showToast('❌ Popup diblokir. Izinkan popup untuk mencetak.');
+                        }
+                    } catch (err) {
+                        console.error('PDF print error:', err);
+                        showToast('❌ Gagal menyiapkan PDF cetak: ' + err.message);
+                    }
+                }).catch(function(err) {
+                    if (offscreen.parentNode) document.body.removeChild(offscreen);
+                    restoreUI();
+                    console.error('html2canvas error:', err);
+                    showToast('❌ Gagal membuat pratinjau cetak: ' + err.message);
+                });
+            }, 100);
+        }
+
+        function ensureLibs(cb) {
+            let pending = 0;
+            let failed = false;
+            function done() { pending--; if (pending <= 0 && !failed) cb(); }
+            function fail() {
+                if (failed) return;
+                failed = true;
+                restoreUI();
+                showToast('❌ Gagal memuat komponen cetak. Cek koneksi internet.');
+            }
+            if (!window.html2canvas) {
+                pending++;
+                const s = document.createElement('script');
+                s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+                s.onload = done; s.onerror = fail;
+                document.head.appendChild(s);
+            }
+            if (!(window.jspdf && window.jspdf.jsPDF) && !window.jsPDF) {
+                pending++;
+                const s2 = document.createElement('script');
+                s2.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+                s2.onload = done; s2.onerror = fail;
+                document.head.appendChild(s2);
+            }
+            if (pending === 0) cb();
+        }
+
+        ensureLibs(function() { setTimeout(doPrint, 300); });
     }
 
     const _modal = {
