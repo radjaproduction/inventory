@@ -8752,10 +8752,33 @@ function updateSSK(tab, rowId) {
                     const iframe = document.createElement('iframe');
                     iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:148mm;height:210mm;border:none;opacity:0;';
 
+                    // Jaga-jaga: di sebagian browser/HP, iframe.contentWindow.print() ternyata
+                    // tidak mencetak isi iframe, tapi jatuh ke fallback mencetak halaman utama
+                    // (parent page) apa adanya di layar — yang masih krem/abu-abu. Supaya tetap
+                    // aman walau fallback itu terjadi, kita paksa background halaman utama jadi
+                    // putih lewat inline style (prioritas tertinggi, tidak tergantung @media
+                    // print) tepat sebelum print, lalu kembalikan lagi sesudahnya.
+                    function forceWhiteBg() {
+                        const targets = [
+                            document.documentElement,
+                            document.body,
+                            document.getElementById('print-overlay'),
+                            document.getElementById('print-content-scroll'),
+                            document.getElementById('print-doc-wrapper'),
+                            document.getElementById('print-doc-inner')
+                        ].filter(Boolean);
+                        const originals = targets.map(el => el.getAttribute('style') || '');
+                        targets.forEach(el => el.style.setProperty('background', '#ffffff', 'important'));
+                        return function restore() {
+                            targets.forEach((el, i) => { el.setAttribute('style', originals[i]); });
+                        };
+                    }
+
                     let _printed = false;
                     function doPrintNow() {
                         if (_printed) return;
                         _printed = true;
+                        const restoreBg = forceWhiteBg();
                         try {
                             iframe.contentWindow.focus();
                             iframe.contentWindow.print();
@@ -8765,6 +8788,7 @@ function updateSSK(tab, rowId) {
                         }
                         restoreUI();
                         setTimeout(function() {
+                            restoreBg();
                             if (iframe.parentNode) document.body.removeChild(iframe);
                         }, 3000);
                     }
