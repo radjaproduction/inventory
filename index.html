@@ -8671,15 +8671,16 @@ function updateSSK(tab, rowId) {
     }
 
     function printOverlayCetak() {
-        // CATATAN PENTING (fix bug "terpotong saat cetak"):
-        // Pendekatan lama pakai iframe + CSS @page{size:A5} lalu window.print().
-        // Masalahnya: banyak printer/print-service Android (driver bawaan HP/Epson/Canon,
-        // atau app share-to-print) TIDAK menghormati ukuran @page dari HTML — mereka pakai
-        // ukuran kertas default sistem (A4/F4/Letter), sehingga layout yang dibuat untuk
-        // lebar 148mm jadi kepotong di sisi kanan / menyisakan banyak ruang kosong di bawah.
-        // Solusinya: generate PDF asli berukuran A5 (ukuran ter-"bake" di dalam file PDF-nya
-        // sendiri), lalu buka dengan autoPrint(). Cara ini konsisten di printer apa pun karena
-        // tidak bergantung pada printer/print-service menghormati CSS.
+        // CATATAN PENTING (fix bug "terpotong saat cetak" & "malah mendownload"):
+        // v1 (iframe + CSS @page + window.print()) -> banyak printer/print-service Android
+        // tidak menghormati ukuran @page, jadi konten kepotong.
+        // v2 (generate PDF + autoPrint() + window.open(blobUrl)) -> di HP/Android biasanya
+        // TIDAK ADA PDF viewer inline, jadi blob PDF langsung didownload, bukan dibuka untuk
+        // dieksekusi perintah print-nya.
+        // v3 (sekarang): tetap screenshot via html2canvas (supaya layout presisi, bebas dari
+        // isu reflow tabel/flex), tapi hasilnya dipasang sebagai <img> di iframe tersembunyi
+        // lalu panggil iframe.contentWindow.print() langsung -> ini yang benar-benar memicu
+        // dialog print NATIVE di semua browser/HP, bukan file yang harus "dibuka" dulu.
         const btn = document.getElementById('print-btn-cetak');
         const toolbar = document.getElementById('print-toolbar');
         const inner = document.getElementById('print-doc-inner');
@@ -8732,33 +8733,53 @@ function updateSSK(tab, rowId) {
                     windowHeight: clone.scrollHeight || docEl.scrollHeight
                 }).then(function(canvas) {
                     document.body.removeChild(offscreen);
-                    restoreUI();
-                    try {
-                        const jsPDFCtor = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : window.jsPDF;
-                        const pageW = 148, pageH = 210; // A5 portrait, mm
-                        const marginMM = 6;
-                        const maxW = pageW - marginMM * 2;
-                        const maxH = pageH - marginMM * 2;
-                        const imgRatio = canvas.height / canvas.width;
-                        let renderW = maxW;
-                        let renderH = renderW * imgRatio;
-                        if (renderH > maxH) { renderH = maxH; renderW = renderH / imgRatio; }
-                        const offsetX = (pageW - renderW) / 2;
-                        const offsetY = marginMM;
 
-                        const pdf = new jsPDFCtor({ orientation: 'portrait', unit: 'mm', format: 'a5' });
-                        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-                        pdf.addImage(imgData, 'JPEG', offsetX, offsetY, renderW, renderH);
-                        pdf.autoPrint();
-                        const blobUrl = pdf.output('bloburl');
-                        const printWin = window.open(blobUrl, '_blank');
-                        if (!printWin) {
-                            showToast('❌ Popup diblokir. Izinkan popup untuk mencetak.');
+                    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                    const iframeDoc = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  html, body { background: #fff; width: 100%; height: 100%; }
+  @page { size: A5 portrait; margin: 6mm; }
+  img { display: block; width: 100%; height: auto; }
+</style>
+</head>
+<body><img src="${imgData}"></body>
+</html>`;
+
+                    const iframe = document.createElement('iframe');
+                    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:148mm;height:210mm;border:none;opacity:0;';
+
+                    let _printed = false;
+                    function doPrintNow() {
+                        if (_printed) return;
+                        _printed = true;
+                        try {
+                            iframe.contentWindow.focus();
+                            iframe.contentWindow.print();
+                        } catch (e) {
+                            console.error('print() error:', e);
+                            showToast('❌ Gagal membuka dialog cetak: ' + e.message);
                         }
-                    } catch (err) {
-                        console.error('PDF print error:', err);
-                        showToast('❌ Gagal menyiapkan PDF cetak: ' + err.message);
+                        restoreUI();
+                        setTimeout(function() {
+                            if (iframe.parentNode) document.body.removeChild(iframe);
+                        }, 3000);
                     }
+
+                    iframe.onload = function() {
+                        setTimeout(doPrintNow, 250);
+                    };
+
+                    document.body.appendChild(iframe);
+                    iframe.contentDocument.open();
+                    iframe.contentDocument.write(iframeDoc);
+                    iframe.contentDocument.close();
+
+                    // Fallback kalau event load tidak pernah terpanggil di browser tertentu.
+                    setTimeout(doPrintNow, 800);
                 }).catch(function(err) {
                     if (offscreen.parentNode) document.body.removeChild(offscreen);
                     restoreUI();
@@ -8768,34 +8789,15 @@ function updateSSK(tab, rowId) {
             }, 100);
         }
 
-        function ensureLibs(cb) {
-            let pending = 0;
-            let failed = false;
-            function done() { pending--; if (pending <= 0 && !failed) cb(); }
-            function fail() {
-                if (failed) return;
-                failed = true;
-                restoreUI();
-                showToast('❌ Gagal memuat komponen cetak. Cek koneksi internet.');
-            }
-            if (!window.html2canvas) {
-                pending++;
-                const s = document.createElement('script');
-                s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-                s.onload = done; s.onerror = fail;
-                document.head.appendChild(s);
-            }
-            if (!(window.jspdf && window.jspdf.jsPDF) && !window.jsPDF) {
-                pending++;
-                const s2 = document.createElement('script');
-                s2.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-                s2.onload = done; s2.onerror = fail;
-                document.head.appendChild(s2);
-            }
-            if (pending === 0) cb();
+        if (!window.html2canvas) {
+            const s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+            s.onload = function() { setTimeout(doPrint, 300); };
+            s.onerror = function() { restoreUI(); showToast('❌ Gagal memuat komponen cetak. Cek koneksi internet.'); };
+            document.head.appendChild(s);
+        } else {
+            setTimeout(doPrint, 200);
         }
-
-        ensureLibs(function() { setTimeout(doPrint, 300); });
     }
 
     const _modal = {
