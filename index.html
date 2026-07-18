@@ -7825,7 +7825,9 @@ function updateSSK(tab, rowId) {
         if (overlay) overlay.remove();
 
         // Hitung summary semua transaksi credit vendor ini
-        const creditTrx = appData.riwayatTransaksi.filter(t => t.vendor === vendor && t.status === 'credit');
+        // PERBAIKAN BUG: ikut filter tanggal aktif, sama seperti tampilan list & tombol LUNAS SEMUA
+        const { dari: dariBS, sampai: sampaiBS } = getFilterRange();
+        const creditTrx = appData.riwayatTransaksi.filter(t => t.vendor === vendor && t.status === 'credit' && tanggalDalamRange(t.tanggal, dariBS, sampaiBS));
         const jumlahTransaksi = creditTrx.length;
         const totalSudahBayar = creditTrx.reduce((sum, t) => {
             return sum + appData.pelunasan.filter(p => Number(p.transaksi_id) === Number(t.id)).reduce((s, p) => s + p.jumlah, 0);
@@ -7990,7 +7992,11 @@ function updateSSK(tab, rowId) {
         if (overlay) overlay.remove();
 
         showConfirm(`Lunasi SEMUA hutang ${vendor}?\nTotal: Rp ${totalHutang.toLocaleString('id-ID')}`, async function() {
-            const creditTrx = appData.riwayatTransaksi.filter(t => t.vendor === vendor && t.status === 'credit');
+            // PERBAIKAN BUG: harus pakai transaksi yang SAMA PERSIS dengan yang tampil di layar
+            // (mengikuti filter tanggal aktif), bukan SEMUA transaksi credit vendor tanpa filter.
+            // Kalau tidak, transaksi di luar rentang filter ikut ter-lunasi tanpa sepengetahuan user.
+            const { dari, sampai } = getFilterRange();
+            const creditTrx = appData.riwayatTransaksi.filter(t => t.vendor === vendor && t.status === 'credit' && tanggalDalamRange(t.tanggal, dari, sampai));
             if (creditTrx.length === 0) { showToast('Tidak ada transaksi CREDIT.'); return; }
 
             const now = new Date();
