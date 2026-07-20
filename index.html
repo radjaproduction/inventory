@@ -1940,7 +1940,8 @@
 
     async function setPIN(type, value) {
         const key = type === 'login' ? 'pin_login' : 'pin_master';
-        await sbClient.from('pengaturan').upsert({ key, value }, { onConflict: 'key' });
+        const { error } = await sbClient.from('pengaturan').upsert({ key, value }, { onConflict: 'key' });
+        if (error) { console.warn('setPIN gagal:', error.message); throw error; }
     }
 
     // Cek apakah PIN sudah ada, lalu tampilkan layar yang sesuai
@@ -2212,8 +2213,13 @@
                     return;
                 }
                 // Simpan kedua PIN
-                await setPIN('login', _pinSetupTemp.login);
-                await setPIN('master', _pinSetupTemp.master);
+                try {
+                    await setPIN('login', _pinSetupTemp.login);
+                    await setPIN('master', _pinSetupTemp.master);
+                } catch (e) {
+                    showToast('❌ Gagal simpan PIN, cek koneksi lalu coba lagi');
+                    return;
+                }
                 document.getElementById('pin-setup-screen').style.display = 'none';
                 pinHaptic([10,40,10,40,25]);
                 showToast('✅ PIN berhasil dibuat!');
@@ -2234,7 +2240,12 @@
                     setTimeout(() => { document.getElementById('pin-setup-dots').classList.remove('pin-dots-shake'); _pinSetupCurrent = ''; updatePinSetupUI(); }, 550);
                     return;
                 }
-                await setPIN('login', _pinSetupTemp.login);
+                try {
+                    await setPIN('login', _pinSetupTemp.login);
+                } catch (e) {
+                    showToast('❌ Gagal simpan PIN, cek koneksi lalu coba lagi');
+                    return;
+                }
                 document.getElementById('pin-setup-screen').style.display = 'none';
                 pinHaptic([10,40,10,40,25]);
                 showToast('✅ PIN Login berhasil diubah!');
@@ -2254,7 +2265,12 @@
                     setTimeout(() => { document.getElementById('pin-setup-dots').classList.remove('pin-dots-shake'); _pinSetupCurrent = ''; updatePinSetupUI(); }, 550);
                     return;
                 }
-                await setPIN('master', _pinSetupTemp.master);
+                try {
+                    await setPIN('master', _pinSetupTemp.master);
+                } catch (e) {
+                    showToast('❌ Gagal simpan PIN, cek koneksi lalu coba lagi');
+                    return;
+                }
                 document.getElementById('pin-setup-screen').style.display = 'none';
                 pinHaptic([10,40,10,40,25]);
                 showToast('✅ PIN Master berhasil diubah!');
@@ -4238,13 +4254,14 @@ function updateSSK(tab, rowId) {
             localStorage.removeItem('app_font_family');
         }
         try {
-            await sbClient.from('pengaturan').upsert([
+            const { error } = await sbClient.from('pengaturan').upsert([
                 { key: 'brand_name', value: nama },
                 { key: 'theme_main', value: main },
                 { key: 'theme_secondary', value: sec }
             ], { onConflict: 'key' });
+            if (error) throw error;
             showToast('✅ Pengaturan disimpan!');
-        } catch(e) { showToast('❌ Gagal simpan pengaturan'); }
+        } catch(e) { showToast('❌ Gagal simpan pengaturan: ' + (e.message || '')); }
     }
 
     // ==================== MASTER DATA: VENDOR ====================
@@ -4265,7 +4282,8 @@ function updateSSK(tab, rowId) {
     }
     async function hapusVendor(id) {
         showConfirm('Hapus vendor ini?\nData yang sudah dihapus tidak bisa dikembalikan.', async function() {
-            await sbClient.from('vendor').delete().eq('id', id);
+            const { error } = await sbClient.from('vendor').delete().eq('id', id);
+            if (error) { showToast('❌ Gagal hapus vendor: ' + error.message); return; }
             masterData.vendor = masterData.vendor.filter(v => v.id !== id);
             renderVendorList();
         }, {title:'HAPUS VENDOR', type:'danger', icon:'🗑️', ok:'YA, HAPUS'});
@@ -4307,7 +4325,8 @@ function updateSSK(tab, rowId) {
     }
     async function hapusBrand(id) {
         showConfirm('Hapus brand ini?\nData yang sudah dihapus tidak bisa dikembalikan.', async function() {
-            await sbClient.from('brand').delete().eq('id', id);
+            const { error } = await sbClient.from('brand').delete().eq('id', id);
+            if (error) { showToast('❌ Gagal hapus brand: ' + error.message); return; }
             masterData.brand = masterData.brand.filter(b => b.id !== id);
             renderBrandList(); renderBrandOptions();
         }, {title:'HAPUS BRAND', type:'danger', icon:'🗑️', ok:'YA, HAPUS'});
@@ -4398,7 +4417,8 @@ function updateSSK(tab, rowId) {
     }
     async function hapusModel(id) {
         showConfirm('Hapus model ini?\nData yang sudah dihapus tidak bisa dikembalikan.', async function() {
-            await sbClient.from('model').delete().eq('id', id);
+            const { error } = await sbClient.from('model').delete().eq('id', id);
+            if (error) { showToast('❌ Gagal hapus model: ' + error.message); return; }
             masterData.model = masterData.model.filter(m => m.id !== id);
             renderModelList();
         }, {title:'HAPUS MODEL', type:'danger', icon:'🗑️', ok:'YA, HAPUS'});
@@ -4409,8 +4429,10 @@ function updateSSK(tab, rowId) {
         const item = document.getElementById('model-item-' + id);
         const input = item ? item.querySelector('.edit-harga-input') : null;
         if (input) {
-            m.harga = parseInt(input.value) || 0;
-            await sbClient.from('model').update({ harga: m.harga }).eq('id', id);
+            const hargaBaru = parseInt(input.value) || 0;
+            const { error } = await sbClient.from('model').update({ harga: hargaBaru }).eq('id', id);
+            if (error) { showToast('❌ Gagal update harga: ' + error.message); renderModelList(); return; }
+            m.harga = hargaBaru;
         }
         renderModelList();
         showToast('✅ Harga diperbarui!');
@@ -4423,8 +4445,10 @@ function updateSSK(tab, rowId) {
         const item = document.getElementById('model-item-' + id);
         const input = item ? item.querySelector('.edit-modal-input') : null;
         if (input) {
-            m.hargaModal = parseInt(input.value) || 0;
-            await sbClient.from('model').update({ harga_modal: m.hargaModal }).eq('id', id);
+            const hargaModalBaru = parseInt(input.value) || 0;
+            const { error } = await sbClient.from('model').update({ harga_modal: hargaModalBaru }).eq('id', id);
+            if (error) { showToast('❌ Gagal update harga modal: ' + error.message); renderModelList(); return; }
+            m.hargaModal = hargaModalBaru;
         }
         renderModelList();
         showToast('✅ Harga modal diperbarui!');
@@ -4617,7 +4641,8 @@ function updateSSK(tab, rowId) {
         showToast(`✅ ${data.length} warna disimpan!`);
     }
     async function hapusWarna(id) {
-        await sbClient.from('warna').delete().eq('id', id);
+        const { error } = await sbClient.from('warna').delete().eq('id', id);
+        if (error) { showToast('❌ Gagal hapus warna: ' + error.message); return; }
         masterData.warna = masterData.warna.filter(w => w.id !== id);
         renderWarnaList();
     }
@@ -4655,8 +4680,9 @@ function updateSSK(tab, rowId) {
     async function simpanEditWarna(id, kode) {
         const w = masterData.warna.find(x => x.id === id);
         if (!w) return;
+        const { error } = await sbClient.from('warna').update({ kode }).eq('id', id);
+        if (error) { showToast('❌ Gagal update warna: ' + error.message); renderWarnaList(); return; }
         w.kode = kode;
-        await sbClient.from('warna').update({ kode }).eq('id', id);
         showToast('✅ Warna diperbarui!');
     }
 
@@ -4717,7 +4743,8 @@ function updateSSK(tab, rowId) {
         showToast(`✅ ${data.length} ukuran disimpan!`);
     }
     async function hapusUkuran(id) {
-        await sbClient.from('ukuran').delete().eq('id', id);
+        const { error } = await sbClient.from('ukuran').delete().eq('id', id);
+        if (error) { showToast('❌ Gagal hapus ukuran: ' + error.message); return; }
         masterData.ukuran = masterData.ukuran.filter(u => u.id !== id);
         renderUkuranList();
     }
@@ -9649,7 +9676,8 @@ function updateSSK(tab, rowId) {
                             if (d.pengaturan && d.pengaturan.length > 0) {
                                 const safePengaturan = d.pengaturan.filter(p => p.key !== 'pin_login' && p.key !== 'pin_master');
                                 if (safePengaturan.length > 0) {
-                                    await sbClient.from('pengaturan').upsert(safePengaturan, { onConflict: 'key' });
+                                    const { error: pengaturanErr } = await sbClient.from('pengaturan').upsert(safePengaturan, { onConflict: 'key' });
+                                    if (pengaturanErr) throw new Error(`Gagal restore pengaturan: ${pengaturanErr.message}`);
                                 }
                             }
 
