@@ -615,17 +615,73 @@
             user-select: none;
             -webkit-user-select: none;
         }
+        .pin-btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: radial-gradient(circle, rgba(255,177,68,0.55) 0%, rgba(255,177,68,0) 70%);
+            opacity: 0;
+            transform: scale(0.4);
+            pointer-events: none;
+        }
         .pin-btn.pin-pressed {
             background: var(--brand-main) !important;
             border-color: #FFB144 !important;
             color: #000 !important;
             transform: scale(0.88);
         }
+        .pin-btn.pin-pressed::after {
+            opacity: 1;
+            transform: scale(1.6);
+            transition: opacity 0.35s ease, transform 0.35s ease;
+        }
         .pin-del.pin-pressed {
             background: rgba(255,177,68,0.3) !important;
             border-color: #FFB144 !important;
             color: var(--brand-main) !important;
             transform: scale(0.88);
+        }
+
+        /* ==== PIN dots: pop / shake / sukses / error ==== */
+        .pin-dot {
+            transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s ease, border-color 0.15s ease, box-shadow 0.2s ease;
+        }
+        .pin-dot.pin-dot-pop {
+            animation: pinDotPop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes pinDotPop {
+            0%   { transform: scale(0.5); }
+            55%  { transform: scale(1.45); }
+            100% { transform: scale(1); }
+        }
+        .pin-dots-shake {
+            animation: pinShakeAnim 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+        }
+        @keyframes pinShakeAnim {
+            10%, 90% { transform: translateX(-3px); }
+            20%, 80% { transform: translateX(6px); }
+            30%, 50%, 70% { transform: translateX(-9px); }
+            40%, 60% { transform: translateX(9px); }
+        }
+        .pin-dot.pin-dot-success {
+            background: #22c55e !important;
+            border-color: #22c55e !important;
+            box-shadow: 0 0 14px rgba(34,197,94,0.65);
+            transform: scale(1.15);
+        }
+        .pin-dot.pin-dot-error {
+            background: #ef4444 !important;
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 14px rgba(239,68,68,0.55);
+        }
+        .pin-success-flash {
+            animation: pinSuccessFlash 0.5s ease;
+        }
+        @keyframes pinSuccessFlash {
+            0%   { box-shadow: 0 0 0 rgba(34,197,94,0); }
+            40%  { box-shadow: 0 0 40px rgba(34,197,94,0.35); }
+            100% { box-shadow: 0 0 0 rgba(34,197,94,0); }
         }
     </style>
 
@@ -637,10 +693,10 @@
                 <div class="text-[10px] text-[#000000]/70 font-bold mt-0.5">Masukkan PIN untuk masuk</div>
             </div>
             <div class="flex gap-4 justify-center mt-1" id="pin-login-dots">
-                <div class="w-5 h-5 rounded-full border-4 border-gray-600 bg-transparent transition-all" id="pld-0"></div>
-                <div class="w-5 h-5 rounded-full border-4 border-gray-600 bg-transparent transition-all" id="pld-1"></div>
-                <div class="w-5 h-5 rounded-full border-4 border-gray-600 bg-transparent transition-all" id="pld-2"></div>
-                <div class="w-5 h-5 rounded-full border-4 border-gray-600 bg-transparent transition-all" id="pld-3"></div>
+                <div class="w-5 h-5 rounded-full border-4 border-gray-600 bg-transparent transition-all pin-dot" id="pld-0"></div>
+                <div class="w-5 h-5 rounded-full border-4 border-gray-600 bg-transparent transition-all pin-dot" id="pld-1"></div>
+                <div class="w-5 h-5 rounded-full border-4 border-gray-600 bg-transparent transition-all pin-dot" id="pld-2"></div>
+                <div class="w-5 h-5 rounded-full border-4 border-gray-600 bg-transparent transition-all pin-dot" id="pld-3"></div>
             </div>
             <div id="pin-login-error" class="text-red-400 text-[11px] font-bold text-center min-h-[18px]"></div>
             <div class="grid grid-cols-3 gap-3 w-full">
@@ -670,10 +726,10 @@
                 <div class="text-[10px] text-[#000000]/70 font-bold mt-0.5">Masukkan PIN Owner untuk melanjutkan</div>
             </div>
             <div class="flex gap-4 justify-center mt-1" id="pin-master-dots">
-                <div class="w-5 h-5 rounded-full border-4 border-gray-600 bg-transparent transition-all" id="pmd-0"></div>
-                <div class="w-5 h-5 rounded-full border-4 border-gray-600 bg-transparent transition-all" id="pmd-1"></div>
-                <div class="w-5 h-5 rounded-full border-4 border-gray-600 bg-transparent transition-all" id="pmd-2"></div>
-                <div class="w-5 h-5 rounded-full border-4 border-gray-600 bg-transparent transition-all" id="pmd-3"></div>
+                <div class="w-5 h-5 rounded-full border-4 border-gray-600 bg-transparent transition-all pin-dot" id="pmd-0"></div>
+                <div class="w-5 h-5 rounded-full border-4 border-gray-600 bg-transparent transition-all pin-dot" id="pmd-1"></div>
+                <div class="w-5 h-5 rounded-full border-4 border-gray-600 bg-transparent transition-all pin-dot" id="pmd-2"></div>
+                <div class="w-5 h-5 rounded-full border-4 border-gray-600 bg-transparent transition-all pin-dot" id="pmd-3"></div>
             </div>
             <div id="pin-master-error" class="text-red-400 text-[11px] font-bold text-center min-h-[18px]"></div>
             <div class="grid grid-cols-3 gap-3 w-full">
@@ -704,10 +760,10 @@
             </div>
             <div class="text-center text-[10px] text-black font-bold" id="pin-setup-step-label">LANGKAH 1 dari 4 — PIN LOGIN</div>
             <div class="flex gap-4 justify-center" id="pin-setup-dots">
-                <div class="w-5 h-5 rounded-full border-4 border-gray-600 bg-transparent transition-all" id="psd-0"></div>
-                <div class="w-5 h-5 rounded-full border-4 border-gray-600 bg-transparent transition-all" id="psd-1"></div>
-                <div class="w-5 h-5 rounded-full border-4 border-gray-600 bg-transparent transition-all" id="psd-2"></div>
-                <div class="w-5 h-5 rounded-full border-4 border-gray-600 bg-transparent transition-all" id="psd-3"></div>
+                <div class="w-5 h-5 rounded-full border-4 border-gray-600 bg-transparent transition-all pin-dot" id="psd-0"></div>
+                <div class="w-5 h-5 rounded-full border-4 border-gray-600 bg-transparent transition-all pin-dot" id="psd-1"></div>
+                <div class="w-5 h-5 rounded-full border-4 border-gray-600 bg-transparent transition-all pin-dot" id="psd-2"></div>
+                <div class="w-5 h-5 rounded-full border-4 border-gray-600 bg-transparent transition-all pin-dot" id="psd-3"></div>
             </div>
             <div id="pin-setup-error" class="text-red-400 text-[11px] font-bold text-center min-h-[18px]"></div>
             <div class="grid grid-cols-3 gap-3 w-full">
@@ -1172,8 +1228,8 @@
             <button onclick="clearTransaksi()" class="flex-1 text-black font-black text-[13px] py-3.5 rounded-xl flex justify-center items-center gap-2 active:scale-95 transition-transform" style="background:linear-gradient(90deg,#ff8c00,#ffb347);">
                 <i class="fa-solid fa-xmark"></i> CLEAR
             </button>
-            <button onclick="simpanTransaksi()" class="flex-[2] brand-gradient-bg text-black font-black text-[13px] py-3.5 rounded-xl flex justify-center items-center gap-2 shadow-[0_4px_15px_rgba(255,140,0,0.35)] active:scale-95 transition-transform" style="background:linear-gradient(90deg,#ff8c00,#ffb347);box-shadow:0 4px 15px rgba(255,140,0,0.35)">
-                <i class="fa-solid fa-check-to-slot"></i> SIMPAN TRANSAKSI
+            <button id="btn-simpan-transaksi" onclick="simpanTransaksi()" class="flex-[2] brand-gradient-bg text-black font-black text-[13px] py-3.5 rounded-xl flex justify-center items-center gap-2 shadow-[0_4px_15px_rgba(255,140,0,0.35)] active:scale-95 transition-transform" style="background:linear-gradient(90deg,#ff8c00,#ffb347);box-shadow:0 4px 15px rgba(255,140,0,0.35)">
+                <i class="fa-solid fa-check-to-slot"></i> <span>SIMPAN TRANSAKSI</span>
             </button>
         </div>
 
@@ -1225,6 +1281,59 @@
                     <button onclick="batalPilihSemua()" class="flex-1 justify-center text-black font-black text-[13px] py-3.5 rounded-xl flex items-center gap-2 active:scale-95 transition-transform" style="background:linear-gradient(90deg,#ff8c00,#ffb347)">BATAL</button>
                     <button onclick="buatSuratTagihan()" id="btn-tagihan-terpilih" class="flex-1 justify-center text-black font-black text-[13px] py-3.5 rounded-xl flex items-center gap-2 opacity-40 cursor-not-allowed active:scale-95 transition-transform" style="background:linear-gradient(90deg,#ff8c00,#ffb347)"><i class="fa-solid fa-file-invoice"></i> TAGIHAN</button>
                     <button onclick="cetakTerpilih()" id="btn-cetak-terpilih" class="flex-1 justify-center text-black font-black text-[13px] py-3.5 rounded-xl flex items-center gap-2 opacity-40 cursor-not-allowed active:scale-95 transition-transform" style="background:linear-gradient(90deg,#ff8c00,#ffb347)"><i class="fa-solid fa-truck-fast"></i> SURAT JALAN</button>
+            </div>
+
+        <div style="height:90px;flex-shrink:0;"></div>
+        </div>
+
+        <!-- TAB LABA KOTOR -->
+        <div id="tab-laba" class="tab-content hidden flex-col p-4 gap-4 relative z-10" >
+            <div class="flex items-stretch -mx-4 -mt-4 mb-2 shadow-[0_4px_16px_rgba(255,140,0,0.35)] brand-gradient-bg rounded-b-2xl overflow-hidden">
+                <div class="w-20 h-[72px] flex items-center justify-center flex-shrink-0 z-10 relative bg-black/5 border-r-2 border-black/10"><i class="fa-solid fa-sack-dollar text-3xl text-[#000000]"></i></div>
+                <div class="h-[72px] flex flex-col justify-center px-4 flex-grow z-10 relative">
+                    <h1 class="text-[26px] font-black text-[#000000] leading-none tracking-wide mb-1">LABA <span class="text-black">KOTOR</span></h1>
+                    <div class="w-full h-[1.5px] bg-[#ffffff]/30 mb-1"></div>
+                    <h2 class="display-brand-name text-[10px] font-bold text-[#000000] tracking-[0.15em] leading-none mt-0.5 uppercase">RADJA PRODUCTION</h2>
+                </div>
+            </div>
+
+            <!-- FILTER PERIODE -->
+            <div class="bg-cardBg rounded-xl p-3 border-2 border-borderDark flex flex-col gap-3">
+                <div class="text-[11px] font-black text-black flex items-center gap-1.5"><i class="fa-solid fa-calendar-days brand-text text-[10px]"></i> FILTER PERIODE</div>
+                <div class="grid grid-cols-4 gap-1.5">
+                    <button id="laba-quick-minggu-ini" onclick="setLabaFilterMingguIni()" class="py-2.5 rounded-lg text-[8.5px] font-black text-black border-2 border-borderDark" style="background:linear-gradient(90deg,#ff8c00,#ffb347);">MINGGU INI</button>
+                    <button id="laba-quick-minggu-lalu" onclick="setLabaFilterMingguLalu()" class="py-2.5 rounded-lg text-[8.5px] font-black text-black bg-darkBg border-2 border-borderDark">MINGGU LALU</button>
+                    <button id="laba-quick-bulan-ini" onclick="setLabaFilterBulanIni()" class="py-2.5 rounded-lg text-[8.5px] font-black text-black bg-darkBg border-2 border-borderDark">BULAN INI</button>
+                    <button id="laba-quick-semua" onclick="resetLabaFilter()" class="py-2.5 rounded-lg text-[8.5px] font-black text-black bg-darkBg border-2 border-borderDark">SEMUA</button>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <div class="text-[8px] font-black text-black tracking-wider">ATAU PILIH PERIODE MANUAL:</div>
+                    <div class="flex gap-2">
+                        <div class="flex flex-col flex-1 min-w-0"><label class="text-[8px] text-black font-bold mb-0.5 leading-none">DARI</label><input type="date" id="laba-filter-dari" class="w-full bg-darkBg text-black text-[11px] px-2 py-2.5 rounded-lg border-2 border-borderDark outline-none"></div>
+                        <div class="flex flex-col flex-1 min-w-0"><label class="text-[8px] text-black font-bold mb-0.5 leading-none">SAMPAI</label><input type="date" id="laba-filter-sampai" class="w-full bg-darkBg text-black text-[11px] px-2 py-2.5 rounded-lg border-2 border-borderDark outline-none"></div>
+                    </div>
+                    <button onclick="applyLabaFilterManual()" class="w-full py-2.5 text-[10px] font-black rounded-lg text-white flex items-center justify-center gap-1.5" style="background:linear-gradient(90deg,#16a34a,#22c55e);"><i class="fa-solid fa-check"></i> TERAPKAN PERIODE MANUAL</button>
+                </div>
+                <div class="text-center text-[9px] font-bold text-black bg-darkBg rounded-lg py-2 border-2 border-dashed border-borderDark">
+                    <i class="fa-solid fa-eye mr-1"></i> Menampilkan: <span id="laba-periode-label">MINGGU INI</span>
+                </div>
+            </div>
+
+            <!-- SUMMARY CARDS -->
+            <div id="laba-total-omset" class="hidden">Rp 0</div>
+            <div class="rounded-xl p-4 border-2 flex flex-col gap-1" style="background:linear-gradient(135deg,#16a34a,#15803d);border-color:#166534;">
+                <div class="text-[9px] font-black text-white/90 tracking-wider flex items-center gap-1"><i class="fa-solid fa-sack-dollar text-[10px]"></i> LABA KOTOR</div>
+                <div id="laba-total-laba" class="text-[26px] font-black text-white leading-none">Rp 0</div>
+                <div id="laba-margin-persen" class="text-[10px] font-bold text-white/80 mt-1">Margin: 0%</div>
+            </div>
+
+            <!-- BREAKDOWN PER MODEL -->
+            <div class="bg-cardBg rounded-xl border-2 border-borderDark overflow-hidden">
+                <div class="px-3 py-2.5 text-[10px] font-black text-black border-b-2 border-borderDark flex items-center gap-1.5"><i class="fa-solid fa-layer-group brand-text text-[10px]"></i> RINCIAN LABA PER MODEL</div>
+                <div id="laba-breakdown-list" class="flex flex-col"></div>
+            </div>
+            <div class="bg-yellow-500/10 border-2 border-yellow-500/25 rounded-lg px-3 py-2.5 text-[9px] text-black leading-relaxed">
+                <i class="fa-solid fa-circle-info mr-1"></i> Laba kotor dihitung dari total <b>Harga Jual</b> per item terjual pada periode yang dipilih.
             </div>
 
         <div style="height:90px;flex-shrink:0;"></div>
@@ -1657,6 +1766,10 @@
                 <div class="icon-box text-[#000000]/60 w-10 h-8 rounded-lg flex items-center justify-center"><i class="fa-solid fa-clock-rotate-left text-lg"></i></div>
                 <span class="nav-text text-[9px] text-[#000000]/60 font-normal">Riwayat</span>
             </div>
+            <div id="nav-btn-laba" onclick="switchTab('laba')" class="nav-btn inactive flex flex-col items-center gap-1 cursor-pointer">
+                <div class="icon-box text-[#000000]/60 w-10 h-8 rounded-lg flex items-center justify-center"><i class="fa-solid fa-sack-dollar text-lg"></i></div>
+                <span class="nav-text text-[9px] text-[#000000]/60 font-normal">Laba</span>
+            </div>
             <div id="nav-btn-master" onclick="switchTab('master')" class="nav-btn inactive flex flex-col items-center gap-1 cursor-pointer">
                 <div class="icon-box text-[#000000]/60 w-10 h-8 rounded-lg flex items-center justify-center"><i class="fa-solid fa-database text-lg"></i></div>
                 <span class="nav-text text-[9px] text-[#000000]/60 font-normal">Master</span>
@@ -1803,6 +1916,11 @@
             });
         });
     }
+    // Getar HP singkat untuk feedback interaktif saat input PIN (aman kalau tidak didukung)
+    function pinHaptic(pattern) {
+        try { if (navigator.vibrate) navigator.vibrate(pattern); } catch(e) {}
+    }
+
     // State PIN
     let _pinLoginVal = '';
     let _pinMasterVal = '';
@@ -1850,6 +1968,7 @@
     function updatePinLoginDots() {
         for (let i = 0; i < 4; i++) {
             const dot = document.getElementById('pld-' + i);
+            dot.classList.remove('pin-dot-error', 'pin-dot-success');
             if (i < _pinLoginVal.length) {
                 dot.style.background = 'var(--brand-main)';
                 dot.style.borderColor = '#FFB144';
@@ -1863,20 +1982,40 @@
     async function pinLoginInput(digit) {
         if (_pinLoginVal.length >= 4) return;
         _pinLoginVal += digit;
+        const idx = _pinLoginVal.length - 1;
         updatePinLoginDots();
+        pinHaptic(12);
+        const justFilled = document.getElementById('pld-' + idx);
+        if (justFilled) {
+            justFilled.classList.remove('pin-dot-pop');
+            void justFilled.offsetWidth; // restart animasi
+            justFilled.classList.add('pin-dot-pop');
+        }
         document.getElementById('pin-login-error').textContent = '';
         if (_pinLoginVal.length === 4) {
             const stored = await getPIN('login');
+            const dotsWrap = document.getElementById('pin-login-dots');
+            const dots = dotsWrap.querySelectorAll('.pin-dot');
             if (_pinLoginVal === stored) {
-                document.getElementById('pin-login-screen').style.display = 'none';
-                await masukApp();
+                pinHaptic([10, 40, 10, 40, 25]);
+                dots.forEach(d => d.classList.add('pin-dot-success'));
+                dotsWrap.classList.add('pin-success-flash');
+                setTimeout(async () => {
+                    document.getElementById('pin-login-screen').style.display = 'none';
+                    await masukApp();
+                }, 320);
             } else {
+                pinHaptic([40, 60, 40]);
                 document.getElementById('pin-login-error').textContent = '❌ PIN salah, coba lagi';
+                dots.forEach(d => d.classList.add('pin-dot-error'));
+                dotsWrap.classList.add('pin-dots-shake');
                 setTimeout(() => {
+                    dotsWrap.classList.remove('pin-dots-shake');
+                    dots.forEach(d => d.classList.remove('pin-dot-error'));
                     _pinLoginVal = '';
                     updatePinLoginDots();
                     document.getElementById('pin-login-error').textContent = '';
-                }, 900);
+                }, 550);
             }
         }
     }
@@ -1885,6 +2024,7 @@
         if (_pinLoginVal.length > 0) {
             _pinLoginVal = _pinLoginVal.slice(0, -1);
             updatePinLoginDots();
+            pinHaptic(8);
         }
     }
 
@@ -1892,6 +2032,7 @@
     function updatePinMasterDots() {
         for (let i = 0; i < 4; i++) {
             const dot = document.getElementById('pmd-' + i);
+            dot.classList.remove('pin-dot-error', 'pin-dot-success');
             if (i < _pinMasterVal.length) {
                 dot.style.background = 'var(--brand-main)';
                 dot.style.borderColor = '#FFB144';
@@ -1905,22 +2046,42 @@
     async function pinMasterInput(digit) {
         if (_pinMasterVal.length >= 4) return;
         _pinMasterVal += digit;
+        const idx = _pinMasterVal.length - 1;
         updatePinMasterDots();
+        pinHaptic(12);
+        const justFilled = document.getElementById('pmd-' + idx);
+        if (justFilled) {
+            justFilled.classList.remove('pin-dot-pop');
+            void justFilled.offsetWidth;
+            justFilled.classList.add('pin-dot-pop');
+        }
         document.getElementById('pin-master-error').textContent = '';
         if (_pinMasterVal.length === 4) {
             const stored = await getPIN('master');
+            const dotsWrap = document.getElementById('pin-master-dots');
+            const dots = dotsWrap.querySelectorAll('.pin-dot');
             if (_pinMasterVal === stored) {
                 _masterUnlocked = true;
-                document.getElementById('pin-master-screen').style.display = 'none';
-                // Buka tab master
-                _doSwitchTab('master');
-            } else {
-                document.getElementById('pin-master-error').textContent = '❌ PIN Owner salah';
+                pinHaptic([10, 40, 10, 40, 25]);
+                dots.forEach(d => d.classList.add('pin-dot-success'));
+                dotsWrap.classList.add('pin-success-flash');
                 setTimeout(() => {
+                    document.getElementById('pin-master-screen').style.display = 'none';
+                    // Buka tab master
+                    _doSwitchTab('master');
+                }, 320);
+            } else {
+                pinHaptic([40, 60, 40]);
+                document.getElementById('pin-master-error').textContent = '❌ PIN Owner salah';
+                dots.forEach(d => d.classList.add('pin-dot-error'));
+                dotsWrap.classList.add('pin-dots-shake');
+                setTimeout(() => {
+                    dotsWrap.classList.remove('pin-dots-shake');
+                    dots.forEach(d => d.classList.remove('pin-dot-error'));
                     _pinMasterVal = '';
                     updatePinMasterDots();
                     document.getElementById('pin-master-error').textContent = '';
-                }, 900);
+                }, 550);
             }
         }
     }
@@ -1929,6 +2090,7 @@
         if (_pinMasterVal.length > 0) {
             _pinMasterVal = _pinMasterVal.slice(0, -1);
             updatePinMasterDots();
+            pinHaptic(8);
         }
     }
 
@@ -1968,6 +2130,7 @@
             const dot = document.getElementById('psd-' + i);
             dot.style.background = 'transparent';
             dot.style.borderColor = '#4b5563';
+            dot.classList.remove('pin-dot-error', 'pin-dot-success', 'pin-dot-pop');
         }
     }
 
@@ -1975,6 +2138,8 @@
     function pinSetupInput(digit) {
         if (_pinSetupCurrent.length >= 4) return;
         _pinSetupCurrent += digit;
+        const idx = _pinSetupCurrent.length - 1;
+        pinHaptic(12);
         document.getElementById('pin-setup-error').textContent = '';
         for (let i = 0; i < 4; i++) {
             const dot = document.getElementById('psd-' + i);
@@ -1986,7 +2151,14 @@
                 dot.style.borderColor = '#4b5563';
             }
         }
+        const justFilled = document.getElementById('psd-' + idx);
+        if (justFilled) {
+            justFilled.classList.remove('pin-dot-pop');
+            void justFilled.offsetWidth;
+            justFilled.classList.add('pin-dot-pop');
+        }
         if (_pinSetupCurrent.length === 4) {
+            pinHaptic([10, 30, 10]);
             setTimeout(() => prosesSetupPIN(), 150);
         }
     }
@@ -1994,6 +2166,7 @@
     function pinSetupHapus() {
         if (_pinSetupCurrent.length > 0) {
             _pinSetupCurrent = _pinSetupCurrent.slice(0, -1);
+            pinHaptic(8);
             for (let i = 0; i < 4; i++) {
                 const dot = document.getElementById('psd-' + i);
                 if (i < _pinSetupCurrent.length) {
@@ -2017,7 +2190,9 @@
             } else if (_pinSetupStep === 1) {
                 if (_pinSetupCurrent !== _pinSetupTemp.login) {
                     document.getElementById('pin-setup-error').textContent = '❌ PIN tidak sama, ulangi';
-                    setTimeout(() => { _pinSetupCurrent = ''; updatePinSetupUI(); }, 900);
+                    pinHaptic([40,60,40]);
+                    document.getElementById('pin-setup-dots').classList.add('pin-dots-shake');
+                    setTimeout(() => { document.getElementById('pin-setup-dots').classList.remove('pin-dots-shake'); _pinSetupCurrent = ''; updatePinSetupUI(); }, 550);
                     return;
                 }
                 _pinSetupCurrent = '';
@@ -2031,13 +2206,16 @@
             } else if (_pinSetupStep === 3) {
                 if (_pinSetupCurrent !== _pinSetupTemp.master) {
                     document.getElementById('pin-setup-error').textContent = '❌ PIN tidak sama, ulangi';
-                    setTimeout(() => { _pinSetupCurrent = ''; updatePinSetupUI(); }, 900);
+                    pinHaptic([40,60,40]);
+                    document.getElementById('pin-setup-dots').classList.add('pin-dots-shake');
+                    setTimeout(() => { document.getElementById('pin-setup-dots').classList.remove('pin-dots-shake'); _pinSetupCurrent = ''; updatePinSetupUI(); }, 550);
                     return;
                 }
                 // Simpan kedua PIN
                 await setPIN('login', _pinSetupTemp.login);
                 await setPIN('master', _pinSetupTemp.master);
                 document.getElementById('pin-setup-screen').style.display = 'none';
+                pinHaptic([10,40,10,40,25]);
                 showToast('✅ PIN berhasil dibuat!');
                 // Langsung masuk app
                 await masukApp();
@@ -2051,11 +2229,14 @@
             } else {
                 if (_pinSetupCurrent !== _pinSetupTemp.login) {
                     document.getElementById('pin-setup-error').textContent = '❌ PIN tidak sama, ulangi';
-                    setTimeout(() => { _pinSetupCurrent = ''; updatePinSetupUI(); }, 900);
+                    pinHaptic([40,60,40]);
+                    document.getElementById('pin-setup-dots').classList.add('pin-dots-shake');
+                    setTimeout(() => { document.getElementById('pin-setup-dots').classList.remove('pin-dots-shake'); _pinSetupCurrent = ''; updatePinSetupUI(); }, 550);
                     return;
                 }
                 await setPIN('login', _pinSetupTemp.login);
                 document.getElementById('pin-setup-screen').style.display = 'none';
+                pinHaptic([10,40,10,40,25]);
                 showToast('✅ PIN Login berhasil diubah!');
                 muatStatusPIN();
             }
@@ -2068,11 +2249,14 @@
             } else {
                 if (_pinSetupCurrent !== _pinSetupTemp.master) {
                     document.getElementById('pin-setup-error').textContent = '❌ PIN tidak sama, ulangi';
-                    setTimeout(() => { _pinSetupCurrent = ''; updatePinSetupUI(); }, 900);
+                    pinHaptic([40,60,40]);
+                    document.getElementById('pin-setup-dots').classList.add('pin-dots-shake');
+                    setTimeout(() => { document.getElementById('pin-setup-dots').classList.remove('pin-dots-shake'); _pinSetupCurrent = ''; updatePinSetupUI(); }, 550);
                     return;
                 }
                 await setPIN('master', _pinSetupTemp.master);
                 document.getElementById('pin-setup-screen').style.display = 'none';
+                pinHaptic([10,40,10,40,25]);
                 showToast('✅ PIN Master berhasil diubah!');
                 muatStatusPIN();
             }
@@ -2210,6 +2394,7 @@ CREATE TABLE IF NOT EXISTS model (
     brand_nama text,
     nama text not null,
     harga integer default 0,
+    harga_modal integer default 0,
     created_at timestamptz default now()
 );
 
@@ -2251,6 +2436,7 @@ CREATE TABLE IF NOT EXISTS transaksi (
     brand text,
     model text,
     harga integer default 0,
+    harga_modal integer default 0,
     status text default 'lunas',
     tanggal text,
     jam text,
@@ -2408,7 +2594,7 @@ END $$;`;
 
             masterData.vendor = (v.data || []).map(x => ({ id: x.id, nama: x.nama, telp: x.telp || '' }));
             masterData.brand  = (b.data || []).map(x => ({ id: x.id, nama: x.nama }));
-            masterData.model  = (m.data || []).map(x => ({ id: x.id, brandId: x.brand_id, brandNama: x.brand?.nama || x.brand_nama || '', nama: x.nama, harga: x.harga || 0 }));
+            masterData.model  = (m.data || []).map(x => ({ id: x.id, brandId: x.brand_id, brandNama: x.brand?.nama || x.brand_nama || '', nama: x.nama, harga: x.harga || 0, hargaModal: x.harga_modal || 0 }));
             masterData.warna  = (w.data || []).map(x => ({ id: x.id, nama: x.nama, kode: x.kode }));
             masterData.ukuran = (u.data || []).map(x => ({ id: x.id, nama: x.nama }));
 
@@ -2456,7 +2642,7 @@ END $$;`;
             });
             appData.riwayatTransaksi = (trx.data || []).map(t => ({
                 id: t.id, vendor: t.vendor, brand: t.brand, model: t.model,
-                harga: t.harga || 0, status: t.status,
+                harga: t.harga || 0, hargaModal: t.harga_modal || 0, status: t.status,
                 tanggal: t.tanggal, jam: t.jam,
                 items: trxItemsMap[t.id] || []
             }));
@@ -2500,7 +2686,7 @@ END $$;`;
     }
     async function fetchModelData() {
         const { data } = await sbClient.from('model').select('*, brand:brand_id(nama)').order('id');
-        masterData.model = (data || []).map(x => ({ id: x.id, brandId: x.brand_id, brandNama: x.brand?.nama || x.brand_nama || '', nama: x.nama, harga: x.harga || 0 }));
+        masterData.model = (data || []).map(x => ({ id: x.id, brandId: x.brand_id, brandNama: x.brand?.nama || x.brand_nama || '', nama: x.nama, harga: x.harga || 0, hargaModal: x.harga_modal || 0 }));
     }
     async function fetchWarnaData() {
         const { data } = await sbClient.from('warna').select('*').order('id');
@@ -2552,7 +2738,7 @@ END $$;`;
         });
         appData.riwayatTransaksi = trxData.sort((a, b) => b.id - a.id).map(t => ({
             id: t.id, vendor: t.vendor, brand: t.brand, model: t.model,
-            harga: t.harga || 0, status: t.status,
+            harga: t.harga || 0, hargaModal: t.harga_modal || 0, status: t.status,
             tanggal: t.tanggal, jam: t.jam,
             items: trxItemsMap[t.id] || []
         }));
@@ -2604,12 +2790,12 @@ async function fetchBayarSebagianData() {
     const REALTIME_GROUP_HANDLERS = {
         vendor:       { fetch: fetchVendorData,       render: () => { renderVendorList(); } },
         brand:        { fetch: fetchBrandData,        render: () => { renderBrandList(); renderBrandOptions(); } },
-        model:        { fetch: fetchModelData,        render: () => { renderModelList(); } },
+        model:        { fetch: fetchModelData,        render: () => { renderModelList(); if (typeof renderLabaKotor === 'function') renderLabaKotor(); } },
         warna:        { fetch: fetchWarnaData,        render: () => { renderWarnaList(); } },
         ukuran:       { fetch: fetchUkuranData,       render: () => { renderUkuranList(); } },
         pengaturan:   { fetch: fetchPengaturanData,   render: () => {} }, // tema/nama brand sudah langsung diterapkan di dalam fetch-nya
         riwayatInput: { fetch: fetchRiwayatInputData, render: () => { renderStokDashboard(); if (typeof _renderRiwayatInputOri === 'function') _renderRiwayatInputOri(); } },
-        transaksi:    { fetch: fetchTransaksiData,    render: () => { renderStokDashboard(); if (typeof _renderRiwayatTransaksiOri === 'function') _renderRiwayatTransaksiOri(); if (typeof _renderPelunasanViewOri === 'function') _renderPelunasanViewOri(); } },
+        transaksi:    { fetch: fetchTransaksiData,    render: () => { renderStokDashboard(); if (typeof _renderRiwayatTransaksiOri === 'function') _renderRiwayatTransaksiOri(); if (typeof _renderPelunasanViewOri === 'function') _renderPelunasanViewOri(); if (typeof renderLabaKotor === 'function') renderLabaKotor(); } },
         pelunasan:    { fetch: fetchPelunasanData,    render: () => { if (typeof _renderPelunasanViewOri === 'function') _renderPelunasanViewOri(); } },
     bayarSebagian:{ fetch: fetchBayarSebagianData,render: () => { if (typeof _renderBayarSebagianViewOri === 'function') _renderBayarSebagianViewOri(); } },
     };
@@ -3065,7 +3251,7 @@ function updateSSK(tab, rowId) {
                                 <span class="text-[11px] font-black text-black uppercase tracking-wide">${nama}</span>
                             </div>
                             <div class="flex gap-1.5">
-                                <span class="text-[9px] bg-green-500/20 text-green-400 px-2 py-1 rounded-lg border-2 border-green-500/30 font-bold">✓ Rp ${stat.lunasNominal.toLocaleString('id-ID')}</span>
+                                <span class="text-[9px] px-2 py-1 rounded-lg border-2 font-bold" style="background:rgba(255,140,0,0.2);color:var(--brand-main);border-color:rgba(255,140,0,0.3);">✓ Rp ${stat.lunasNominal.toLocaleString('id-ID')}</span>
                                 <span class="text-[9px] px-2 py-1 rounded-lg font-black bg-red-500/20 text-red-400 border-2 border-red-500/30">CREDIT: ${stat.credit}</span>
                             </div>
                         </div>
@@ -3086,6 +3272,7 @@ function updateSSK(tab, rowId) {
     // ==================== NAVIGASI ====================
     let _activeTab = 'stok';
     let _riwayatNeedsReset = true; // true = tab Riwayat perlu direset ke default (INPUT DATA + HARI INI) saat dibuka
+    let _labaNeedsReset = true; // true = tab Laba perlu direset ke default (MINGGU INI) saat dibuka
 
     function _clearInputForm() {
         setInputMode('masuk');
@@ -3099,7 +3286,7 @@ function updateSSK(tab, rowId) {
     }
 
     function _clearTrxForm() {
-        trxState = { vendorId: null, vendorNama: '', brandId: null, brandNama: '', modelId: null, modelNama: '', modelHarga: 0, statusBayar: 'credit' };
+        trxState = { vendorId: null, vendorNama: '', brandId: null, brandNama: '', modelId: null, modelNama: '', modelHarga: 0, modelHargaModal: 0, statusBayar: 'credit' };
         document.getElementById('trx-vendor-display').textContent = 'Pilih vendor';
         document.getElementById('trx-brand-display').textContent = 'Pilih brand';
         document.getElementById('trx-model-display').textContent = 'Pilih model';
@@ -3130,7 +3317,7 @@ function updateSSK(tab, rowId) {
     }
 
     function _doSwitchTab(tabName) {
-        const tabs = ['stok','input','transaksi','riwayat','master','setting'];
+        const tabs = ['stok','input','transaksi','riwayat','laba','master','setting'];
 
         // Auto-clear form saat meninggalkan tab input atau transaksi
         if (_activeTab === 'input' && tabName !== 'input') {
@@ -3153,6 +3340,9 @@ function updateSSK(tab, rowId) {
         // setiap kali tab LAIN yang aktif (bukan hanya sesaat sebelum masuk Riwayat).
         if (tabName !== 'riwayat') {
             _riwayatNeedsReset = true;
+        }
+        if (tabName !== 'laba') {
+            _labaNeedsReset = true;
         }
         _activeTab = tabName;
 
@@ -3202,6 +3392,12 @@ function updateSSK(tab, rowId) {
                 else _renderRiwayatInputOri();
             }
             if (tabName === 'master') renderBrandOptions();
+            if (tabName === 'laba') {
+                if (_labaNeedsReset) {
+                    if (typeof setLabaFilterMingguIni === 'function') setLabaFilterMingguIni();
+                    _labaNeedsReset = false;
+                } else if (typeof renderLabaKotor === 'function') renderLabaKotor();
+            }
             if (tabName === 'setting') {
                 Object.entries(collapseGroups).forEach(([id, chev]) => {
                     const el = document.getElementById(id);
@@ -4145,12 +4341,17 @@ function updateSSK(tab, rowId) {
         modelRowCount++;
         const container = document.getElementById('model-rows-container');
         const row = document.createElement('div');
-        row.className = 'grid grid-cols-12 gap-2 p-3 items-center';
+        row.className = 'flex flex-col gap-1.5 p-3 border-b-2 border-borderDark last:border-0';
         row.id = 'model-row-' + modelRowCount;
         row.innerHTML = `
-            <div class="col-span-6"><input type="text" placeholder="Nama model..." class="model-nama w-full bg-darkBg border-2 border-borderDark rounded-lg px-3 py-2.5 text-xs text-black text-center placeholder-black focus:outline-none focus:border-[#FFB144] transition-colors"></div>
-            <div class="col-span-5"><div class="relative"><span class="absolute inset-y-0 left-2 flex items-center text-black text-[9px] font-bold">Rp</span><input type="number" placeholder="0" class="model-harga w-full bg-darkBg border-2 border-borderDark rounded-lg pl-6 pr-2 py-2.5 text-xs text-black text-center placeholder-black focus:outline-none focus:border-[#FFB144] transition-colors"></div></div>
-            <div class="col-span-1 flex justify-center"><button onclick="hapusModelRow(${modelRowCount})" class="w-7 h-7 rounded-lg flex items-center justify-center border-2 border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"><i class="fa-regular fa-trash-can text-[10px]"></i></button></div>`;
+            <div class="flex gap-2 items-center">
+                <input type="text" placeholder="Nama model..." class="model-nama flex-1 min-w-0 bg-darkBg border-2 border-borderDark rounded-lg px-3 py-2.5 text-xs text-black text-center placeholder-black focus:outline-none focus:border-[#FFB144] transition-colors">
+                <button onclick="hapusModelRow(${modelRowCount})" class="w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center border-2 border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"><i class="fa-regular fa-trash-can text-[10px]"></i></button>
+            </div>
+            <div class="flex gap-2">
+                <div class="relative flex-1 min-w-0"><span class="absolute inset-y-0 left-2 flex items-center text-black text-[9px] font-bold">Rp</span><input type="number" placeholder="Harga Jual" class="model-harga w-full bg-darkBg border-2 border-borderDark rounded-lg pl-6 pr-2 py-2.5 text-xs text-black text-center placeholder-black focus:outline-none focus:border-[#FFB144] transition-colors"></div>
+                <div class="relative flex-1 min-w-0"><span class="absolute inset-y-0 left-2 flex items-center text-black text-[9px] font-bold">Rp</span><input type="number" placeholder="Harga Modal" class="model-modal w-full bg-darkBg border-2 border-borderDark rounded-lg pl-6 pr-2 py-2.5 text-xs text-black text-center placeholder-black focus:outline-none focus:border-[#FFB144] transition-colors"></div>
+            </div>`;
         container.appendChild(row);
     }
     function hapusModelRow(id) {
@@ -4167,6 +4368,7 @@ function updateSSK(tab, rowId) {
         rows.forEach(row => {
             const nama = row.querySelector('.model-nama').value.trim();
             const harga = row.querySelector('.model-harga').value;
+            const hargaModal = row.querySelector('.model-modal').value;
             if (nama) {
                 // Cek duplikat: nama sama dalam brand yang sama
                 const isDuplikat = masterData.model.some(m => m.brandId == brandId && m.nama.toUpperCase() === nama.toUpperCase());
@@ -4175,7 +4377,7 @@ function updateSSK(tab, rowId) {
                 if (isDuplikat || isInBatch) {
                     duplikatList.push(nama.toUpperCase());
                 } else {
-                    toInsert.push({ brand_id: brandId, brand_nama: brand.nama, nama, harga: harga ? parseInt(harga) : 0 });
+                    toInsert.push({ brand_id: brandId, brand_nama: brand.nama, nama, harga: harga ? parseInt(harga) : 0, harga_modal: hargaModal ? parseInt(hargaModal) : 0 });
                 }
             }
         });
@@ -4186,7 +4388,7 @@ function updateSSK(tab, rowId) {
         if (toInsert.length === 0) { showAlert('Isi minimal satu nama model!', {type:'warning'}); return; }
         const { data, error } = await sbClient.from('model').insert(toInsert).select();
         if (error) { showToast('❌ Gagal simpan model'); return; }
-        data.forEach(m => masterData.model.push({ id: m.id, brandId: m.brand_id, brandNama: m.brand_nama, nama: m.nama, harga: m.harga || 0 }));
+        data.forEach(m => masterData.model.push({ id: m.id, brandId: m.brand_id, brandNama: m.brand_nama, nama: m.nama, harga: m.harga || 0, hargaModal: m.harga_modal || 0 }));
         document.getElementById('model-rows-container').innerHTML = '';
         modelRowCount = 0;
         tambahModelRow();
@@ -4215,6 +4417,33 @@ function updateSSK(tab, rowId) {
     }
     function batalEditHarga(id) { renderModelList(); }
     function batalEditNama(id) { renderModelList(); }
+    async function simpanEditModal(id) {
+        const m = masterData.model.find(x => x.id == id);
+        if (!m) return;
+        const item = document.getElementById('model-item-' + id);
+        const input = item ? item.querySelector('.edit-modal-input') : null;
+        if (input) {
+            m.hargaModal = parseInt(input.value) || 0;
+            await sbClient.from('model').update({ harga_modal: m.hargaModal }).eq('id', id);
+        }
+        renderModelList();
+        showToast('✅ Harga modal diperbarui!');
+    }
+    function batalEditModal(id) { renderModelList(); }
+    function editModalModel(id) {
+        const m = masterData.model.find(x => x.id == id);
+        if (!m) return;
+        const item = document.getElementById('model-item-' + id);
+        if (!item || item.querySelector('.edit-modal-input')) return;
+        const displayEl = item.querySelector('.model-modal-display-' + id);
+        displayEl.innerHTML = `<div class="flex items-center gap-1 mt-0.5">
+            <span class="text-black text-[9px]">Rp</span>
+            <input type="number" value="${m.hargaModal||0}" class="edit-modal-input bg-darkBg border-2 border-[#FFB144] rounded px-1.5 py-0.5 text-[10px] text-black w-24 focus:outline-none">
+            <button onclick="simpanEditModal(${id})" class="w-5 h-5 bg-green-500/20 border-2 border-green-500/40 text-green-400 rounded flex items-center justify-center"><i class="fa-solid fa-check text-[8px]"></i></button>
+            <button onclick="batalEditModal(${id})" class="w-5 h-5 bg-gray-500/20 border-2 border-gray-500/40 text-black rounded flex items-center justify-center"><i class="fa-solid fa-xmark text-[8px]"></i></button>
+        </div>`;
+        item.querySelector('.edit-modal-input').focus();
+    }
     function editNamaModel(id) {
         const m = masterData.model.find(x => x.id == id);
         if (!m) return;
@@ -4314,11 +4543,13 @@ function updateSSK(tab, rowId) {
                     <div class="flex items-center justify-between py-1.5 border-b-2 border-borderDark last:border-0" id="model-item-${m.id}">
                         <div>
                             <div class="text-[11px] font-bold text-black model-nama-display-${m.id}">${m.nama}</div>
-                            <div class="text-[9px] text-black model-harga-display-${m.id}">Rp ${m.harga ? m.harga.toLocaleString('id-ID') : '—'}</div>
+                            <div class="text-[9px] text-black model-harga-display-${m.id}">Jual: Rp ${m.harga ? m.harga.toLocaleString('id-ID') : '—'}</div>
+                            <div class="text-[9px] text-black/70 model-modal-display-${m.id}">Modal: Rp ${m.hargaModal ? m.hargaModal.toLocaleString('id-ID') : '—'}</div>
                         </div>
                         <div class="flex gap-1.5 flex-shrink-0">
                             <button onclick="editNamaModel(${m.id})" title="Rename" class="w-7 h-7 rounded-lg bg-blue-500/10 border-2 border-blue-500/30 text-blue-400 flex items-center justify-center hover:bg-blue-500/20 transition-colors"><i class="fa-solid fa-i-cursor text-[9px]"></i></button>
-                            <button onclick="editHargaModel(${m.id})" title="Edit Harga" class="w-7 h-7 rounded-lg bg-yellow-500/10 border-2 border-yellow-500/30 text-yellow-400 flex items-center justify-center hover:bg-yellow-500/20 transition-colors"><i class="fa-solid fa-pen text-[9px]"></i></button>
+                            <button onclick="editHargaModel(${m.id})" title="Edit Harga Jual" class="w-7 h-7 rounded-lg bg-yellow-500/10 border-2 border-yellow-500/30 text-yellow-400 flex items-center justify-center hover:bg-yellow-500/20 transition-colors"><i class="fa-solid fa-pen text-[9px]"></i></button>
+                            <button onclick="editModalModel(${m.id})" title="Edit Harga Modal" class="w-7 h-7 rounded-lg bg-purple-500/10 border-2 border-purple-500/30 text-purple-400 flex items-center justify-center hover:bg-purple-500/20 transition-colors"><i class="fa-solid fa-coins text-[9px]"></i></button>
                             <button onclick="hapusModel(${m.id})" class="w-7 h-7 rounded-lg bg-red-500/10 border-2 border-red-500/30 text-red-400 flex items-center justify-center hover:bg-red-500/20 transition-colors"><i class="fa-regular fa-trash-can text-[10px]"></i></button>
                         </div>
                     </div>`).join('')}
@@ -5382,7 +5613,7 @@ function updateSSK(tab, rowId) {
         }
     }
 
-    let trxState = { vendorId: null, vendorNama: '', brandId: null, brandNama: '', modelId: null, modelNama: '', modelHarga: 0, statusBayar: 'credit' };
+    let trxState = { vendorId: null, vendorNama: '', brandId: null, brandNama: '', modelId: null, modelNama: '', modelHarga: 0, modelHargaModal: 0, statusBayar: 'credit' };
     window.trxState = trxState;
     let trxRowCount = 0;
 
@@ -5407,7 +5638,7 @@ function updateSSK(tab, rowId) {
     }
     
     function _clearTrxDariModel() {
-        trxState.modelId = null; trxState.modelNama = ''; trxState.modelHarga = 0;
+        trxState.modelId = null; trxState.modelNama = ''; trxState.modelHarga = 0; trxState.modelHargaModal = 0;
         document.getElementById('trx-model-display').textContent = 'Pilih model';
         _clearTrxVariasi();
     }
@@ -5449,9 +5680,9 @@ function updateSSK(tab, rowId) {
                 return Object.entries(stokMap).some(([key, qty]) => key.startsWith(m.nama + '||') && qty > 0);
             });
             if (modelsAdaStok.length === 0) { showAlert('Tidak ada model dengan stok tersedia untuk brand ini.', {type:'warning'}); return; }
-            bukaGenericDropdown(modelsAdaStok.map(m => ({ label: m.nama, id: m.id, nama: m.nama, harga: m.harga })), triggerEl, (item) => {
+            bukaGenericDropdown(modelsAdaStok.map(m => ({ label: m.nama, id: m.id, nama: m.nama, harga: m.harga, hargaModal: m.hargaModal })), triggerEl, (item) => {
                 if (item.id !== trxState.modelId) {
-                    trxState.modelId = item.id; trxState.modelNama = item.nama; trxState.modelHarga = item.harga || 0;
+                    trxState.modelId = item.id; trxState.modelNama = item.nama; trxState.modelHarga = item.harga || 0; trxState.modelHargaModal = item.hargaModal || 0;
                     document.getElementById('trx-model-display').textContent = item.nama;
                     _clearTrxVariasi();
                 }
@@ -5897,6 +6128,24 @@ function updateSSK(tab, rowId) {
 
     let _trxIsSaving = false; 
 
+    // Helper generik: toggle tampilan tombol jadi state loading (disabled + spinner + teks custom)
+    function setButtonLoading(btn, isLoading, loadingText) {
+        if (!btn) return;
+        if (isLoading) {
+            if (!btn.dataset.originalHtml) btn.dataset.originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.classList.add('opacity-60', 'pointer-events-none');
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>${loadingText || 'MENYIMPAN...'}</span>`;
+        } else {
+            btn.disabled = false;
+            btn.classList.remove('opacity-60', 'pointer-events-none');
+            if (btn.dataset.originalHtml) {
+                btn.innerHTML = btn.dataset.originalHtml;
+                delete btn.dataset.originalHtml;
+            }
+        }
+    }
+
     async function simpanTransaksi() {
         if (_trxIsSaving) { showToast('⚠️ Sedang menyimpan, harap tunggu...'); return; }
         if (!trxState.vendorId) { showAlert('Pilih vendor!', {type:'warning'}); return; }
@@ -5964,9 +6213,12 @@ function updateSSK(tab, rowId) {
         const snapModelId = trxState.modelId;
         const snapModelNama = trxState.modelNama;
         const snapModelHarga = trxState.modelHarga;
+        const snapModelHargaModal = trxState.modelHargaModal;
         const snapStatusBayar = trxState.statusBayar;
 
         _trxIsSaving = true;
+        const _btnSimpanTrx = document.getElementById('btn-simpan-transaksi');
+        setButtonLoading(_btnSimpanTrx, true, 'MENYIMPAN...');
         try {
             const modelNama = snapModelNama;
             for (const item of items) {
@@ -5995,19 +6247,21 @@ function updateSSK(tab, rowId) {
                     if (r.transaksi?.model === modelNama && r.transaksi?.brand === brandNamaFilter) stokDB -= r.qty;
                 });
 
-                if (item.qty > stokDB) {
-                    showAlert(
-                        `⚠️ STOK TIDAK CUKUP (verifikasi DB)\n\n${modelNama} • ${item.warna}/${item.ukuran}\nStok di DB: ${stokDB} pcs\nQty diminta: ${item.qty} pcs\n\nTransaksi dibatalkan. Refresh data terlebih dahulu.`,
-                        { type: 'danger', title: '⚠️ STOK TIDAK CUKUP' }
-                    );
-                    _trxIsSaving = false;
-                    return;
-                }
                 if (stokDB <= 0) {
                     showAlert(
                         `⚠️ STOK HABIS\n\n${modelNama} • ${item.warna}/${item.ukuran}\nStok: 0 pcs`,
                         { type: 'danger', title: '⚠️ STOK HABIS' }
                     );
+                    setButtonLoading(_btnSimpanTrx, false);
+                    _trxIsSaving = false;
+                    return;
+                }
+                if (item.qty > stokDB) {
+                    showAlert(
+                        `⚠️ STOK TIDAK CUKUP (verifikasi DB)\n\n${modelNama} • ${item.warna}/${item.ukuran}\nStok di DB: ${stokDB} pcs\nQty diminta: ${item.qty} pcs\n\nTransaksi dibatalkan. Refresh data terlebih dahulu.`,
+                        { type: 'danger', title: '⚠️ STOK TIDAK CUKUP' }
+                    );
+                    setButtonLoading(_btnSimpanTrx, false);
                     _trxIsSaving = false;
                     return;
                 }
@@ -6021,13 +6275,14 @@ function updateSSK(tab, rowId) {
         const jam = now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
         const { data: trx, error: trxErr } = await sbClient.from('transaksi').insert({
             vendor: snapVendorNama, brand: snapBrandNama, model: snapModelNama,
-            harga: snapModelHarga, status: snapStatusBayar, tanggal, jam
+            harga: snapModelHarga, harga_modal: snapModelHargaModal, status: snapStatusBayar, tanggal, jam
         }).select().single();
-        if (trxErr) { showToast('❌ Gagal simpan transaksi'); _trxIsSaving = false; return; }
+        if (trxErr) { showToast('❌ Gagal simpan transaksi'); setButtonLoading(_btnSimpanTrx, false); _trxIsSaving = false; return; }
         const { data: insertedTrxItems, error: itemErr } = await sbClient.from('transaksi_item').insert(items.map(i => ({ transaksi_id: trx.id, ...i }))).select();
         if (itemErr) {
             await sbClient.from('transaksi').delete().eq('id', trx.id);
             showToast('❌ Gagal simpan item transaksi. Dibatalkan.');
+            setButtonLoading(_btnSimpanTrx, false);
             _trxIsSaving = false;
             return;
         }
@@ -6035,8 +6290,8 @@ function updateSSK(tab, rowId) {
         // yang dilakukan langsung setelah transaksi tersimpan tidak jatuh ke pencocokan warna+ukuran
         // (yang berisiko kena 2 baris sekaligus kalau ada variasi ganda) melainkan pakai id yang pasti.
         const itemsWithId = (insertedTrxItems || []).map(i => ({ id: i.id, warna: i.warna, ukuran: i.ukuran, qty: i.qty, ssk: i.ssk }));
-        appData.riwayatTransaksi.unshift({ id: trx.id, vendor: snapVendorNama, brand: snapBrandNama, model: snapModelNama, harga: snapModelHarga, status: snapStatusBayar, tanggal, jam, items: itemsWithId.length ? itemsWithId : items });
-        trxState = { vendorId: null, vendorNama: '', brandId: null, brandNama: '', modelId: null, modelNama: '', modelHarga: 0, statusBayar: 'lunas' };
+        appData.riwayatTransaksi.unshift({ id: trx.id, vendor: snapVendorNama, brand: snapBrandNama, model: snapModelNama, harga: snapModelHarga, hargaModal: snapModelHargaModal, status: snapStatusBayar, tanggal, jam, items: itemsWithId.length ? itemsWithId : items });
+        trxState = { vendorId: null, vendorNama: '', brandId: null, brandNama: '', modelId: null, modelNama: '', modelHarga: 0, modelHargaModal: 0, statusBayar: 'lunas' };
         document.getElementById('trx-vendor-display').textContent = 'Pilih vendor';
         document.getElementById('trx-brand-display').textContent = 'Pilih brand';
         document.getElementById('trx-model-display').textContent = 'Pilih model';
@@ -6047,6 +6302,7 @@ function updateSSK(tab, rowId) {
         renderRiwayatTransaksi();
         renderStokDashboard();
         showToast('✅ Transaksi disimpan!');
+        setButtonLoading(_btnSimpanTrx, false);
         _trxIsSaving = false;
     }
 
@@ -6064,7 +6320,7 @@ function updateSSK(tab, rowId) {
 
     function clearTransaksi() {
         if (_trxIsSaving) { showToast('⏳ Sedang menyimpan transaksi, harap tunggu...'); return; }
-        trxState = { vendorId: null, vendorNama: '', brandId: null, brandNama: '', modelId: null, modelNama: '', modelHarga: 0, statusBayar: 'credit' };
+        trxState = { vendorId: null, vendorNama: '', brandId: null, brandNama: '', modelId: null, modelNama: '', modelHarga: 0, modelHargaModal: 0, statusBayar: 'credit' };
         document.getElementById('trx-vendor-display').textContent = 'Pilih vendor';
         document.getElementById('trx-brand-display').textContent = 'Pilih brand';
         document.getElementById('trx-model-display').textContent = 'Pilih model';
@@ -6195,6 +6451,197 @@ function updateSSK(tab, rowId) {
         else if (activeSubTab === 'bayar-sebagian') renderBayarSebagianView();
         else renderRiwayatInput();
     }
+
+    // ==================== TAB LABA KOTOR ====================
+    // Filter periode terpisah dari filter di tab Riwayat (elemen & state sendiri),
+    // supaya tidak saling mengganggu satu sama lain.
+    function _formatTanggalInputLaba(d) {
+        return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+
+    // Minggu dimulai hari SENIN (konvensi Indonesia)
+    function _awalMingguIni(ref) {
+        const d = new Date(ref);
+        const day = d.getDay(); // 0=minggu,1=senin,...,6=sabtu
+        const diff = (day === 0 ? -6 : 1 - day);
+        d.setDate(d.getDate() + diff);
+        d.setHours(0,0,0,0);
+        return d;
+    }
+
+    function _setLabaQuickActive(which) {
+        const map = {
+            'minggu-ini': 'laba-quick-minggu-ini',
+            'minggu-lalu': 'laba-quick-minggu-lalu',
+            'bulan-ini': 'laba-quick-bulan-ini',
+            'semua': 'laba-quick-semua',
+        };
+        ['laba-quick-minggu-ini','laba-quick-minggu-lalu','laba-quick-bulan-ini','laba-quick-semua'].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.style.background = '';
+            if (!el.classList.contains('bg-darkBg')) el.classList.add('bg-darkBg');
+        });
+        const activeId = map[which];
+        if (activeId) {
+            const el = document.getElementById(activeId);
+            if (el) { el.style.background = 'linear-gradient(90deg,#ff8c00,#ffb347)'; el.classList.remove('bg-darkBg'); }
+        }
+    }
+
+    function setLabaFilterMingguIni() {
+        const now = new Date();
+        const awal = _awalMingguIni(now);
+        const akhir = new Date(awal); akhir.setDate(akhir.getDate() + 6);
+        document.getElementById('laba-filter-dari').value = _formatTanggalInputLaba(awal);
+        document.getElementById('laba-filter-sampai').value = _formatTanggalInputLaba(akhir);
+        _setLabaQuickActive('minggu-ini');
+        renderLabaKotor();
+    }
+
+    function setLabaFilterMingguLalu() {
+        const now = new Date();
+        const awalMingguIni = _awalMingguIni(now);
+        const akhir = new Date(awalMingguIni); akhir.setDate(akhir.getDate() - 1);
+        const awal = new Date(awalMingguIni); awal.setDate(awal.getDate() - 7);
+        document.getElementById('laba-filter-dari').value = _formatTanggalInputLaba(awal);
+        document.getElementById('laba-filter-sampai').value = _formatTanggalInputLaba(akhir);
+        _setLabaQuickActive('minggu-lalu');
+        renderLabaKotor();
+    }
+
+    function setLabaFilterBulanIni() {
+        const now = new Date();
+        const awal = new Date(now.getFullYear(), now.getMonth(), 1);
+        const akhir = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        document.getElementById('laba-filter-dari').value = _formatTanggalInputLaba(awal);
+        document.getElementById('laba-filter-sampai').value = _formatTanggalInputLaba(akhir);
+        _setLabaQuickActive('bulan-ini');
+        renderLabaKotor();
+    }
+
+    function resetLabaFilter() {
+        document.getElementById('laba-filter-dari').value = '';
+        document.getElementById('laba-filter-sampai').value = '';
+        _setLabaQuickActive('semua');
+        renderLabaKotor();
+    }
+
+    function applyLabaFilterManual() {
+        const dari = document.getElementById('laba-filter-dari')?.value;
+        const sampai = document.getElementById('laba-filter-sampai')?.value;
+        if (dari && sampai && dari > sampai) {
+            showToast('⚠️ Tanggal awal tidak boleh lebih besar dari tanggal akhir!');
+            return;
+        }
+        _setLabaQuickActive('manual');
+        renderLabaKotor();
+    }
+
+    function getLabaFilterRange() {
+        const dari = document.getElementById('laba-filter-dari')?.value;
+        const sampai = document.getElementById('laba-filter-sampai')?.value;
+        return {
+            dari: dari ? new Date(dari + 'T00:00:00') : null,
+            sampai: sampai ? new Date(sampai + 'T23:59:59') : null
+        };
+    }
+
+    function _updateLabaPeriodeLabel(dari, sampai) {
+        const label = document.getElementById('laba-periode-label');
+        if (!label) return;
+        if (!dari && !sampai) { label.textContent = 'SEMUA DATA'; return; }
+        const fmt = (d) => d ? d.toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'}) : '';
+        if (dari && sampai) label.textContent = fmt(dari) + ' — ' + fmt(sampai);
+        else if (dari) label.textContent = 'SEJAK ' + fmt(dari);
+        else label.textContent = 'SAMPAI ' + fmt(sampai);
+    }
+
+    const LABA_BREAKDOWN_PAGE_SIZE = 15;
+    let _labaBreakdownRows = [];
+    let _labaBreakdownShowCount = LABA_BREAKDOWN_PAGE_SIZE;
+
+    function _renderLabaBreakdownList() {
+        const listEl = document.getElementById('laba-breakdown-list');
+        if (!listEl) return;
+
+        const rows = _labaBreakdownRows;
+        if (rows.length === 0) {
+            listEl.innerHTML = '<div class="text-center text-black text-[11px] py-8 flex flex-col items-center gap-2"><i class="fa-solid fa-inbox text-2xl opacity-40"></i>Belum ada transaksi di periode ini.</div>';
+            return;
+        }
+
+        const visibleRows = rows.slice(0, _labaBreakdownShowCount);
+        const sisa = rows.length - visibleRows.length;
+
+        let html = visibleRows.map(r => {
+            return `<div class="flex items-center justify-between px-3 py-2.5 border-b-2 border-borderDark last:border-0">
+                <div class="min-w-0 flex-1">
+                    <div class="text-[10.5px] font-bold text-black truncate">${r.model}</div>
+                    <div class="text-[8.5px] text-black/70">${r.brand} • ${r.qty} pcs terjual</div>
+                </div>
+                <div class="text-right flex-shrink-0 ml-2">
+                    <div class="text-[11px] font-black text-green-600">Rp ${r.omset.toLocaleString('id-ID')}</div>
+                </div>
+            </div>`;
+        }).join('');
+
+        if (sisa > 0) {
+            html += `<button onclick="loadMoreLabaBreakdown()" class="w-full py-2.5 text-[9.5px] font-black text-black flex items-center justify-center gap-1.5 border-t-2 border-borderDark" style="background:linear-gradient(90deg,#ff8c00,#ffb347);">
+                <i class="fa-solid fa-chevron-down"></i> MUAT LEBIH BANYAK (${sisa} lagi)
+            </button>`;
+        }
+
+        listEl.innerHTML = html;
+    }
+
+    function loadMoreLabaBreakdown() {
+        _labaBreakdownShowCount += LABA_BREAKDOWN_PAGE_SIZE;
+        _renderLabaBreakdownList();
+    }
+    window.loadMoreLabaBreakdown = loadMoreLabaBreakdown;
+
+    function renderLabaKotor() {
+        const listEl = document.getElementById('laba-breakdown-list');
+        if (!listEl) return; // tab belum ter-render di DOM
+
+        const { dari, sampai } = getLabaFilterRange();
+        _updateLabaPeriodeLabel(dari, sampai);
+
+        const trxDalamRange = appData.riwayatTransaksi.filter(t => tanggalDalamRange(t.tanggal, dari, sampai));
+
+        let totalOmset = 0;
+        const perModel = {};
+
+        trxDalamRange.forEach(t => {
+            const totalQty = (t.items || []).reduce((s, i) => s + i.qty, 0);
+            const hargaJual = t.harga || 0;
+            const omset = totalQty * hargaJual;
+            totalOmset += omset;
+
+            const key = t.brand + ' || ' + t.model;
+            if (!perModel[key]) perModel[key] = { brand: t.brand, model: t.model, qty: 0, omset: 0 };
+            perModel[key].qty += totalQty;
+            perModel[key].omset += omset;
+        });
+
+        const totalLaba = totalOmset;
+        const margin = totalOmset > 0 ? 100 : 0;
+
+        document.getElementById('laba-total-omset').textContent = 'Rp ' + totalOmset.toLocaleString('id-ID');
+        document.getElementById('laba-total-laba').textContent = 'Rp ' + totalLaba.toLocaleString('id-ID');
+        document.getElementById('laba-margin-persen').textContent = 'Margin: ' + margin.toFixed(1) + '%';
+
+        _labaBreakdownRows = Object.values(perModel).sort((a, b) => b.omset - a.omset);
+        _labaBreakdownShowCount = LABA_BREAKDOWN_PAGE_SIZE; // reset paginasi setiap kali filter/data berubah
+        _renderLabaBreakdownList();
+    }
+    window.renderLabaKotor = renderLabaKotor;
+    window.setLabaFilterMingguIni = setLabaFilterMingguIni;
+    window.setLabaFilterMingguLalu = setLabaFilterMingguLalu;
+    window.setLabaFilterBulanIni = setLabaFilterBulanIni;
+    window.resetLabaFilter = resetLabaFilter;
+    window.applyLabaFilterManual = applyLabaFilterManual;
 
     function _isInputKorup(d) {
         return !Array.isArray(d.items) || d.items.length === 0;
@@ -7212,6 +7659,7 @@ function updateSSK(tab, rowId) {
         btnsEl.appendChild(btnBatal);
 
         const btnSimpan = document.createElement('button');
+        btnSimpan.id = 'btn-simpan-edit-qty-trx';
         btnSimpan.textContent = 'SIMPAN';
         btnSimpan.style.cssText = 'padding:10px 22px;border:none;border-radius:10px;font-family:Montserrat,sans-serif;font-weight:900;font-size:12px;cursor:pointer;background:linear-gradient(90deg,#ff8c00,#ffb347);color:#000;';
         btnSimpan.onclick = () => simpanEditQtyTrx(trxId);
@@ -7243,6 +7691,8 @@ function updateSSK(tab, rowId) {
 
         if (!adaPerubahan) { _modal.close(); showToast('Qty tidak ada yang berubah.'); return; }
 
+        const _btnSimpanEditQty = document.getElementById('btn-simpan-edit-qty-trx');
+        setButtonLoading(_btnSimpanEditQty, true, 'MENYIMPAN...');
         try {
             for (const { item, qtyBaru } of updates) {
                 let error;
@@ -7264,6 +7714,7 @@ function updateSSK(tab, rowId) {
             showToast(`✅ Qty transaksi berhasil diperbarui!`);
         } catch(e) {
             showToast('Gagal update: ' + (e.message || e));
+            setButtonLoading(_btnSimpanEditQty, false);
         }
     }
 
@@ -7610,9 +8061,9 @@ function updateSSK(tab, rowId) {
                             <div class="flex flex-col gap-2">
                                 <input type="text" id="bayar-ket-${t.id}" placeholder="keterangan pembayaran (opsional)..."
                                     class="w-full bg-darkBg border-2 border-borderDark rounded-lg px-3 py-2.5 text-xs text-black placeholder-black focus:outline-none focus:border-[#FFB144]">
-                                <button onclick="simpanPelunasan(${t.id}, '${t.vendor}', ${sisaHutang})"
+                                <button onclick="simpanPelunasan(${t.id}, '${t.vendor}', ${sisaHutang}, this)"
                                     class="w-full bg-green-500 hover:bg-green-400 text-black font-black text-xs py-3 rounded-xl flex items-center justify-center gap-2 transition-colors">
-                                    <i class="fa-solid fa-circle-check"></i> LUNAS PENUH — Rp ${sisaHutang.toLocaleString('id-ID')}
+                                    <i class="fa-solid fa-circle-check"></i> <span>LUNAS PENUH — Rp ${sisaHutang.toLocaleString('id-ID')}</span>
                                 </button>
                             </div>
                         </div>` : ''}
@@ -8241,7 +8692,7 @@ function updateSSK(tab, rowId) {
 
     let _pelIsSaving = false; 
 
-    async function simpanPelunasan(trxId, vendor, sisaHutang) {
+    async function simpanPelunasan(trxId, vendor, sisaHutang, btnEl) {
         if (_pelIsSaving) { showToast('⚠️ Sedang menyimpan, harap tunggu...'); return; }
         trxId = Number(trxId);
         const ketEl = document.getElementById('bayar-ket-' + trxId);
@@ -8268,10 +8719,11 @@ function updateSSK(tab, rowId) {
         const jam = now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
 
         _pelIsSaving = true;
+        setButtonLoading(btnEl, true, 'MEMPROSES...');
         const { data, error } = await sbClient.from('pelunasan').insert({
             transaksi_id: trxId, vendor, jumlah, keterangan, tanggal, jam
         }).select().single();
-        if (error) { showToast('❌ Gagal simpan pelunasan'); _pelIsSaving = false; return; }
+        if (error) { showToast('❌ Gagal simpan pelunasan'); setButtonLoading(btnEl, false); _pelIsSaving = false; return; }
 
         appData.pelunasan.unshift({ id: data.id, transaksi_id: trxId, vendor, jumlah, keterangan, tanggal, jam });
 
