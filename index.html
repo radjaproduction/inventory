@@ -19,7 +19,6 @@
             .bg-\[\#f0faf2\]{background-color:#f0faf2 !important;}
             .bg-\[\#ff8c00\]{background-color:#ff8c00 !important;}
             .bg-\[\#2563eb\]{background-color:#2563eb !important;}
-            .bg-\[\#10b981\]{background-color:#10b981 !important;}
             .bg-\[\#ef4444\]{background-color:#ef4444 !important;}
             .bg-\[\#d946ef\]{background-color:#d946ef !important;}
             .bg-\[\#3a1c1c\]{background-color:#3a1c1c !important;}
@@ -871,7 +870,7 @@
                     <div class="h-[64px] flex flex-col justify-center px-4 flex-grow z-10 relative">
                         <h1 class="text-xl font-black text-[#000000] leading-none tracking-wide mb-1">DASHBOARD <span class="text-black">STOK</span></h1>
                         <h2 class="display-brand-name text-[9px] font-bold text-[#000000] tracking-[0.15em] leading-none uppercase">RADJA PRODUCTION</h2>
-                        <span id="app-version-badge" class="absolute inset-y-0 right-2 text-[#000000] select-none flex flex-col items-end justify-center leading-none gap-0.5" style="font-family:'Poppins',sans-serif;" title="Versi Aplikasi"><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">v3.0.2</span><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">RADJA PRODUCTION</span><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">@2026</span></span>
+                        <span id="app-version-badge" class="absolute inset-y-0 right-2 text-[#000000] select-none flex flex-col items-end justify-center leading-none gap-0.5" style="font-family:'Montserrat',sans-serif;" title="Versi Aplikasi"><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">v3.0.2</span><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">RADJA PRODUCTION</span><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">@2026</span></span>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
@@ -1052,7 +1051,7 @@
                 <i class="fa-solid fa-xmark"></i> CLEAR
             </button>
             <button onclick="simpanInputData()" id="btn-simpan-input" class="flex-[2] brand-gradient-bg text-black font-black text-[13px] py-3.5 rounded-xl flex justify-center items-center gap-2 shadow-[0_4px_15px_rgba(255,140,0,0.35)] active:scale-95 transition-transform" style="background:linear-gradient(90deg,#ff8c00,#ffb347);box-shadow:0 4px 15px rgba(255,140,0,0.35)">
-                <i class="fa-regular fa-floppy-disk"></i> <span id="btn-simpan-input-text">SIMPAN DATA MASUK</span>
+                <i class="fa-solid fa-floppy-disk"></i> <span id="btn-simpan-input-text">SIMPAN DATA MASUK</span>
             </button>
         </div>
 
@@ -1254,7 +1253,7 @@
             </div>
             <!-- LEVEL 2: Status transaksi — dua kartu terpisah, warna beda arti: KREDIT (merah, menunggu) vs LUNAS (hijau, selesai) -->
             <div id="filter-transaksi-status-bar" class="hidden grid grid-cols-2 gap-2">
-                <button id="filter-trx-kredit" onclick="setFilterTrxStatus('kredit')" class="flex items-center justify-center gap-2 py-3.5 rounded-2xl transition-all font-black text-[11px] tracking-wide text-white shadow-[0_4px_14px_rgba(185,28,28,0.45)] bg-[linear-gradient(135deg,#ef4444,#b91c1c)] border-4 border-[#b91c1c] bg-clip-padding">
+                <button id="filter-trx-kredit" onclick="setFilterTrxStatus('kredit')" class="flex items-center justify-center gap-2 py-3.5 rounded-2xl transition-all font-black text-[11px] tracking-wide text-white shadow-[0_4px_14px_rgba(220,38,38,0.45)] bg-[linear-gradient(135deg,#ef4444,#dc2626)] border-4 border-[#dc2626] bg-clip-padding">
                     <i class="fa-solid fa-hourglass-half text-[12px]"></i>
                     <span class="flex flex-col items-start leading-none"><span>KREDIT</span><span class="text-[7px] font-bold opacity-80 mt-1 tracking-widest">BELUM LUNAS</span></span>
                 </button>
@@ -3866,7 +3865,7 @@ function updateSSK(tab, rowId) {
     function _updateFilterTrxStatusButtons(activeStatus) {
         const btnLunas = document.getElementById('filter-trx-lunas');
         const btnKredit = document.getElementById('filter-trx-kredit');
-        const kreditActive = 'flex items-center justify-center gap-2 py-3.5 rounded-2xl transition-all font-black text-[11px] tracking-wide text-white shadow-[0_4px_14px_rgba(185,28,28,0.45)] bg-[linear-gradient(135deg,#ef4444,#b91c1c)] border-4 border-[#b91c1c] bg-clip-padding';
+        const kreditActive = 'flex items-center justify-center gap-2 py-3.5 rounded-2xl transition-all font-black text-[11px] tracking-wide text-white shadow-[0_4px_14px_rgba(220,38,38,0.45)] bg-[linear-gradient(135deg,#ef4444,#dc2626)] border-4 border-[#dc2626] bg-clip-padding';
         const kreditInactive = 'flex items-center justify-center gap-2 py-3.5 rounded-2xl transition-all font-black text-[11px] tracking-wide text-black/55 bg-cardBg border-4 border-dashed border-[#dc2626]/40';
         const lunasActive = 'flex items-center justify-center gap-2 py-3.5 rounded-2xl transition-all font-black text-[11px] tracking-wide text-white shadow-[0_4px_14px_rgba(22,163,74,0.45)] bg-[linear-gradient(135deg,#22c55e,#16a34a)] border-4 border-[#16a34a] bg-clip-padding';
         const lunasInactive = 'flex items-center justify-center gap-2 py-3.5 rounded-2xl transition-all font-black text-[11px] tracking-wide text-black/55 bg-cardBg border-4 border-dashed border-[#16a34a]/40';
@@ -5160,7 +5159,7 @@ function updateSSK(tab, rowId) {
             btn.className = 'w-10 h-10 rounded-lg flex items-center justify-center border-2 border-borderDark bg-darkBg text-black/30 cursor-not-allowed transition-colors';
             btn.onclick = null;
         } else {
-            btn.className = 'w-10 h-10 rounded-lg flex items-center justify-center border-2 border-[#ff4d4d]/50 bg-[#ff4d4d]/15 text-[#ff4d4d] cursor-pointer hover:bg-[#ff4d4d]/25 transition-colors';
+            btn.className = 'w-10 h-10 rounded-lg flex items-center justify-center border-2 border-[#ef4444]/50 bg-[#ef4444]/15 text-[#ef4444] cursor-pointer hover:bg-[#ef4444]/25 transition-colors';
             btn.onclick = () => hapusRowInput(id);
         }
     }
@@ -5221,7 +5220,7 @@ function updateSSK(tab, rowId) {
 
         const delClass = isFirst
             ? 'w-10 h-10 rounded-lg flex items-center justify-center border-2 border-borderDark bg-darkBg text-black/30 cursor-not-allowed transition-colors'
-            : 'w-10 h-10 rounded-lg flex items-center justify-center border-2 border-[#ff4d4d]/50 bg-[#ff4d4d]/15 text-[#ff4d4d] cursor-pointer hover:bg-[#ff4d4d]/25 transition-colors';
+            : 'w-10 h-10 rounded-lg flex items-center justify-center border-2 border-[#ef4444]/50 bg-[#ef4444]/15 text-[#ef4444] cursor-pointer hover:bg-[#ef4444]/25 transition-colors';
         const delClick = isFirst ? '' : `onclick="hapusRowInput(${id})"`;
 
         row.innerHTML = `
@@ -5756,7 +5755,7 @@ function updateSSK(tab, rowId) {
             btn.className = 'w-10 h-10 rounded-lg flex items-center justify-center border-2 border-borderDark bg-darkBg text-black/30 cursor-not-allowed transition-colors';
             btn.onclick = null;
         } else {
-            btn.className = 'w-10 h-10 rounded-lg flex items-center justify-center border-2 border-[#ff4d4d]/50 bg-[#ff4d4d]/15 text-[#ff4d4d] cursor-pointer hover:bg-[#ff4d4d]/25 transition-colors';
+            btn.className = 'w-10 h-10 rounded-lg flex items-center justify-center border-2 border-[#ef4444]/50 bg-[#ef4444]/15 text-[#ef4444] cursor-pointer hover:bg-[#ef4444]/25 transition-colors';
             btn.onclick = () => hapusRowTrx(id);
         }
     }
@@ -6028,7 +6027,7 @@ function updateSSK(tab, rowId) {
 
         const delClass = isFirst
             ? 'w-10 h-10 rounded-lg flex items-center justify-center border-2 border-borderDark bg-darkBg text-black/30 cursor-not-allowed transition-colors'
-            : 'w-10 h-10 rounded-lg flex items-center justify-center border-2 border-[#ff4d4d]/50 bg-[#ff4d4d]/15 text-[#ff4d4d] cursor-pointer hover:bg-[#ff4d4d]/25 transition-colors';
+            : 'w-10 h-10 rounded-lg flex items-center justify-center border-2 border-[#ef4444]/50 bg-[#ef4444]/15 text-[#ef4444] cursor-pointer hover:bg-[#ef4444]/25 transition-colors';
 	        const delClick = isFirst ? '' : `onclick="hapusRowTrx(${id})"`;
 
 	        row.innerHTML = `
@@ -9916,7 +9915,7 @@ function updateSSK(tab, rowId) {
 
     <!-- MODAL KOREKSI STOK -->
     <div id="modal-koreksi-stok" class="hidden fixed inset-0 z-[999] items-end justify-center" style="background:rgba(0,0,0,0.7);">
-        <div style="background:#ffffff;border-radius:20px 20px 0 0;padding:24px 20px 32px;width:100%;max-width:480px;border-top:2px solid #ef4444;box-shadow:0 -10px 40px rgba(0,0,0,0.15);">
+        <div style="background:#ffffff;border-radius:24px 24px 0 0;padding:24px 20px 32px;width:100%;max-width:480px;border-top:2px solid #ef4444;box-shadow:0 -10px 40px rgba(0,0,0,0.15);">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
                 <span style="color:#ef4444;font-size:13px;font-weight:900;letter-spacing:1px;font-family:Montserrat,sans-serif;"><i class="fa-solid fa-wrench mr-2"></i>KOREKSI STOK</span>
                 <button onclick="tutupKoreksiStok()" style="background:none;border:none;color:#000;font-size:20px;cursor:pointer;line-height:1;">&times;</button>
