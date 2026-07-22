@@ -1788,9 +1788,6 @@
         hideLoadingOverlay();
         document.getElementById('pin-login-screen').style.display = 'none';
         document.getElementById('main-app').style.display = 'block';
-        const urlDisplay = document.getElementById('setting-supabase-url-display');
-        const url = SUPABASE_URL || localStorage.getItem('sb_url') || '';
-        if (urlDisplay) urlDisplay.textContent = url.replace('https://', '');
         await muatSemuaData();
         initUI();
         muatStatusPIN();
@@ -3372,7 +3369,6 @@ function updateSSK(tab, rowId) {
                     if (el) el.classList.add('collapsed');
                     if (ic) ic.classList.remove('rotated');
                 });
-                setTimeout(cpInit, 50);
                 muatStatusPIN();
             }
         });
@@ -4026,108 +4022,6 @@ function updateSSK(tab, rowId) {
         document.documentElement.style.setProperty('--brand-main', mainColor);
         document.documentElement.style.setProperty('--brand-gradient', `linear-gradient(90deg, ${mainColor} 0%, ${secondaryColor} 100%)`);
         document.querySelectorAll('.submit-btn-shadow').forEach(s => { s.style.boxShadow = `0 4px 15px ${mainColor}66`; });
-        document.querySelectorAll('.theme-btn').forEach(b => {
-            b.classList.remove('ring-2', 'ring-white', 'ring-offset-2', 'ring-offset-cardBg');
-            b.querySelector('.check-icon').classList.add('hidden');
-            if (b.getAttribute('data-color') === mainColor) {
-                b.classList.add('ring-2', 'ring-white', 'ring-offset-2', 'ring-offset-cardBg');
-                b.querySelector('.check-icon').classList.remove('hidden');
-            }
-        });
-        // Update preview bar
-        const previewBar = document.getElementById('theme-preview-bar');
-        if (previewBar) previewBar.style.background = `linear-gradient(90deg, ${mainColor} 0%, ${secondaryColor} 100%)`;
-        // Sync color picker
-        const picker = document.getElementById('custom-color-picker');
-        if (picker) {
-            picker.value = mainColor;
-            document.getElementById('custom-color-hex').textContent = mainColor;
-            document.getElementById('custom-color-preview').style.background = mainColor;
-        }
-    }
-
-    // ==================== CANVAS COLOR PICKER ====================
-    const cp = {
-        hue: 30, sat: 0.9, val: 0.9,
-        dragging: null
-    };
-
-    function cpHsvToHex(h, s, v) {
-        let r, g, b;
-        const i = Math.floor(h / 60) % 6;
-        const f = h / 60 - Math.floor(h / 60);
-        const p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s);
-        [r, g, b] = [[v,t,p],[q,v,p],[p,v,t],[p,q,v],[t,p,v],[v,p,q]][i];
-        return '#' + [r,g,b].map(x => Math.round(x*255).toString(16).padStart(2,'0')).join('');
-    }
-
-    function cpDrawCanvas() {
-        const canvas = document.getElementById('cp-canvas');
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        const W = canvas.width, H = canvas.height;
-        // Base hue color
-        const hueColor = cpHsvToHex(cp.hue, 1, 1);
-        // White to hue gradient (left to right)
-        const gradH = ctx.createLinearGradient(0, 0, W, 0);
-        gradH.addColorStop(0, '#ffffff');
-        gradH.addColorStop(1, hueColor);
-        ctx.fillStyle = gradH;
-        ctx.fillRect(0, 0, W, H);
-        // Transparent to black gradient (top to bottom)
-        const gradV = ctx.createLinearGradient(0, 0, 0, H);
-        gradV.addColorStop(0, 'rgba(0,0,0,0)');
-        gradV.addColorStop(1, 'rgba(0,0,0,1)');
-        ctx.fillStyle = gradV;
-        ctx.fillRect(0, 0, W, H);
-        // Draw cursor
-        const cx = cp.sat * W;
-        const cy = (1 - cp.val) * H;
-        ctx.beginPath();
-        ctx.arc(cx, cy, 8, 0, 2 * Math.PI);
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.arc(cx, cy, 6, 0, 2 * Math.PI);
-        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-    }
-
-    function cpDrawHue() {
-        const canvas = document.getElementById('cp-hue');
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        const W = canvas.width, H = canvas.height;
-        const grad = ctx.createLinearGradient(0, 0, W, 0);
-        for (let i = 0; i <= 360; i += 30) grad.addColorStop(i/360, `hsl(${i},100%,50%)`);
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, W, H);
-        // Draw hue cursor
-        const hx = (cp.hue / 360) * W;
-        ctx.beginPath();
-        ctx.rect(hx - 4, 0, 8, H);
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.strokeStyle = 'rgba(0,0,0,0.4)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-    }
-
-    function cpUpdatePreview() {
-        const hex = cpHsvToHex(cp.hue, cp.sat, cp.val);
-        const preview = document.getElementById('cp-preview');
-        const label = document.getElementById('cp-hex-label');
-        if (preview) preview.style.background = hex;
-        if (label) label.textContent = hex;
-    }
-
-    function cpInit() {
-        cpDrawCanvas();
-        cpDrawHue();
-        cpUpdatePreview();
     }
 
     async function simpanPengaturan() {
