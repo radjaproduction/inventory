@@ -1438,82 +1438,6 @@
                 </div>
             </div>
 
-            <!-- DANGER ZONE: HAPUS DATA (Owner Only) -->
-            <div class="mt-2 bg-cardBg rounded-xl border-2 border-red-500/30 flex flex-col overflow-hidden">
-                <div class="flex items-center justify-between px-4 py-3 cursor-pointer select-none" onclick="toggleCollapse('danger-collapse','danger-chevron')">
-                    <div class="flex items-center gap-2">
-                        <div class="w-7 h-7 rounded-lg bg-red-500/15 border-2 border-red-500/30 flex items-center justify-center flex-shrink-0">
-                            <i class="fa-solid fa-triangle-exclamation text-red-400 text-[11px]"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-sm font-black text-red-400 tracking-wide">DANGER ZONE</h3>
-                            <p class="text-[9px] text-black mt-0.5">Aksi ini tidak bisa dibatalkan</p>
-                        </div>
-                    </div>
-                    <i id="danger-chevron" class="fa-solid fa-chevron-down text-red-400 text-xs collapse-chevron"></i>
-                </div>
-                <div id="danger-collapse" class="collapse-body collapsed flex flex-col gap-3 px-4 py-4 border-t-2 border-red-500/20">
-
-                    <!-- Hapus Transaksi -->
-                    <div class="bg-darkBg rounded-xl p-3 border-2 border-red-500/20">
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="flex-1 min-w-0">
-                                <div class="text-[11px] font-black text-black flex items-center gap-1.5">
-                                    <i class="fa-solid fa-handshake text-red-400 text-[10px]"></i>
-                                    Hapus Semua Transaksi
-                                </div>
-                                <p class="text-[9px] text-black mt-1 leading-relaxed">Menghapus semua data transaksi, item transaksi, dan pelunasan. Stok akan kembali seperti sebelum ada penjualan.</p>
-                            </div>
-                            <button onclick="hapusSemuaTransaksi()" class="flex-shrink-0 px-3 py-2 bg-red-500/10 border-2 border-red-500/40 text-red-400 text-[10px] font-black rounded-lg hover:bg-red-500/20 transition-colors whitespace-nowrap">
-                                <i class="fa-solid fa-trash-can mr-1"></i> HAPUS
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Hapus Riwayat Input -->
-                    <div class="bg-darkBg rounded-xl p-3 border-2 border-red-500/20">
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="flex-1 min-w-0">
-                                <div class="text-[11px] font-black text-black flex items-center gap-1.5">
-                                    <i class="fa-solid fa-boxes-stacked text-red-400 text-[10px]"></i>
-                                    Hapus Semua Riwayat Input Stok
-                                </div>
-                                <p class="text-[9px] text-black mt-1 leading-relaxed">Menghapus semua riwayat stok masuk & retur. Stok semua barang akan menjadi 0.</p>
-                            </div>
-                            <button onclick="hapusSemuaRiwayatInput()" class="flex-shrink-0 px-3 py-2 bg-red-500/10 border-2 border-red-500/40 text-red-400 text-[10px] font-black rounded-lg hover:bg-red-500/20 transition-colors whitespace-nowrap">
-                                <i class="fa-solid fa-trash-can mr-1"></i> HAPUS
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Hapus Master Data -->
-                    <div class="bg-darkBg rounded-xl p-3 border-2 border-red-500/20">
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="flex-1 min-w-0">
-                                <div class="text-[11px] font-black text-black flex items-center gap-1.5">
-                                    <i class="fa-solid fa-database text-red-400 text-[10px]"></i>
-                                    Hapus Semua Master Data
-                                </div>
-                                <p class="text-[9px] text-black mt-1 leading-relaxed">Menghapus semua data vendor, brand, model, warna, dan ukuran. Lakukan setelah hapus transaksi & stok.</p>
-                            </div>
-                            <button onclick="hapusSemuaMasterData()" class="flex-shrink-0 px-3 py-2 bg-red-500/10 border-2 border-red-500/40 text-red-400 text-[10px] font-black rounded-lg hover:bg-red-500/20 transition-colors whitespace-nowrap">
-                                <i class="fa-solid fa-trash-can mr-1"></i> HAPUS
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Hapus SEMUA (reset total) -->
-                    <div class="mt-1 pt-3 border-t-2 border-red-500/20">
-                        <button onclick="hapusSemuaData()" class="w-full py-3.5 bg-red-600 hover:bg-red-700 text-black font-black text-sm rounded-xl flex items-center justify-center gap-2 transition-colors shadow-[0_4px_15px_rgba(220,38,38,0.3)]">
-                            <i class="fa-solid fa-bomb text-base"></i>
-                            RESET TOTAL — HAPUS SEMUA DATA
-                        </button>
-                        <p class="text-[9px] text-black text-center mt-2">Menghapus semua transaksi, stok, master data sekaligus. Database bersih total.</p>
-                    </div>
-
-                </div>
-            </div>
-
         <div style="height:90px;flex-shrink:0;"></div>
         </div>
 
@@ -3218,7 +3142,7 @@ function updateSSK(tab, rowId) {
         const brandListEl = document.getElementById('stok-brand-list');
         if (brandListEl) {
             if (masterData.brand.length === 0) {
-                brandListEl.innerHTML = '<div class="text-center text-black text-xs py-4">Belum ada brand. Tambahkan di Tab Master.</div>';
+                brandListEl.innerHTML = '<div class="text-center text-black text-[11px] py-8 flex flex-col items-center gap-2"><i class="fa-solid fa-inbox text-2xl opacity-40"></i>Belum ada brand. Tambahkan di Tab Master.</div>';
             } else {
                 const brandStok = masterData.brand.map(b => {
                     const stokMap = hitungStokBrand(b.id);
@@ -3233,7 +3157,7 @@ function updateSSK(tab, rowId) {
     return a.nama.localeCompare(b.nama, 'id', { sensitivity: 'base' });
 });
                 if (brandStok.length === 0) {
-                    brandListEl.innerHTML = '<div class="text-center text-black text-xs py-4">Belum ada data stok masuk.</div>';
+                    brandListEl.innerHTML = '<div class="text-center text-black text-[11px] py-8 flex flex-col items-center gap-2"><i class="fa-solid fa-inbox text-2xl opacity-40"></i>Belum ada data stok masuk.</div>';
                 } else {
                     const maxStok = Math.max(...brandStok.map(b => b.total), 1);
                     brandListEl.innerHTML = brandStok.map(b => {
@@ -3268,7 +3192,7 @@ function updateSSK(tab, rowId) {
         const vendorListEl = document.getElementById('stok-vendor-list');
         if (vendorListEl) {
             if (masterData.vendor.length === 0 || appData.riwayatTransaksi.length === 0) {
-                vendorListEl.innerHTML = '<div class="text-center text-black text-xs py-4">Belum ada transaksi vendor.</div>';
+                vendorListEl.innerHTML = '<div class="text-center text-black text-[11px] py-8 flex flex-col items-center gap-2"><i class="fa-solid fa-inbox text-2xl opacity-40"></i>Belum ada transaksi vendor.</div>';
             } else {
                 const vendorMap = {};
                 appData.riwayatTransaksi.forEach(d => {
@@ -3486,7 +3410,7 @@ function updateSSK(tab, rowId) {
             return true;
         });
         if (entries.length === 0) {
-            itemsEl.innerHTML = '<div class="text-center text-black text-xs py-10">Belum ada data stok.</div>';
+            itemsEl.innerHTML = '<div class="text-center text-black text-[11px] py-8 flex flex-col items-center gap-2"><i class="fa-solid fa-inbox text-2xl opacity-40"></i>Belum ada data stok.</div>';
             return;
         }
         // Urutkan: negatif di atas (untuk mudah audit), lalu sort normal
@@ -3684,7 +3608,7 @@ function updateSSK(tab, rowId) {
         _activeWarnaFilter = null;
 
         if (Object.keys(_detailStokMap).length === 0) {
-            document.getElementById('stok-detail-items').innerHTML = '<div class="text-center text-black text-xs py-10">Belum ada data stok.</div>';
+            document.getElementById('stok-detail-items').innerHTML = '<div class="text-center text-black text-[11px] py-8 flex flex-col items-center gap-2"><i class="fa-solid fa-inbox text-2xl opacity-40"></i>Belum ada data stok.</div>';
         } else {
             renderDetailItems(null);
         }
@@ -3932,8 +3856,7 @@ function updateSSK(tab, rowId) {
         'font-collapse': 'font-chevron',
         'pelunasan-setting-collapse': 'pelunasan-setting-chevron',
         'pin-collapse': 'pin-chevron',
-        'backup-collapse': 'backup-chevron',
-        'danger-collapse': 'danger-chevron'
+        'backup-collapse': 'backup-chevron'
     };
 
     function toggleCollapse(bodyId, chevronId) {
@@ -6495,7 +6418,7 @@ function updateSSK(tab, rowId) {
     function renderRiwayatInput() {
         const list = document.getElementById('riwayat-input-list');
         if (appData.riwayatInput.length === 0) {
-            list.innerHTML = '<div class="text-center text-black text-xs mt-10"><i class="fa-solid fa-box-open text-3xl mb-2 opacity-50"></i><br>Belum ada data input.</div>';
+            list.innerHTML = '<div class="text-center text-black text-[11px] py-8 flex flex-col items-center gap-2"><i class="fa-solid fa-inbox text-2xl opacity-40"></i>Belum ada data input.</div>';
             return;
         }
         const { dari, sampai } = getFilterRange();
@@ -6612,7 +6535,7 @@ function updateSSK(tab, rowId) {
         if (!list) return;
         const returData = appData.riwayatInput.filter(d => d.mode === 'retur');
         if (returData.length === 0) {
-            list.innerHTML = '<div class="text-center text-black text-xs py-6 opacity-70"><i class="fa-solid fa-box-open text-2xl mb-2 opacity-50"></i><br>Belum ada data retur.</div>';
+            list.innerHTML = '<div class="text-center text-black text-[11px] py-8 flex flex-col items-center gap-2"><i class="fa-solid fa-inbox text-2xl opacity-40"></i>Belum ada data retur.</div>';
             return;
         }
         list.innerHTML = returData.map((d, idx) => {
@@ -6870,7 +6793,7 @@ function updateSSK(tab, rowId) {
         selectedTrxIds.clear();
         updateCetakBar();
         if (appData.riwayatTransaksi.length === 0) {
-            list.innerHTML = '<div class="text-center text-black text-xs mt-10"><i class="fa-solid fa-box-open text-3xl mb-2 opacity-50"></i><br>Belum ada data transaksi.</div>';
+            list.innerHTML = '<div class="text-center text-black text-[11px] py-8 flex flex-col items-center gap-2"><i class="fa-solid fa-inbox text-2xl opacity-40"></i>Belum ada data transaksi.</div>';
             return;
         }
 
@@ -9304,116 +9227,6 @@ function updateSSK(tab, rowId) {
                 { label: opts.ok || 'YA, LANJUTKAN', primary: true, action: onConfirm }
             ]
         });
-    }
-
-    async function hapusSemuaTransaksi() {
-        showConfirm(
-            'Hapus SEMUA transaksi, item transaksi, dan pelunasan?\n\nStok akan kembali seperti sebelum ada penjualan.\nAksi ini TIDAK BISA dibatalkan!',
-            async function() {
-                try {
-                    showToast('⏳ Menghapus data transaksi...');
-                    await sbClient.from('pelunasan').delete().neq('id', 0);
-                    await sbClient.from('transaksi_item').delete().neq('id', 0);
-                    await sbClient.from('transaksi').delete().neq('id', 0);
-                    appData.riwayatTransaksi = [];
-                    appData.pelunasan = [];
-                    renderRiwayatTransaksi();
-                    renderStokDashboard();
-                    showToast('✅ Semua transaksi berhasil dihapus!');
-                } catch(e) {
-                    showToast('❌ Gagal: ' + e.message);
-                }
-            },
-            { title: 'HAPUS TRANSAKSI', type: 'danger', icon: '🗑️', ok: 'YA, HAPUS SEMUA' }
-        );
-    }
-
-    async function hapusSemuaRiwayatInput() {
-        showConfirm(
-            'Hapus SEMUA riwayat input stok (masuk & retur)?\n\nStok semua barang akan menjadi 0.\nAksi ini TIDAK BISA dibatalkan!',
-            async function() {
-                try {
-                    showToast('⏳ Menghapus riwayat stok...');
-                    await sbClient.from('riwayat_input_item').delete().neq('id', 0);
-                    await sbClient.from('riwayat_input').delete().neq('id', 0);
-                    appData.riwayatInput = [];
-                    renderRiwayatInput();
-                    renderStokDashboard();
-                    showToast('✅ Semua riwayat input stok berhasil dihapus!');
-                } catch(e) {
-                    showToast('❌ Gagal: ' + e.message);
-                }
-            },
-            { title: 'HAPUS RIWAYAT STOK', type: 'danger', icon: '🗑️', ok: 'YA, HAPUS SEMUA' }
-        );
-    }
-
-    async function hapusSemuaMasterData() {
-        showConfirm(
-            'Hapus SEMUA master data?\n(Vendor, Brand, Model, Warna, Ukuran)\n\nPastikan sudah hapus transaksi & stok terlebih dahulu.\nAksi ini TIDAK BISA dibatalkan!',
-            async function() {
-                try {
-                    showToast('⏳ Menghapus master data...');
-                    await sbClient.from('model').delete().neq('id', 0);
-                    await sbClient.from('brand').delete().neq('id', 0);
-                    await sbClient.from('vendor').delete().neq('id', 0);
-                    await sbClient.from('warna').delete().neq('id', 0);
-                    await sbClient.from('ukuran').delete().neq('id', 0);
-                    masterData.vendor = [];
-                    masterData.brand = [];
-                    masterData.model = [];
-                    masterData.warna = [];
-                    masterData.ukuran = [];
-                    renderVendorList(); renderBrandList(); renderModelList();
-                    renderWarnaList(); renderUkuranList(); renderBrandOptions();
-                    renderStokDashboard();
-                    showToast('✅ Semua master data berhasil dihapus!');
-                } catch(e) {
-                    showToast('❌ Gagal: ' + e.message);
-                }
-            },
-            { title: 'HAPUS MASTER DATA', type: 'danger', icon: '🗑️', ok: 'YA, HAPUS SEMUA' }
-        );
-    }
-
-    async function hapusSemuaData() {
-        showConfirm(
-            '⚠️ RESET TOTAL DATABASE ⚠️\n\nSEMUA data akan dihapus permanen:\n• Transaksi & pelunasan\n• Riwayat stok masuk/retur\n• Vendor, Brand, Model, Warna, Ukuran\n\nDatabase akan BERSIH TOTAL.\nAksi ini TIDAK BISA dibatalkan!',
-            function() {
-                showConfirm(
-                    'Konfirmasi terakhir:\nYakin ingin menghapus SEMUA data?',
-                    async function() {
-                        try {
-                            showToast('⏳ Mereset database...');
-                            await sbClient.from('pelunasan').delete().neq('id', 0);
-                            await sbClient.from('transaksi_item').delete().neq('id', 0);
-                            await sbClient.from('transaksi').delete().neq('id', 0);
-                            await sbClient.from('riwayat_input_item').delete().neq('id', 0);
-                            await sbClient.from('riwayat_input').delete().neq('id', 0);
-                            await sbClient.from('model').delete().neq('id', 0);
-                            await sbClient.from('brand').delete().neq('id', 0);
-                            await sbClient.from('vendor').delete().neq('id', 0);
-                            await sbClient.from('warna').delete().neq('id', 0);
-                            await sbClient.from('ukuran').delete().neq('id', 0);
-                            appData.riwayatTransaksi = [];
-                            appData.riwayatInput = [];
-                            appData.pelunasan = [];
-                            masterData.vendor = []; masterData.brand = [];
-                            masterData.model = []; masterData.warna = []; masterData.ukuran = [];
-                            renderVendorList(); renderBrandList(); renderModelList();
-                            renderWarnaList(); renderUkuranList(); renderBrandOptions();
-                            renderRiwayatInput(); renderRiwayatTransaksi();
-                            renderStokDashboard();
-                            showToast('🎉 Database berhasil direset! Semua data telah dihapus.');
-                        } catch(e) {
-                            showToast('❌ Gagal reset: ' + e.message);
-                        }
-                    },
-                    { title: 'KONFIRMASI AKHIR', type: 'danger', icon: '💣', ok: 'YA, RESET SEKARANG', cancel: 'BATAL' }
-                );
-            },
-            { title: 'RESET TOTAL DATABASE', type: 'danger', icon: '⚠️', ok: 'LANJUTKAN', cancel: 'BATAL' }
-        );
     }
 
     async function jalankanBackup() {
