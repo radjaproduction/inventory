@@ -175,6 +175,39 @@
         .brand-bg { background-color: var(--brand-main) !important; }
         .brand-gradient-bg { background: var(--brand-gradient) !important; }
         .dashed-border-brand { border: 2px dashed #FFB144 !important; }
+
+        /* === Heat Bar (animated) — palet mengikuti tema brand oranye/gold === */
+        .heat-bar-fill {
+            position: relative;
+            background-image: linear-gradient(90deg, #ffd580 0%, #ffb347 25%, #ff8c00 50%, #ff6a00 75%, #ff8c00 100%);
+            background-size: 200% 100%;
+            animation: heatFlow 2.4s linear infinite;
+            box-shadow: 0 0 6px rgba(255,110,0,0.65), inset 0 0 3px rgba(255,255,255,0.35);
+            overflow: hidden;
+        }
+        .heat-bar-fill.heat-neg {
+            background-image: linear-gradient(90deg, #fca5a5 0%, #ef4444 35%, #b91c1c 65%, #ef4444 100%);
+            background-size: 200% 100%;
+            box-shadow: 0 0 6px rgba(239,68,68,0.65), inset 0 0 3px rgba(255,255,255,0.25);
+        }
+        .heat-bar-fill::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; height: 100%; width: 45%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
+            animation: heatShine 1.9s ease-in-out infinite;
+        }
+        @keyframes heatFlow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: -200% 50%; }
+        }
+        @keyframes heatShine {
+            0% { transform: translateX(-160%); }
+            100% { transform: translateX(320%); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .heat-bar-fill, .heat-bar-fill::after { animation: none !important; }
+        }
         /* Catatan: dulu ada rule border khusus mode gelap di sini, tapi fitur
            toggle mode gelap/terang sudah dihapus (body permanen class .bg-light,
            lihat .border-borderDark#ff8c00 di blok style paling atas). */
@@ -1457,13 +1490,9 @@ END $$;</textarea>
             <!-- BREAKDOWN PER MODEL -->
             <div class="bg-cardBg rounded-xl border-2 border-borderDark overflow-hidden">
                 <div class="flex items-center gap-2 px-4 py-3 border-b-2 border-borderDark"><i class="fa-solid fa-layer-group brand-text"></i><h3 class="text-sm font-bold text-black tracking-wide">RINCIAN LABA PER MODEL</h3></div>
-                <div id="laba-breakdown-list" class="flex flex-col"></div>
+                <div id="laba-breakdown-list" class="flex flex-col pb-3"></div>
             </div>
-            <div class="bg-yellow-500/10 border-2 border-yellow-500/25 rounded-lg px-3 py-2.5 text-[9px] text-black leading-relaxed">
-                <i class="fa-solid fa-circle-info mr-1"></i> Laba kotor dihitung dari total <b>Harga Jual</b> per item terjual pada periode yang dipilih.
-            </div>
-
-        <div style="height:90px;flex-shrink:0;"></div>
+        <div style="height:110px;flex-shrink:0;"></div>
         </div>
 
         <!-- TAB MASTER -->
@@ -3262,7 +3291,7 @@ function updateSSK(tab, rowId) {
                                         </div>
                                         <div class="flex items-center gap-1.5 mt-2">
                                             <div class="flex-grow bg-black/10 rounded-full h-2 overflow-hidden border border-black/5">
-                                                <div class="${isNegative ? 'bg-red-500' : 'brand-gradient-bg'} h-full rounded-full transition-all" style="width:${isNegative ? 100 : pct}%; box-shadow:${isNegative ? 'none' : '0 0 6px rgba(255,140,0,0.6)'};"></div>
+                                                <div class="heat-bar-fill ${isNegative ? 'heat-neg' : ''} h-full rounded-full transition-all" style="width:${isNegative ? 100 : pct}%;"></div>
                                             </div>
                                             <span class="text-[8.5px] font-bold text-black/40 flex-shrink-0">${isNegative ? '' : share + '%'}</span>
                                         </div>
