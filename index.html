@@ -175,39 +175,6 @@
         .brand-bg { background-color: var(--brand-main) !important; }
         .brand-gradient-bg { background: var(--brand-gradient) !important; }
         .dashed-border-brand { border: 2px dashed #FFB144 !important; }
-
-        /* === Heat Bar (animated) — palet mengikuti tema brand oranye/gold === */
-        .heat-bar-fill {
-            position: relative;
-            background-image: linear-gradient(90deg, #ffd580 0%, #ffb347 25%, #ff8c00 50%, #ff6a00 75%, #ff8c00 100%);
-            background-size: 200% 100%;
-            animation: heatFlow 2.4s linear infinite;
-            box-shadow: 0 0 6px rgba(255,110,0,0.65), inset 0 0 3px rgba(255,255,255,0.35);
-            overflow: hidden;
-        }
-        .heat-bar-fill.heat-neg {
-            background-image: linear-gradient(90deg, #fca5a5 0%, #ef4444 35%, #b91c1c 65%, #ef4444 100%);
-            background-size: 200% 100%;
-            box-shadow: 0 0 6px rgba(239,68,68,0.65), inset 0 0 3px rgba(255,255,255,0.25);
-        }
-        .heat-bar-fill::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; height: 100%; width: 45%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
-            animation: heatShine 1.9s ease-in-out infinite;
-        }
-        @keyframes heatFlow {
-            0% { background-position: 0% 50%; }
-            100% { background-position: -200% 50%; }
-        }
-        @keyframes heatShine {
-            0% { transform: translateX(-160%); }
-            100% { transform: translateX(320%); }
-        }
-        @media (prefers-reduced-motion: reduce) {
-            .heat-bar-fill, .heat-bar-fill::after { animation: none !important; }
-        }
         /* Catatan: dulu ada rule border khusus mode gelap di sini, tapi fitur
            toggle mode gelap/terang sudah dihapus (body permanen class .bg-light,
            lihat .border-borderDark#ff8c00 di blok style paling atas). */
@@ -3226,6 +3193,35 @@ function updateSSK(tab, rowId) {
 }
 
     let _brandSortMode = 'alpha';
+    function buildHeatSegments(pctFill, isNeg, total) {
+        const SEG_COUNT = 14;
+        let litCount;
+        if (isNeg) {
+            litCount = SEG_COUNT;
+        } else if (!total || total <= 0) {
+            litCount = 0;
+        } else {
+            litCount = Math.max(1, Math.round((pctFill / 100) * SEG_COUNT));
+        }
+        let segs = '';
+        for (let i = 0; i < SEG_COUNT; i++) {
+            const t = i / (SEG_COUNT - 1);
+            const hue = Math.round(42 - (37 * t));      // 42 (gold) -> 5 (merah-oranye tua)
+            const light = Math.round(63 - (20 * t));    // 63% (terang) -> 43% (gelap/pekat)
+            let bg;
+            if (isNeg) {
+                bg = '#ef4444';
+            } else if (i < litCount) {
+                bg = `hsl(${hue}, 92%, ${light}%)`;
+            } else {
+                bg = 'rgba(0,0,0,0.08)';
+            }
+            const glow = (!isNeg && i < litCount) ? `box-shadow:0 0 4px hsla(${hue},92%,${light}%,0.65);` : '';
+            segs += `<div class="flex-1 rounded-[2px]" style="height:100%;background:${bg};${glow}"></div>`;
+        }
+        return segs;
+    }
+
     function renderStokDashboard() {
         let totalMasuk = 0, totalRetur = 0, totalKeluar = 0;
         appData.riwayatInput.forEach(d => {
@@ -3290,8 +3286,8 @@ function updateSSK(tab, rowId) {
                                             <span class="text-[11.5px] font-black text-black uppercase tracking-wide leading-none truncate">${b.nama}</span>
                                         </div>
                                         <div class="flex items-center gap-1.5 mt-2">
-                                            <div class="flex-grow bg-black/10 rounded-full h-2 overflow-hidden border border-black/5">
-                                                <div class="heat-bar-fill ${isNegative ? 'heat-neg' : ''} h-full rounded-full transition-all" style="width:${isNegative ? 100 : pct}%;"></div>
+                                            <div class="flex-grow rounded-full h-2 overflow-hidden flex gap-[2px]">
+                                                ${buildHeatSegments(pct, isNegative, b.total)}
                                             </div>
                                             <span class="text-[8.5px] font-bold text-black/40 flex-shrink-0">${isNegative ? '' : share + '%'}</span>
                                         </div>
@@ -6547,7 +6543,7 @@ function updateSSK(tab, rowId) {
         else label.textContent = 'SAMPAI ' + fmt(sampai);
     }
 
-    const LABA_BREAKDOWN_PAGE_SIZE = 15;
+    const LABA_BREAKDOWN_PAGE_SIZE = 8;
     let _labaBreakdownRows = [];
     let _labaBreakdownPage = 1;
 
@@ -6568,16 +6564,16 @@ function updateSSK(tab, rowId) {
 
         let html = visibleRows.map((r, idx) => {
             const noUrut = (_labaBreakdownPage - 1) * LABA_BREAKDOWN_PAGE_SIZE + idx + 1;
-            return `<div class="flex items-center justify-between px-3 py-2.5 border-b-2 border-borderDark last:border-0">
+            return `<div class="flex items-center justify-between px-3 py-1.5 border-b-2 border-borderDark last:border-0">
                 <div class="min-w-0 flex-1 flex items-start gap-2">
-                    <div class="w-5 flex-shrink-0 pt-0.5 text-center text-[10px] font-black text-black">${noUrut}</div>
+                    <div class="w-4 flex-shrink-0 pt-0.5 text-center text-[9px] font-black text-black">${noUrut}</div>
                     <div class="min-w-0 flex-1">
-                        <div class="text-[10.5px] font-bold text-black truncate">${r.model}</div>
-                        <div class="text-[8.5px] text-black/70">${r.brand} • ${r.qty} pcs terjual</div>
+                        <div class="text-[10px] font-bold text-black truncate leading-tight">${r.model}</div>
+                        <div class="text-[8px] text-black/70 leading-tight">${r.brand} • ${r.qty} pcs terjual</div>
                     </div>
                 </div>
                 <div class="text-right flex-shrink-0 ml-2">
-                    <div class="text-[11px] font-black text-green-600">Rp ${r.omset.toLocaleString('id-ID')}</div>
+                    <div class="text-[10.5px] font-black text-green-600">Rp ${r.omset.toLocaleString('id-ID')}</div>
                 </div>
             </div>`;
         }).join('');
