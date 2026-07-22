@@ -3743,6 +3743,10 @@ function updateSSK(tab, rowId) {
             setTimeout(() => {
                 detailView.classList.add('hidden'); detailView.classList.remove('flex');
                 dashboard.classList.remove('hidden'); dashboard.classList.add('flex', 'tab-content');
+                // Render ulang list stok per brand di sini (bukan cuma toggle class hidden/flex),
+                // supaya tidak ada glitch repaint webview yang bikin bar heat kelihatan kepotong
+                // saat kembali dari halaman detail brand.
+                renderStokDashboard();
             }, 250);
         }
     }
