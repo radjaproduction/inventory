@@ -993,6 +993,7 @@
             </div>
             <div class="bg-darkBg p-1 rounded-xl flex border-2 border-borderDark gap-1 flex-shrink-0">
                 <button id="input-mode-masuk" onclick="setInputMode('masuk')" class="flex-1 py-2.5 text-xs font-bold rounded-lg brand-gradient-bg text-black shadow-sm transition-all flex items-center justify-center gap-2"><i class="fa-solid fa-arrow-down text-xs"></i> STOK MASUK</button>
+                <button id="input-mode-beban" onclick="setInputMode('beban')" class="flex-1 py-2.5 text-xs font-bold rounded-lg text-black hover:text-black transition-all flex items-center justify-center gap-2"><i class="fa-solid fa-file-invoice-dollar text-xs"></i> BEBAN</button>
                 <button id="input-mode-retur" onclick="setInputMode('retur')" class="flex-1 py-2.5 text-xs font-bold rounded-lg text-black hover:text-black transition-all flex items-center justify-center gap-2"><i class="fa-solid fa-rotate-left text-xs"></i> RETUR</button>
             </div>
             <div id="retur-info-banner" class="hidden bg-red-500/10 border-2 border-red-500/30 rounded-xl px-4 py-3 flex items-start gap-3 flex-shrink-0">
@@ -1010,7 +1011,87 @@
                     <input id="input-retur-keterangan" type="text" class="w-full bg-cardBg border-2 border-red-500/40 rounded-lg pl-9 pr-3 py-2.5 text-xs text-black placeholder-black focus:outline-none focus:border-red-500 transition-colors" placeholder="retur...">
                 </div>
             </div>
-            <div class="flex flex-col gap-3 flex-shrink-0">
+
+            <!-- PANEL BEBAN OPERASIONAL: hanya tampil saat mode BEBAN aktif -->
+            <div id="beban-form-wrapper" class="hidden flex-col gap-3 flex-shrink-0">
+                <div class="rounded-xl overflow-hidden border-2 border-borderDark bg-cardBg" style="box-shadow:0 2px 12px rgba(255,140,0,0.15)">
+                    <div class="brand-gradient-bg text-black px-4 py-3 flex items-center gap-2">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                        <div class="text-[13px] font-black leading-none">CATAT BIAYA OPERASIONAL</div>
+                    </div>
+                    <div class="p-4 flex flex-col gap-3">
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[10px] font-bold text-black tracking-wider">JENIS BIAYA</label>
+                            <input id="beban-input-kategori" type="text" list="beban-kategori-datalist" placeholder="mis. Listrik, Bensin, Gaji Harian..." class="w-full bg-darkBg border-2 border-borderDark rounded-lg px-3 py-2.5 text-xs text-black placeholder-black/50 outline-none focus:border-[#FFB144] transition-colors">
+                            <datalist id="beban-kategori-datalist"></datalist>
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[10px] font-bold text-black tracking-wider">NOMINAL</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-3 flex items-center text-black text-xs font-bold">Rp</span>
+                                <input id="beban-input-nominal" type="number" inputmode="numeric" min="0" placeholder="0" class="w-full bg-darkBg border-2 border-borderDark rounded-lg pl-9 pr-3 py-2.5 text-xs text-black placeholder-black/50 outline-none focus:border-[#FFB144] transition-colors">
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[10px] font-bold text-black tracking-wider">TANGGAL</label>
+                            <input id="beban-input-tanggal" type="date" class="w-full bg-darkBg border-2 border-borderDark rounded-lg px-3 py-2.5 text-xs text-black outline-none focus:border-[#FFB144] transition-colors">
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[10px] font-bold text-black tracking-wider">KETERANGAN (opsional)</label>
+                            <input id="beban-input-keterangan" type="text" placeholder="catatan tambahan..." class="w-full bg-darkBg border-2 border-borderDark rounded-lg px-3 py-2.5 text-xs text-black placeholder-black/50 outline-none focus:border-[#FFB144] transition-colors">
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[10px] font-bold text-black tracking-wider">FOTO KWITANSI/BON <span class="text-red-500">*wajib</span></label>
+                            <input type="file" id="beban-input-foto" accept="image/*" capture="environment" class="hidden" onchange="prosesFotoBeban(event)">
+                            <div id="beban-foto-placeholder" onclick="document.getElementById('beban-input-foto').click()" class="w-full border-2 border-dashed border-borderDark rounded-lg py-6 flex flex-col items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-transform">
+                                <i class="fa-solid fa-camera text-black/40 text-xl"></i>
+                                <span class="text-[10px] font-bold text-black/50">Ketuk untuk foto kwitansi/bon</span>
+                            </div>
+                            <div id="beban-foto-preview-wrapper" class="hidden relative">
+                                <img id="beban-foto-preview" class="w-full rounded-lg border-2 border-borderDark object-cover max-h-[220px]" src="">
+                                <button type="button" onclick="hapusFotoBeban()" class="absolute top-2 right-2 w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg active:scale-90 transition-transform"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                        </div>
+                        <button id="btn-simpan-beban-input" onclick="simpanBebanInput()" class="w-full brand-gradient-bg text-black font-black text-[13px] py-3.5 rounded-xl flex justify-center items-center gap-2 shadow-[0_4px_15px_rgba(255,140,0,0.35)] active:scale-95 transition-transform"><i class="fa-solid fa-floppy-disk"></i> SIMPAN BIAYA</button>
+                    </div>
+                </div>
+
+                <div class="summary-card rounded-xl p-4 border-2 flex flex-col gap-1" style="background:linear-gradient(135deg,#dc2626,#991b1b);border-color:#7f1d1d;">
+                    <div class="text-[9px] font-black text-white/90 tracking-wider flex items-center gap-1"><i class="fa-solid fa-arrow-trend-down text-[10px]"></i> TOTAL BEBAN (SEMUA)</div>
+                    <div id="beban-input-total" class="text-[22px] font-black text-white leading-none">Rp 0</div>
+                </div>
+
+                <div id="beban-input-tabel-missing" class="hidden bg-red-500/10 border-2 border-red-500/30 rounded-xl px-4 py-3">
+                    <div class="text-[10px] font-black text-red-500 mb-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i>TABEL BELUM ADA</div>
+                    <div class="text-[9px] text-black/80 leading-relaxed mb-2">Tabel <b>beban_operasional</b> belum ada di database ini. Jalankan SQL ini sekali di Supabase SQL Editor:</div>
+                    <textarea readonly class="w-full text-[8px] font-mono bg-white border border-red-300 rounded-lg p-2" rows="6" onclick="this.select()">CREATE TABLE IF NOT EXISTS beban_operasional (
+    id bigint generated by default as identity primary key,
+    kategori text not null,
+    keterangan text,
+    nominal integer default 0,
+    tanggal text not null,
+    sumber text default 'ADMIN',
+    foto text,
+    created_at timestamptz default now()
+);
+ALTER TABLE beban_operasional ADD COLUMN IF NOT EXISTS sumber text default 'ADMIN';
+ALTER TABLE beban_operasional ADD COLUMN IF NOT EXISTS foto text;
+ALTER TABLE beban_operasional DISABLE ROW LEVEL SECURITY;
+DO $$
+BEGIN
+  BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE beban_operasional; EXCEPTION WHEN duplicate_object THEN NULL; END;
+END $$;</textarea>
+                    <button onclick="loadBebanInputList()" class="w-full mt-2 py-2 text-[9px] font-black rounded-lg text-white" style="background:linear-gradient(90deg,#16a34a,#22c55e);"><i class="fa-solid fa-rotate mr-1"></i> SUDAH DIJALANKAN, CEK LAGI</button>
+                </div>
+
+                <div class="flex items-center gap-2 px-1">
+                    <i class="fa-solid fa-clock-rotate-left brand-text text-xs"></i>
+                    <span class="text-[11px] font-black text-black tracking-wide">RIWAYAT BIAYA</span>
+                </div>
+                <div id="beban-input-list" class="flex flex-col gap-2"></div>
+            </div>
+
+            <div id="input-brandmodel-wrapper" class="flex flex-col gap-3 flex-shrink-0">
                 <div id="input-brand-selector" onclick="bukaDropdownInput('brand')" class="bg-cardBg rounded-xl p-5 flex items-center justify-between border-2 border-[#FFB144] cursor-pointer hover:bg-[#fdf6ec] transition-colors" style="box-shadow:0 2px 12px rgba(255,140,0,0.15)">
                     <div class="flex items-center gap-4">
                         <div class="w-12 h-12 rounded-lg brand-gradient-bg flex items-center justify-center text-black"><i class="fa-solid fa-tags text-xl"></i></div>
@@ -1026,7 +1107,7 @@
                     <i class="fa-solid fa-chevron-down brand-text text-base"></i>
                 </div>
             </div>
-            <div class="rounded-xl overflow-hidden border-2 border-borderDark bg-cardBg variasi-card-grow">
+            <div id="input-variasi-card" class="rounded-xl overflow-hidden border-2 border-borderDark bg-cardBg variasi-card-grow">
                 <div id="input-tabel-header" class="brand-gradient-bg text-black px-4 py-3 flex items-center justify-between gap-3 flex-shrink-0">
                     <div>
                         <div class="text-[13px] font-black leading-none">VARIASI ITEM</div>
@@ -2740,7 +2821,7 @@ async function fetchBayarSebagianData() {
     // dari HP/device lain, tampilan di sini ikut ter-update otomatis tanpa perlu refresh manual.
     let _realtimeChannel = null;
     let _realtimeDebounceTimer = null;
-    const REALTIME_TABLES = ['vendor', 'brand', 'model', 'warna', 'ukuran', 'pengaturan', 'riwayat_input', 'riwayat_input_item', 'transaksi', 'transaksi_item', 'pelunasan'];
+    const REALTIME_TABLES = ['vendor', 'brand', 'model', 'warna', 'ukuran', 'pengaturan', 'riwayat_input', 'riwayat_input_item', 'transaksi', 'transaksi_item', 'pelunasan', 'beban_operasional'];
 
     // Peta nama tabel Supabase -> "grup" data. Tabel yang datanya digabung jadi 1 entity
     // (misal transaksi + transaksi_item, riwayat_input + riwayat_input_item) masuk grup yang sama,
@@ -2751,6 +2832,7 @@ async function fetchBayarSebagianData() {
         riwayat_input: 'riwayatInput', riwayat_input_item: 'riwayatInput',
         transaksi: 'transaksi', transaksi_item: 'transaksi',
     pelunasan: 'pelunasan', bayar_sebagian: 'bayarSebagian',
+    beban_operasional: 'bebanOperasional',
     };
 
     // Tiap grup: fungsi fetch (tarik ulang data grup ini SAJA) + fungsi render
@@ -2766,6 +2848,7 @@ async function fetchBayarSebagianData() {
         transaksi:    { fetch: fetchTransaksiData,    render: () => { renderStokDashboard(); if (typeof _renderRiwayatTransaksiOri === 'function') _renderRiwayatTransaksiOri(); if (typeof _renderPelunasanViewOri === 'function') _renderPelunasanViewOri(); if (typeof renderLabaKotor === 'function') renderLabaKotor(); } },
         pelunasan:    { fetch: fetchPelunasanData,    render: () => { if (typeof _renderPelunasanViewOri === 'function') _renderPelunasanViewOri(); } },
     bayarSebagian:{ fetch: fetchBayarSebagianData,render: () => { if (typeof _renderBayarSebagianViewOri === 'function') _renderBayarSebagianViewOri(); } },
+    bebanOperasional: { fetch: loadBebanInputList, render: () => {} },
     };
 
     function initRealtimeSync() {
@@ -4727,23 +4810,53 @@ function updateSSK(tab, rowId) {
     function setInputMode(mode) {
         inputState.mode = mode;
         const btnMasuk = document.getElementById('input-mode-masuk');
+        const btnBeban = document.getElementById('input-mode-beban');
         const btnRetur = document.getElementById('input-mode-retur');
         const banner = document.getElementById('retur-info-banner');
         const keteranganWrapper = document.getElementById('retur-keterangan-wrapper');
         const headerTitle = document.getElementById('input-header-title');
         const btnText = document.getElementById('btn-simpan-input-text');
         const returSection = document.getElementById('riwayat-retur-section');
+        const bebanWrapper = document.getElementById('beban-form-wrapper');
+        const brandModelWrapper = document.getElementById('input-brandmodel-wrapper');
+        const variasiCard = document.getElementById('input-variasi-card');
+        const actionBar = document.getElementById('action-bar-input');
+
+        const ACTIVE = "flex-1 py-2.5 text-xs font-bold rounded-lg brand-gradient-bg text-black shadow-sm transition-all flex items-center justify-center gap-2";
+        const ACTIVE_RETUR = "flex-1 py-2.5 text-xs font-bold rounded-lg bg-red-500/20 text-red-400 border-2 border-red-500/40 shadow-sm transition-all flex items-center justify-center gap-2";
+        const INACTIVE = "flex-1 py-2.5 text-xs font-bold rounded-lg text-black hover:text-black transition-all flex items-center justify-center gap-2";
+
+        btnMasuk.className = mode === 'masuk' ? ACTIVE : INACTIVE;
+        btnBeban.className = mode === 'beban' ? ACTIVE : INACTIVE;
+        btnRetur.className = mode === 'retur' ? ACTIVE_RETUR : INACTIVE;
+
+        if (mode === 'beban') {
+            banner.classList.add('hidden'); banner.classList.remove('flex');
+            keteranganWrapper.classList.add('hidden'); keteranganWrapper.classList.remove('flex');
+            if (returSection) { returSection.classList.add('hidden'); returSection.classList.remove('flex'); }
+            brandModelWrapper.classList.add('hidden');
+            variasiCard.classList.add('hidden');
+            actionBar.style.display = 'none';
+            bebanWrapper.classList.remove('hidden'); bebanWrapper.classList.add('flex');
+            headerTitle.innerHTML = 'CATAT <span class="text-black">BIAYA</span>';
+            const tglInput = document.getElementById('beban-input-tanggal');
+            if (tglInput && !tglInput.value) tglInput.value = new Date().toISOString().slice(0, 10);
+            loadBebanInputList();
+            return;
+        }
+
+        brandModelWrapper.classList.remove('hidden');
+        variasiCard.classList.remove('hidden');
+        actionBar.style.display = 'flex';
+        bebanWrapper.classList.add('hidden'); bebanWrapper.classList.remove('flex');
+
         if (mode === 'masuk') {
-            btnMasuk.className = "flex-1 py-2.5 text-xs font-bold rounded-lg brand-gradient-bg text-black shadow-sm transition-all flex items-center justify-center gap-2";
-            btnRetur.className = "flex-1 py-2.5 text-xs font-bold rounded-lg text-black hover:text-black transition-all flex items-center justify-center gap-2";
             banner.classList.add('hidden'); banner.classList.remove('flex');
             keteranganWrapper.classList.add('hidden'); keteranganWrapper.classList.remove('flex');
             headerTitle.innerHTML = 'INPUT <span class="text-black">DATA</span>';
             btnText.textContent = 'SIMPAN DATA MASUK';
             if (returSection) { returSection.classList.add('hidden'); returSection.classList.remove('flex'); }
         } else {
-            btnRetur.className = "flex-1 py-2.5 text-xs font-bold rounded-lg bg-red-500/20 text-red-400 border-2 border-red-500/40 shadow-sm transition-all flex items-center justify-center gap-2";
-            btnMasuk.className = "flex-1 py-2.5 text-xs font-bold rounded-lg text-black hover:text-black transition-all flex items-center justify-center gap-2";
             banner.classList.remove('hidden'); banner.classList.add('flex');
             keteranganWrapper.classList.remove('hidden'); keteranganWrapper.classList.add('flex');
             headerTitle.innerHTML = 'RETUR <span class="text-black">STOK</span>';
@@ -4752,6 +4865,156 @@ function updateSSK(tab, rowId) {
             _rrPage = 1; // masuk mode retur -> kembali ke halaman 1 biar tidak nyangkut di halaman lama
             renderRiwayatReturInline();
         }
+    }
+
+    // ==================== BEBAN OPERASIONAL (tab Input Data) ====================
+    let _cacheBebanInput = [];
+    let _bebanInputTableMissing = false;
+    let _bebanFotoBase64 = null;
+
+    function prosesFotoBeban(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const maxW = 1000;
+                let w = img.width, h = img.height;
+                if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+                const canvas = document.createElement('canvas');
+                canvas.width = w; canvas.height = h;
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                _bebanFotoBase64 = canvas.toDataURL('image/jpeg', 0.6);
+                document.getElementById('beban-foto-preview').src = _bebanFotoBase64;
+                document.getElementById('beban-foto-preview-wrapper').classList.remove('hidden');
+                document.getElementById('beban-foto-preview-wrapper').classList.add('flex');
+                document.getElementById('beban-foto-placeholder').classList.add('hidden');
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function hapusFotoBeban() {
+        _bebanFotoBase64 = null;
+        document.getElementById('beban-input-foto').value = '';
+        document.getElementById('beban-foto-preview-wrapper').classList.add('hidden');
+        document.getElementById('beban-foto-preview-wrapper').classList.remove('flex');
+        document.getElementById('beban-foto-placeholder').classList.remove('hidden');
+    }
+
+    function resetFotoBebanForm() {
+        _bebanFotoBase64 = null;
+        const inputFoto = document.getElementById('beban-input-foto');
+        if (inputFoto) inputFoto.value = '';
+        const wrapper = document.getElementById('beban-foto-preview-wrapper');
+        const placeholder = document.getElementById('beban-foto-placeholder');
+        if (wrapper) { wrapper.classList.add('hidden'); wrapper.classList.remove('flex'); }
+        if (placeholder) placeholder.classList.remove('hidden');
+    }
+
+    function tampilkanFotoBebanLightbox(src) {
+        if (!src) { showToast('Tidak ada foto untuk catatan ini.'); return; }
+        document.getElementById('foto-beban-lightbox-img').src = src;
+        const el = document.getElementById('foto-beban-lightbox');
+        el.classList.remove('hidden'); el.classList.add('flex');
+    }
+
+    function tutupFotoBebanLightbox() {
+        const el = document.getElementById('foto-beban-lightbox');
+        el.classList.add('hidden'); el.classList.remove('flex');
+    }
+
+    function lihatFotoBebanInput(id) {
+        const r = _cacheBebanInput.find(x => x.id === id);
+        if (r) tampilkanFotoBebanLightbox(r.foto);
+    }
+
+    async function loadBebanInputList() {
+        const listEl = document.getElementById('beban-input-list');
+        const missingBanner = document.getElementById('beban-input-tabel-missing');
+        try {
+            const { data, error } = await sbClient.from('beban_operasional').select('*').order('tanggal', { ascending: false }).order('id', { ascending: false }).limit(50);
+            if (error) throw error;
+            _bebanInputTableMissing = false;
+            _cacheBebanInput = data || [];
+            missingBanner.classList.add('hidden');
+        } catch (e) {
+            _bebanInputTableMissing = true;
+            _cacheBebanInput = [];
+            missingBanner.classList.remove('hidden');
+        }
+
+        const total = _cacheBebanInput.reduce((s, r) => s + (r.nominal || 0), 0);
+        document.getElementById('beban-input-total').textContent = 'Rp ' + total.toLocaleString('id-ID');
+
+        const datalist = document.getElementById('beban-kategori-datalist');
+        const kategoriUnik = [...new Set(_cacheBebanInput.map(r => r.kategori))];
+        datalist.innerHTML = kategoriUnik.map(k => `<option value="${escapeHtmlBeban(k)}">`).join('');
+
+        if (_bebanInputTableMissing) { listEl.innerHTML = ''; return; }
+        if (_cacheBebanInput.length === 0) {
+            listEl.innerHTML = '<div class="text-center text-[10px] text-black/50 font-bold py-6">Belum ada catatan biaya.</div>';
+            return;
+        }
+        listEl.innerHTML = _cacheBebanInput.map(r => `
+            <div class="bg-cardBg rounded-xl p-3 flex items-center justify-between border-2 border-borderDark">
+                <div class="flex-1 min-w-0">
+                    <div class="text-xs font-bold text-black truncate flex items-center gap-1.5">
+                        ${escapeHtmlBeban(r.kategori)}
+                        <span class="text-[8px] font-black px-1.5 py-0.5 rounded border-2 flex-shrink-0 ${r.sumber === 'OWNER' ? 'bg-purple-500/15 text-purple-600 border-purple-500/40' : 'bg-blue-500/15 text-blue-600 border-blue-500/40'}">${escapeHtmlBeban(r.sumber || 'ADMIN')}</span>
+                    </div>
+                    <div class="text-[9px] text-black/60 font-bold mt-0.5">${escapeHtmlBeban(r.tanggal)}${r.keterangan ? ' • ' + escapeHtmlBeban(r.keterangan) : ''}</div>
+                </div>
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    <span class="text-[11px] font-black text-red-500">Rp ${(r.nominal || 0).toLocaleString('id-ID')}</span>
+                    ${r.foto ? `<button onclick="lihatFotoBebanInput(${r.id})" class="w-7 h-7 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 active:scale-90 transition-transform flex items-center justify-center text-blue-600 text-[10px]"><i class="fa-solid fa-image"></i></button>` : ''}
+                    <button onclick="hapusBebanInput(${r.id})" class="w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 active:scale-90 transition-transform flex items-center justify-center text-red-600 text-[10px]"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function escapeHtmlBeban(str) {
+        return String(str ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+    }
+
+    async function simpanBebanInput() {
+        const kategori = document.getElementById('beban-input-kategori').value.trim();
+        const nominal = parseInt(document.getElementById('beban-input-nominal').value) || 0;
+        const tanggal = document.getElementById('beban-input-tanggal').value || new Date().toISOString().slice(0, 10);
+        const keterangan = document.getElementById('beban-input-keterangan').value.trim();
+
+        if (!kategori) { showAlert('Isi jenis biaya!', {type:'warning'}); return; }
+        if (nominal <= 0) { showAlert('Nominal harus lebih dari 0!', {type:'warning'}); return; }
+        if (!_bebanFotoBase64) { showAlert('Wajib foto kwitansi/bon dulu sebelum simpan!', {type:'warning'}); return; }
+
+        const btn = document.getElementById('btn-simpan-beban-input');
+        setButtonLoading(btn, true, 'MENYIMPAN...');
+        try {
+            const { error } = await sbClient.from('beban_operasional').insert({ kategori, nominal, tanggal, keterangan, sumber: 'ADMIN', foto: _bebanFotoBase64 });
+            if (error) throw error;
+            document.getElementById('beban-input-kategori').value = '';
+            document.getElementById('beban-input-nominal').value = '';
+            document.getElementById('beban-input-keterangan').value = '';
+            resetFotoBebanForm();
+            showToast('✅ Biaya disimpan!');
+            await loadBebanInputList();
+        } catch (e) {
+            showToast('❌ Gagal simpan biaya: ' + (e.message || ''));
+        } finally {
+            setButtonLoading(btn, false);
+        }
+    }
+
+    function hapusBebanInput(id) {
+        showConfirm('Hapus catatan biaya ini?\nData yang sudah dihapus tidak bisa dikembalikan.', async function() {
+            const { error } = await sbClient.from('beban_operasional').delete().eq('id', id);
+            if (error) { showToast('❌ Gagal hapus: ' + error.message); return; }
+            showToast('✅ Biaya dihapus.');
+            loadBebanInputList();
+        });
     }
 
     function bukaDropdownInput(type) {
@@ -9657,6 +9920,12 @@ function updateSSK(tab, rowId) {
                 </button>
             </div>
         </div>
+    </div>
+
+    <!-- LIGHTBOX FOTO BUKTI BEBAN -->
+    <div id="foto-beban-lightbox" class="hidden fixed inset-0 items-center justify-center" style="background:rgba(0,0,0,0.9);z-index:999999;" onclick="tutupFotoBebanLightbox()">
+        <button onclick="tutupFotoBebanLightbox()" style="position:absolute;top:16px;right:16px;width:36px;height:36px;background:rgba(255,255,255,0.15);border:none;border-radius:50%;color:#fff;font-size:18px;cursor:pointer;">&times;</button>
+        <img id="foto-beban-lightbox-img" src="" style="max-width:92vw;max-height:88vh;object-fit:contain;border-radius:8px;" onclick="event.stopPropagation()">
     </div>
 </body>
 </html>
