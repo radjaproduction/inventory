@@ -993,7 +993,7 @@
             </div>
             <div class="bg-darkBg p-1 rounded-xl flex border-2 border-borderDark gap-1 flex-shrink-0">
                 <button id="input-mode-masuk" onclick="setInputMode('masuk')" class="flex-1 py-2.5 text-xs font-bold rounded-lg brand-gradient-bg text-black shadow-sm transition-all flex items-center justify-center gap-2"><i class="fa-solid fa-arrow-down text-xs"></i> STOK MASUK</button>
-                <button id="input-mode-beban" onclick="setInputMode('beban')" class="flex-1 py-2.5 text-xs font-bold rounded-lg text-black hover:text-black transition-all flex items-center justify-center gap-2"><i class="fa-solid fa-file-invoice-dollar text-xs"></i> BEBAN</button>
+                <button id="input-mode-beban" onclick="setInputMode('beban')" class="flex-1 py-2.5 text-xs font-bold rounded-lg text-black hover:text-black flex items-center justify-center gap-2"><i class="fa-solid fa-file-invoice-dollar text-xs"></i> BEBAN</button>
                 <button id="input-mode-retur" onclick="setInputMode('retur')" class="flex-1 py-2.5 text-xs font-bold rounded-lg text-black hover:text-black transition-all flex items-center justify-center gap-2"><i class="fa-solid fa-rotate-left text-xs"></i> RETUR</button>
             </div>
             <div id="retur-info-banner" class="hidden bg-red-500/10 border-2 border-red-500/30 rounded-xl px-4 py-3 flex items-start gap-3 flex-shrink-0">
@@ -1022,37 +1022,37 @@
                     <div class="p-4 flex flex-col gap-3">
                         <div class="flex flex-col gap-1.5">
                             <label class="text-[10px] font-bold text-black tracking-wider">JENIS BIAYA</label>
-                            <input id="beban-input-kategori" type="text" list="beban-kategori-datalist" placeholder="mis. Listrik, Bensin, Gaji Harian..." class="w-full bg-darkBg border-2 border-borderDark rounded-lg px-3 py-2.5 text-xs text-black placeholder-black/50 outline-none focus:border-[#FFB144] transition-colors">
+                            <input id="beban-input-kategori" type="text" list="beban-kategori-datalist" placeholder="mis. Listrik, Bensin, Gaji Harian..." class="w-full bg-darkBg border-2 border-borderDark rounded-lg px-3 py-2.5 text-xs text-black placeholder-black/50 outline-none focus:border-[#FFB144]">
                             <datalist id="beban-kategori-datalist"></datalist>
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <label class="text-[10px] font-bold text-black tracking-wider">NOMINAL</label>
                             <div class="relative">
                                 <span class="absolute inset-y-0 left-3 flex items-center text-black text-xs font-bold">Rp</span>
-                                <input id="beban-input-nominal" type="text" inputmode="numeric" placeholder="0" oninput="formatRupiahInputBeban(this)" class="w-full bg-darkBg border-2 border-borderDark rounded-lg pl-9 pr-3 py-2.5 text-xs text-black placeholder-black/50 outline-none focus:border-[#FFB144] transition-colors">
+                                <input id="beban-input-nominal" type="text" inputmode="numeric" placeholder="0" oninput="formatRupiahInputBeban(this)" class="w-full bg-darkBg border-2 border-borderDark rounded-lg pl-9 pr-3 py-2.5 text-xs text-black placeholder-black/50 outline-none focus:border-[#FFB144]">
                             </div>
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <label class="text-[10px] font-bold text-black tracking-wider">TANGGAL</label>
-                            <input id="beban-input-tanggal" type="date" class="w-full bg-darkBg border-2 border-borderDark rounded-lg px-3 py-2.5 text-xs text-black outline-none focus:border-[#FFB144] transition-colors">
+                            <input id="beban-input-tanggal" type="date" class="w-full bg-darkBg border-2 border-borderDark rounded-lg px-3 py-2.5 text-xs text-black outline-none focus:border-[#FFB144]">
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <label class="text-[10px] font-bold text-black tracking-wider">KETERANGAN (opsional)</label>
-                            <input id="beban-input-keterangan" type="text" placeholder="catatan tambahan..." class="w-full bg-darkBg border-2 border-borderDark rounded-lg px-3 py-2.5 text-xs text-black placeholder-black/50 outline-none focus:border-[#FFB144] transition-colors">
+                            <input id="beban-input-keterangan" type="text" placeholder="catatan tambahan..." class="w-full bg-darkBg border-2 border-borderDark rounded-lg px-3 py-2.5 text-xs text-black placeholder-black/50 outline-none focus:border-[#FFB144]">
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <label class="text-[10px] font-bold text-black tracking-wider">FOTO KWITANSI/BON <span class="text-red-500">*wajib</span></label>
                             <input type="file" id="beban-input-foto" accept="image/*" capture="environment" class="hidden" onchange="prosesFotoBeban(event)">
-                            <div id="beban-foto-placeholder" onclick="document.getElementById('beban-input-foto').click()" class="w-full border-2 border-dashed border-borderDark rounded-lg py-6 flex flex-col items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-transform">
+                            <div id="beban-foto-placeholder" onclick="document.getElementById('beban-input-foto').click()" class="w-full border-2 border-dashed border-borderDark rounded-lg py-6 flex flex-col items-center justify-center gap-1.5 cursor-pointer">
                                 <i class="fa-solid fa-camera text-black/40 text-xl"></i>
                                 <span class="text-[10px] font-bold text-black/50">Ketuk untuk foto kwitansi/bon</span>
                             </div>
                             <div id="beban-foto-preview-wrapper" class="hidden relative">
                                 <img id="beban-foto-preview" class="w-full rounded-lg border-2 border-borderDark object-cover max-h-[220px]" src="">
-                                <button type="button" onclick="hapusFotoBeban()" class="absolute top-2 right-2 w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg active:scale-90 transition-transform"><i class="fa-solid fa-xmark"></i></button>
+                                <button type="button" onclick="hapusFotoBeban()" class="absolute top-2 right-2 w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg"><i class="fa-solid fa-xmark"></i></button>
                             </div>
                         </div>
-                        <button id="btn-simpan-beban-input" onclick="simpanBebanInput()" class="w-full brand-gradient-bg text-black font-black text-[13px] py-3.5 rounded-xl flex justify-center items-center gap-2 shadow-[0_4px_15px_rgba(255,140,0,0.35)] active:scale-95 transition-transform"><i class="fa-solid fa-floppy-disk"></i> SIMPAN BIAYA</button>
+                        <button id="btn-simpan-beban-input" onclick="simpanBebanInput()" class="w-full brand-gradient-bg text-black font-black text-[13px] py-3.5 rounded-xl flex justify-center items-center gap-2 shadow-[0_4px_15px_rgba(255,140,0,0.35)]"><i class="fa-solid fa-floppy-disk"></i> SIMPAN BIAYA</button>
                     </div>
                 </div>
 
@@ -1083,6 +1083,24 @@ BEGIN
   BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE beban_operasional; EXCEPTION WHEN duplicate_object THEN NULL; END;
 END $$;</textarea>
                     <button onclick="loadBebanInputList()" class="w-full mt-2 py-2 text-[9px] font-black rounded-lg text-white" style="background:linear-gradient(90deg,#16a34a,#22c55e);"><i class="fa-solid fa-rotate mr-1"></i> SUDAH DIJALANKAN, CEK LAGI</button>
+                </div>
+
+                <div class="bg-cardBg rounded-xl border-2 border-borderDark px-3 py-2.5 flex items-center justify-between">
+                    <div class="text-center flex-1">
+                        <div class="text-[8px] font-black text-blue-600 tracking-wider">TOTAL DARI ADMIN</div>
+                        <div id="beban-total-admin" class="text-[13px] font-black text-black">Rp 0</div>
+                    </div>
+                    <div class="w-px h-8 bg-borderDark flex-shrink-0"></div>
+                    <div class="text-center flex-1">
+                        <div class="text-[8px] font-black text-purple-600 tracking-wider">TOTAL DARI OWNER</div>
+                        <div id="beban-total-owner" class="text-[13px] font-black text-black">Rp 0</div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-1.5">
+                    <button id="beban-sumber-semua" onclick="setBebanSumberFilterInput('semua')" class="flex-1 py-1.5 rounded-lg text-[8.5px] font-black text-black border-2 border-borderDark" style="background:linear-gradient(90deg,#ff8c00,#ffb347);">SEMUA</button>
+                    <button id="beban-sumber-admin" onclick="setBebanSumberFilterInput('ADMIN')" class="flex-1 py-1.5 rounded-lg text-[8.5px] font-black text-black bg-darkBg border-2 border-borderDark">ADMIN</button>
+                    <button id="beban-sumber-owner" onclick="setBebanSumberFilterInput('OWNER')" class="flex-1 py-1.5 rounded-lg text-[8.5px] font-black text-black bg-darkBg border-2 border-borderDark">OWNER</button>
                 </div>
 
                 <div class="flex items-center gap-2 px-1">
@@ -4946,8 +4964,25 @@ function updateSSK(tab, rowId) {
         return { awalISO: _fmtISOBeban(awal), akhirISO: _fmtISOBeban(akhir) };
     }
 
+    let _bebanSumberFilterInput = 'semua';
+    function setBebanSumberFilterInput(which) {
+        _bebanSumberFilterInput = which;
+        const map = { 'semua': 'beban-sumber-semua', 'ADMIN': 'beban-sumber-admin', 'OWNER': 'beban-sumber-owner' };
+        Object.entries(map).forEach(([key, id]) => {
+            const btn = document.getElementById(id);
+            if (!btn) return;
+            if (key === which) {
+                btn.className = 'flex-1 py-1.5 rounded-lg text-[8.5px] font-black text-black border-2 border-borderDark';
+                btn.style.background = 'linear-gradient(90deg,#ff8c00,#ffb347)';
+            } else {
+                btn.className = 'flex-1 py-1.5 rounded-lg text-[8.5px] font-black text-black bg-darkBg border-2 border-borderDark';
+                btn.style.background = '';
+            }
+        });
+        renderBebanInputList();
+    }
+
     async function loadBebanInputList() {
-        const listEl = document.getElementById('beban-input-list');
         const missingBanner = document.getElementById('beban-input-tabel-missing');
         const { awalISO, akhirISO } = _rangeMingguIniBeban();
         try {
@@ -4968,16 +5003,29 @@ function updateSSK(tab, rowId) {
         const total = _cacheBebanInput.reduce((s, r) => s + (r.nominal || 0), 0);
         document.getElementById('beban-input-total').textContent = 'Rp ' + total.toLocaleString('id-ID');
 
+        const totalAdmin = _cacheBebanInput.reduce((s, r) => s + ((r.sumber || 'ADMIN') === 'ADMIN' ? (r.nominal || 0) : 0), 0);
+        const totalOwner = _cacheBebanInput.reduce((s, r) => s + (r.sumber === 'OWNER' ? (r.nominal || 0) : 0), 0);
+        document.getElementById('beban-total-admin').textContent = 'Rp ' + totalAdmin.toLocaleString('id-ID');
+        document.getElementById('beban-total-owner').textContent = 'Rp ' + totalOwner.toLocaleString('id-ID');
+
         const datalist = document.getElementById('beban-kategori-datalist');
         const kategoriUnik = [...new Set(_cacheBebanInput.map(r => r.kategori))];
         datalist.innerHTML = kategoriUnik.map(k => `<option value="${escapeHtmlBeban(k)}">`).join('');
 
+        renderBebanInputList();
+    }
+
+    function renderBebanInputList() {
+        const listEl = document.getElementById('beban-input-list');
         if (_bebanInputTableMissing) { listEl.innerHTML = ''; return; }
-        if (_cacheBebanInput.length === 0) {
-            listEl.innerHTML = '<div class="text-center text-[10px] text-black/50 font-bold py-6">Belum ada catatan biaya minggu ini.</div>';
+
+        const dataTampil = _bebanSumberFilterInput === 'semua' ? _cacheBebanInput : _cacheBebanInput.filter(r => (r.sumber || 'ADMIN') === _bebanSumberFilterInput);
+
+        if (dataTampil.length === 0) {
+            listEl.innerHTML = '<div class="text-center text-[10px] text-black/50 font-bold py-6">Belum ada catatan biaya' + (_bebanSumberFilterInput === 'semua' ? ' minggu ini.' : ' dari ' + _bebanSumberFilterInput + ' minggu ini.') + '</div>';
             return;
         }
-        listEl.innerHTML = _cacheBebanInput.map(r => `
+        listEl.innerHTML = dataTampil.map(r => `
             <div class="bg-cardBg rounded-xl p-3 flex items-center justify-between border-2 border-borderDark">
                 <div class="flex-1 min-w-0">
                     <div class="text-xs font-bold text-black truncate flex items-center gap-1.5">
@@ -4988,12 +5036,14 @@ function updateSSK(tab, rowId) {
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <span class="text-[11px] font-black text-red-500">Rp ${(r.nominal || 0).toLocaleString('id-ID')}</span>
-                    ${r.foto ? `<button onclick="lihatFotoBebanInput(${r.id})" class="w-7 h-7 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 active:scale-90 transition-transform flex items-center justify-center text-blue-600 text-[10px]"><i class="fa-solid fa-image"></i></button>` : ''}
-                    <button onclick="hapusBebanInput(${r.id})" class="w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 active:scale-90 transition-transform flex items-center justify-center text-red-600 text-[10px]"><i class="fa-solid fa-trash"></i></button>
+                    ${r.foto ? `<button onclick="lihatFotoBebanInput(${r.id})" class="w-7 h-7 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 flex items-center justify-center text-blue-600 text-[10px]"><i class="fa-solid fa-image"></i></button>` : ''}
+                    <button onclick="hapusBebanInput(${r.id})" class="w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 flex items-center justify-center text-red-600 text-[10px]"><i class="fa-solid fa-trash"></i></button>
                 </div>
             </div>
         `).join('');
     }
+
+
 
     function escapeHtmlBeban(str) {
         return String(str ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
