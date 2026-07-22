@@ -255,6 +255,16 @@
             display: none;
             height: 0;
         }
+        /* Tab-tab ini sudah punya spacer manual sendiri (90px) di bawah kontennya,
+           jadi ::after bawaan (170px) dihapus supaya tidak dobel dan menyisakan
+           ruang kosong berlebihan sebelum bottom nav saat konten pendek. */
+        #tab-stok.tab-content.flex::after,
+        #tab-riwayat.tab-content.flex::after,
+        #tab-laba.tab-content.flex::after,
+        #tab-master.tab-content.flex::after {
+            display: none;
+            height: 0;
+        }
         #tab-input .tab-bottom-spacer,
         #tab-transaksi .tab-bottom-spacer {
             display: none;
@@ -1411,9 +1421,6 @@ END $$;</textarea>
                     </div>
                     <button onclick="applyLabaFilterManual()" class="w-full py-2.5 text-[10px] font-black rounded-lg text-white flex items-center justify-center gap-1.5" style="background:linear-gradient(90deg,#16a34a,#22c55e);"><i class="fa-solid fa-check"></i> TERAPKAN PERIODE MANUAL</button>
                 </div>
-                <div class="text-center text-[9px] font-bold text-black bg-darkBg rounded-lg py-2 border-2 border-dashed border-borderDark">
-                    <i class="fa-solid fa-eye mr-1"></i> Menampilkan: <span id="laba-periode-label">MINGGU INI</span>
-                </div>
             </div>
 
             <!-- BREAKDOWN PER MODEL -->
@@ -1756,10 +1763,6 @@ END $$;</textarea>
             <div id="nav-btn-master" onclick="switchTab('master')" class="nav-btn inactive flex flex-col items-center gap-1 cursor-pointer">
                 <div class="icon-box text-[#000000]/60 w-10 h-8 rounded-lg flex items-center justify-center"><i class="fa-solid fa-database text-lg"></i></div>
                 <span class="nav-text text-[9px] text-[#000000]/60 font-normal">Master</span>
-            </div>
-            <div id="nav-btn-setting" onclick="switchTab('setting')" class="nav-btn inactive flex flex-col items-center gap-1 cursor-pointer">
-                <div class="icon-box text-[#000000]/60 w-10 h-8 rounded-lg flex items-center justify-center"><i class="fa-solid fa-gear text-lg"></i></div>
-                <span class="nav-text text-[9px] text-[#000000]/60 font-normal">Pengaturan</span>
             </div>
             <div onclick="exitApp()" class="flex flex-col items-center gap-1 cursor-pointer">
                 <div class="w-10 h-8 rounded-lg flex items-center justify-center transition-all bg-red-500/20 border-2 border-red-500/30"><i class="fa-solid fa-right-from-bracket text-red-500 text-lg"></i></div>
@@ -3328,7 +3331,7 @@ function updateSSK(tab, rowId) {
     }
 
     function _doSwitchTab(tabName) {
-        const tabs = ['stok','input','transaksi','riwayat','laba','master','setting'];
+        const tabs = ['stok','input','transaksi','riwayat','laba','master'];
 
         // Auto-clear form saat meninggalkan tab input atau transaksi
         if (_activeTab === 'input' && tabName !== 'input') {
