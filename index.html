@@ -6678,11 +6678,15 @@ function updateSSK(tab, rowId) {
         const visibleRows = rows.slice(0, _labaBreakdownShowCount);
         const sisa = rows.length - visibleRows.length;
 
-        let html = visibleRows.map(r => {
+        let html = visibleRows.map((r, idx) => {
+            const noUrut = idx + 1;
             return `<div class="flex items-center justify-between px-3 py-2.5 border-b-2 border-borderDark last:border-0">
-                <div class="min-w-0 flex-1">
-                    <div class="text-[10.5px] font-bold text-black truncate">${r.model}</div>
-                    <div class="text-[8.5px] text-black/70">${r.brand} • ${r.qty} pcs terjual</div>
+                <div class="min-w-0 flex-1 flex items-start gap-2">
+                    <div class="w-5 flex-shrink-0 pt-0.5 text-center text-[10px] font-black text-black">${noUrut}</div>
+                    <div class="min-w-0 flex-1">
+                        <div class="text-[10.5px] font-bold text-black truncate">${r.model}</div>
+                        <div class="text-[8.5px] text-black/70">${r.brand} • ${r.qty} pcs terjual</div>
+                    </div>
                 </div>
                 <div class="text-right flex-shrink-0 ml-2">
                     <div class="text-[11px] font-black text-green-600">Rp ${r.omset.toLocaleString('id-ID')}</div>
