@@ -3289,7 +3289,6 @@ function updateSSK(tab, rowId) {
                                             <div class="flex-grow rounded-full h-2 overflow-hidden flex gap-[2px]">
                                                 ${buildHeatSegments(pct, isNegative, b.total)}
                                             </div>
-                                            <span class="text-[8.5px] font-bold text-black/40 flex-shrink-0">${isNegative ? '' : share + '%'}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -6543,7 +6542,7 @@ function updateSSK(tab, rowId) {
         else label.textContent = 'SAMPAI ' + fmt(sampai);
     }
 
-    const LABA_BREAKDOWN_PAGE_SIZE = 8;
+    const LABA_BREAKDOWN_PAGE_SIZE = 10;
     let _labaBreakdownRows = [];
     let _labaBreakdownPage = 1;
 
