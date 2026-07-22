@@ -231,8 +231,12 @@
             width: 100%;
             flex-shrink: 0;
         }
-        /* Kunci tinggi tab INPUT DATA & TRANSAKSI ke layar (tidak ikut memanjang),
-           supaya scroll HANYA terjadi di dalam kolom VARIASI ITEM, bukan di seluruh halaman */
+        /* Kunci tinggi tab INPUT DATA & TRANSAKSI ke layar (tidak ikut memanjang).
+           Normalnya scroll cukup terjadi di dalam kolom VARIASI ITEM saja (karena kolom
+           itu flex:1 dan sudah punya scroll sendiri), tapi tab ini juga diberi
+           overflow-y:auto sebagai fallback — supaya konten tambahan di bawah kolom
+           VARIASI ITEM (mis. RIWAYAT RETUR saat mode retur aktif) tetap bisa
+           dijangkau/discroll kalau totalnya melebihi tinggi layar. */
         #tab-input.tab-content.flex,
         #tab-transaksi.tab-content.flex {
             height: 100dvh;
@@ -240,7 +244,8 @@
             max-height: 100dvh;
             max-height: 100vh;
             min-height: 0;
-            overflow: hidden;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
             /* Sisakan ruang di bawah supaya tombol "Tambah Item/Variasi" tidak
                ketutupan action-bar (CLEAR/SIMPAN) + nav bar yang posisinya fixed */
             padding-bottom: 170px;
@@ -4832,6 +4837,7 @@ function updateSSK(tab, rowId) {
             headerTitle.innerHTML = 'RETUR <span class="text-black">STOK</span>';
             btnText.textContent = 'SIMPAN RETUR';
             if (returSection) { returSection.classList.remove('hidden'); returSection.classList.add('flex'); }
+            _rrPage = 1; // masuk mode retur -> kembali ke halaman 1 biar tidak nyangkut di halaman lama
             renderRiwayatReturInline();
         }
     }
@@ -6530,6 +6536,19 @@ function updateSSK(tab, rowId) {
         requestAnimationFrame(renderNextInputItem);
     }
 
+    // PAGINATION Riwayat Retur (inline, di tab Input Data mode RETUR): sama seperti
+    // pagination Riwayat Input — list flat, dipaginasi langsung per-item.
+    let _rrPage = 1;
+    const RR_PAGE_SIZE = 10;
+
+    function rrGoToPage(page) {
+        _rrPage = page;
+        renderRiwayatReturInline();
+        const list = document.getElementById('riwayat-retur-list');
+        if (list) list.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    window.rrGoToPage = rrGoToPage;
+
     function renderRiwayatReturInline() {
         const list = document.getElementById('riwayat-retur-list');
         if (!list) return;
@@ -6538,7 +6557,14 @@ function updateSSK(tab, rowId) {
             list.innerHTML = '<div class="text-center text-black text-[11px] py-8 flex flex-col items-center gap-2"><i class="fa-solid fa-inbox text-2xl opacity-40"></i>Belum ada data retur.</div>';
             return;
         }
-        list.innerHTML = returData.map((d, idx) => {
+        // PAGINATION: returData tetap lengkap (dipakai utk hitung total halaman),
+        // yang dipotong per halaman cuma pageItems (yang benar-benar di-render ke DOM).
+        const rrTotalPages = Math.max(1, Math.ceil(returData.length / RR_PAGE_SIZE));
+        if (_rrPage > rrTotalPages) _rrPage = rrTotalPages;
+        if (_rrPage < 1) _rrPage = 1;
+        const pageItems = returData.slice((_rrPage - 1) * RR_PAGE_SIZE, _rrPage * RR_PAGE_SIZE);
+
+        list.innerHTML = pageItems.map((d, idx) => {
             const totalQty = d.items.reduce((s, i) => s + i.qty, 0);
             const uid = 'rr-' + (d.id || idx);
             const itemsPreview = d.items.slice(0,2).map(i => `<span class="text-[8px] bg-darkBg border-2 border-borderDark rounded px-1.5 py-0.5 text-black">${i.warna}/${i.ukuran}:<b class="text-black">${i.qty}</b></span>`).join('') + (d.items.length > 2 ? `<span class="text-[8px] text-black">+${d.items.length-2} lagi</span>` : '');
@@ -6572,7 +6598,13 @@ function updateSSK(tab, rowId) {
                     </div>
                 </div>
             </div>`;
-        }).join('');
+        }).join('') + _renderPaginationControls({
+            currentPage: _rrPage,
+            totalPages: rrTotalPages,
+            totalItems: returData.length,
+            itemLabel: 'data',
+            onPageChangeFn: 'rrGoToPage'
+        });
     }
 
     function bukaModalEditInputItem(riwayatId, modelNama, warna, ukuran, qtyLama, itemIdx, mode) {
