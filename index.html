@@ -1057,8 +1057,9 @@
                 </div>
 
                 <div class="summary-card rounded-xl p-4 border-2 flex flex-col gap-1" style="background:linear-gradient(135deg,#dc2626,#991b1b);border-color:#7f1d1d;">
-                    <div class="text-[9px] font-black text-white/90 tracking-wider flex items-center gap-1"><i class="fa-solid fa-arrow-trend-down text-[10px]"></i> TOTAL BEBAN (SEMUA)</div>
+                    <div class="text-[9px] font-black text-white/90 tracking-wider flex items-center gap-1"><i class="fa-solid fa-arrow-trend-down text-[10px]"></i> TOTAL BEBAN (MINGGU INI)</div>
                     <div id="beban-input-total" class="text-[22px] font-black text-white leading-none">Rp 0</div>
+                    <div id="beban-input-periode-label" class="text-[9px] font-bold text-white/70 mt-0.5"></div>
                 </div>
 
                 <div id="beban-input-tabel-missing" class="hidden bg-red-500/10 border-2 border-red-500/30 rounded-xl px-4 py-3">
@@ -1086,7 +1087,7 @@ END $$;</textarea>
 
                 <div class="flex items-center gap-2 px-1">
                     <i class="fa-solid fa-clock-rotate-left brand-text text-xs"></i>
-                    <span class="text-[11px] font-black text-black tracking-wide">RIWAYAT BIAYA</span>
+                    <span class="text-[11px] font-black text-black tracking-wide">RIWAYAT BIAYA (MINGGU INI)</span>
                 </div>
                 <div id="beban-input-list" class="flex flex-col gap-2"></div>
             </div>
@@ -4931,11 +4932,26 @@ function updateSSK(tab, rowId) {
         if (r) tampilkanFotoBebanLightbox(r.foto);
     }
 
+    function _awalMingguIniBeban(ref) {
+        const d = new Date(ref); const day = d.getDay();
+        const diff = (day === 0 ? -6 : 1 - day);
+        d.setDate(d.getDate() + diff); d.setHours(0, 0, 0, 0);
+        return d;
+    }
+    function _fmtISOBeban(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+    function _fmtTglLabelBeban(iso) { return new Date(iso + 'T00:00:00').toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }); }
+    function _rangeMingguIniBeban() {
+        const awal = _awalMingguIniBeban(new Date());
+        const akhir = new Date(awal); akhir.setDate(akhir.getDate() + 5); // Senin s/d Sabtu
+        return { awalISO: _fmtISOBeban(awal), akhirISO: _fmtISOBeban(akhir) };
+    }
+
     async function loadBebanInputList() {
         const listEl = document.getElementById('beban-input-list');
         const missingBanner = document.getElementById('beban-input-tabel-missing');
+        const { awalISO, akhirISO } = _rangeMingguIniBeban();
         try {
-            const { data, error } = await sbClient.from('beban_operasional').select('*').order('tanggal', { ascending: false }).order('id', { ascending: false }).limit(50);
+            const { data, error } = await sbClient.from('beban_operasional').select('*').gte('tanggal', awalISO).lte('tanggal', akhirISO).order('tanggal', { ascending: false }).order('id', { ascending: false });
             if (error) throw error;
             _bebanInputTableMissing = false;
             _cacheBebanInput = data || [];
@@ -4946,6 +4962,9 @@ function updateSSK(tab, rowId) {
             missingBanner.classList.remove('hidden');
         }
 
+        const periodeEl = document.getElementById('beban-input-periode-label');
+        if (periodeEl) periodeEl.textContent = 'Periode ' + _fmtTglLabelBeban(awalISO) + ' – ' + _fmtTglLabelBeban(akhirISO) + ' (reset tiap Senin)';
+
         const total = _cacheBebanInput.reduce((s, r) => s + (r.nominal || 0), 0);
         document.getElementById('beban-input-total').textContent = 'Rp ' + total.toLocaleString('id-ID');
 
@@ -4955,7 +4974,7 @@ function updateSSK(tab, rowId) {
 
         if (_bebanInputTableMissing) { listEl.innerHTML = ''; return; }
         if (_cacheBebanInput.length === 0) {
-            listEl.innerHTML = '<div class="text-center text-[10px] text-black/50 font-bold py-6">Belum ada catatan biaya.</div>';
+            listEl.innerHTML = '<div class="text-center text-[10px] text-black/50 font-bold py-6">Belum ada catatan biaya minggu ini.</div>';
             return;
         }
         listEl.innerHTML = _cacheBebanInput.map(r => `
