@@ -3271,7 +3271,7 @@ function updateSSK(tab, rowId) {
                         const isNegative = b.total < 0;
                         const share = Math.max(0, Math.round((b.total / totalSemuaStok) * 100));
                         const initials = b.nama.replace(/[^A-Za-z0-9 ]/g, '').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?';
-                        return `<div onclick="openBrandDetail(${b.id}, '${b.nama}')" class="relative rounded-2xl overflow-hidden cursor-pointer transition-transform active:scale-[0.98]" style="background:linear-gradient(135deg,#FBE4BE 0%,#F6DBB6 100%); box-shadow:0 2px 6px rgba(120,70,10,0.12);">
+                        return `<div onclick="openBrandDetail(${b.id}, '${b.nama}')" class="relative rounded-2xl overflow-hidden cursor-pointer transition-transform active:scale-[0.98] flex-shrink-0" style="background:linear-gradient(135deg,#FBE4BE 0%,#F6DBB6 100%); box-shadow:0 2px 6px rgba(120,70,10,0.12);">
                             ${!isNegative ? `<div class="absolute left-0 top-0 h-full w-2.5" style="background:var(--brand-gradient);"></div>` : ''}
                             <div class="flex items-center justify-between pl-4 pr-3.5 py-3 gap-2">
                                 <div class="flex items-center gap-2.5 flex-grow min-w-0">
