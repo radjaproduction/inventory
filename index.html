@@ -687,35 +687,46 @@
             40%  { box-shadow: 0 0 40px rgba(34,197,94,0.35); }
             100% { box-shadow: 0 0 0 rgba(34,197,94,0); }
         }
+
+        /* ==== Slide to Unlock (ala iPhone, menggantikan numpad PIN) ==== */
+        .slide-shimmer-text {
+            background: linear-gradient(
+                100deg,
+                rgba(0,0,0,0.35) 0%,
+                rgba(0,0,0,0.35) 40%,
+                rgba(0,0,0,0.95) 50%,
+                rgba(0,0,0,0.35) 60%,
+                rgba(0,0,0,0.35) 100%
+            );
+            background-size: 250% 100%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            -webkit-text-fill-color: transparent;
+            animation: slide-shimmer-sweep 2.6s linear infinite;
+        }
+        @keyframes slide-shimmer-sweep {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
     </style>
 
     <div id="pin-login-screen" style="display:none;position:fixed;inset:0;background:radial-gradient(ellipse at 50% 20%, rgba(255,140,0,0.55) 0%, rgba(180,80,0,0.25) 35%, #F6DBB6 70%), #F6DBB6;z-index:9995;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:0;">
-        <div class="w-full max-w-xs flex flex-col items-center gap-5 mx-auto">
+        <div class="w-full max-w-xs flex flex-col items-center gap-10 mx-auto">
             <div class="brand-gradient-bg rounded-2xl px-6 py-4 text-center w-full">
                 <div id="pin-login-logo-wrap" class="flex justify-center mb-2 hidden"><img id="pin-login-logo" src="" class="h-12 object-contain"></div>
                 <div class="text-xl font-black text-[#000000] display-brand-name">RADJA PRODUCTION</div>
-                <div class="text-[10px] text-[#000000]/70 font-bold mt-0.5">Masukkan PIN untuk masuk</div>
+                <div class="text-[10px] text-[#000000]/70 font-bold mt-0.5">Dashboard Stok</div>
             </div>
-            <div class="flex gap-4 justify-center mt-1" id="pin-login-dots">
-                <div class="w-5 h-5 rounded-full border-4 border-gray-600 bg-transparent transition-all pin-dot" id="pld-0"></div>
-                <div class="w-5 h-5 rounded-full border-4 border-gray-600 bg-transparent transition-all pin-dot" id="pld-1"></div>
-                <div class="w-5 h-5 rounded-full border-4 border-gray-600 bg-transparent transition-all pin-dot" id="pld-2"></div>
-                <div class="w-5 h-5 rounded-full border-4 border-gray-600 bg-transparent transition-all pin-dot" id="pld-3"></div>
+            <div class="flex flex-col items-center gap-2">
+                <i class="fa-solid fa-lock text-3xl text-black/60"></i>
+                <div id="lk-slide-clock" class="text-[13px] font-bold text-black/50"></div>
             </div>
-            <div id="pin-login-error" class="text-red-400 text-[11px] font-bold text-center min-h-[18px]"></div>
-            <div class="grid grid-cols-3 gap-3 w-full">
-                <button onclick="pinFlash(this);pinLoginInput('1')" class="pin-btn bg-cardBg border-2 border-borderDark rounded-2xl py-4 text-[#1a1d24] text-xl font-black">1</button>
-                <button onclick="pinFlash(this);pinLoginInput('2')" class="pin-btn bg-cardBg border-2 border-borderDark rounded-2xl py-4 text-[#1a1d24] text-xl font-black">2</button>
-                <button onclick="pinFlash(this);pinLoginInput('3')" class="pin-btn bg-cardBg border-2 border-borderDark rounded-2xl py-4 text-[#1a1d24] text-xl font-black">3</button>
-                <button onclick="pinFlash(this);pinLoginInput('4')" class="pin-btn bg-cardBg border-2 border-borderDark rounded-2xl py-4 text-[#1a1d24] text-xl font-black">4</button>
-                <button onclick="pinFlash(this);pinLoginInput('5')" class="pin-btn bg-cardBg border-2 border-borderDark rounded-2xl py-4 text-[#1a1d24] text-xl font-black">5</button>
-                <button onclick="pinFlash(this);pinLoginInput('6')" class="pin-btn bg-cardBg border-2 border-borderDark rounded-2xl py-4 text-[#1a1d24] text-xl font-black">6</button>
-                <button onclick="pinFlash(this);pinLoginInput('7')" class="pin-btn bg-cardBg border-2 border-borderDark rounded-2xl py-4 text-[#1a1d24] text-xl font-black">7</button>
-                <button onclick="pinFlash(this);pinLoginInput('8')" class="pin-btn bg-cardBg border-2 border-borderDark rounded-2xl py-4 text-[#1a1d24] text-xl font-black">8</button>
-                <button onclick="pinFlash(this);pinLoginInput('9')" class="pin-btn bg-cardBg border-2 border-borderDark rounded-2xl py-4 text-[#1a1d24] text-xl font-black">9</button>
-                <div></div>
-                <button onclick="pinFlash(this);pinLoginInput('0')" class="pin-btn bg-cardBg border-2 border-borderDark rounded-2xl py-4 text-[#1a1d24] text-xl font-black">0</button>
-                <button onclick="pinFlash(this);pinLoginHapus()" class="pin-btn pin-del bg-cardBg border-2 border-borderDark rounded-2xl py-4 text-black text-lg"><i class="fa-solid fa-delete-left"></i></button>
+            <div id="slide-unlock-track" style="touch-action:none;" class="relative w-full h-20 rounded-full bg-black/10 border-2 border-borderDark overflow-hidden select-none">
+                <div id="slide-unlock-label" class="slide-shimmer-text absolute inset-0 flex items-center justify-center text-[13px] font-black tracking-wide pointer-events-none" style="padding-left:88px;">GESER UNTUK MASUK &nbsp;›&nbsp;›&nbsp;›</div>
+                <div id="slide-unlock-handle" class="absolute top-0.5 left-1.5 w-[72px] h-[72px] rounded-full brand-gradient-bg flex items-center justify-center shadow-lg" style="touch-action:none;cursor:grab;">
+                    <i class="fa-solid fa-chevron-right text-black text-xl"></i>
+                </div>
             </div>
         </div>
     </div>
@@ -863,84 +874,58 @@
             </svg>
         </div>
 
-        <div id="tab-stok" class="tab-content flex flex-col p-4 gap-4 relative z-10" >
-            <div id="stok-dashboard-view" class="flex flex-col gap-4">
-                <div class="flex items-stretch -mx-4 -mt-4 mb-0 shadow-[0_4px_16px_rgba(255,140,0,0.25)] brand-gradient-bg rounded-b-2xl overflow-hidden">
-                    <div class="w-20 h-[64px] flex items-center justify-center flex-shrink-0 z-10 relative bg-black/5 border-r-2 border-black/10">
-                        <img id="header-logo-img" src="" alt="Logo" class="w-12 h-12 object-contain hidden">
-                        <svg id="header-logo-svg" class="w-10 h-auto" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" version="1.1" viewBox="0 0 3996.74 2715.33">
+        <div id="tab-stok" class="tab-content flex flex-col p-4 gap-3 relative z-10" >
+            <div id="stok-dashboard-view" class="flex flex-col gap-3">
+                <div class="flex items-center gap-3 -mx-4 -mt-4 mb-1 px-4 py-3 shadow-[0_4px_14px_rgba(255,140,0,0.22)] brand-gradient-bg rounded-b-2xl relative overflow-hidden">
+                    <div class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 bg-black/10">
+                        <img id="header-logo-img" src="" alt="Logo" class="w-8 h-8 object-contain hidden">
+                        <svg id="header-logo-svg" class="w-7 h-auto" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" version="1.1" viewBox="0 0 3996.74 2715.33">
                             <path fill="#000000" d="M1379.8 2078.49l-339.7 -450.38 -797.43 0 819.99 1087.21 369.69 0 427.79 0 778.91 0c746.73,0 1357.68,-610.94 1357.68,-1357.67 0,-746.72 -610.94,-1357.66 -1357.68,-1357.66l-685.55 0c242.92,127.17 422.11,359.81 476.47,636.83l209.08 0c396.43,0 720.83,324.36 720.83,720.83 0,396.44 -324.35,720.83 -720.83,720.83l-1259.26 0zm906.78 -104.15l-261.1 -346.23 -0.04 0 -84.57 -112.11c240.44,-141.62 402.14,-403.18 402.14,-701.94 0,-448.98 -365.11,-814.06 -814.05,-814.06l-1528.97 0 480.33 636.83 1048.65 0c97.46,0 177.22,79.74 177.22,177.22 0,97.51 -79.76,177.25 -177.22,177.25l-781.29 0 741.44 983.04 797.46 0z"/>
                         </svg>
                     </div>
-                    <div class="h-[64px] flex flex-col justify-center px-4 flex-grow z-10 relative">
-                        <h1 class="text-xl font-black text-[#000000] leading-none tracking-wide mb-1">DASHBOARD <span class="text-black">STOK</span></h1>
-                        <h2 class="display-brand-name text-[9px] font-bold text-[#000000] tracking-[0.15em] leading-none uppercase">RADJA PRODUCTION</h2>
-                        <span id="app-version-badge" class="absolute inset-y-0 right-2 text-[#000000] select-none flex flex-col items-end justify-center leading-none gap-0.5" style="font-family:'Montserrat',sans-serif;" title="Versi Aplikasi"><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">v3.0.2</span><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">RADJA PRODUCTION</span><span style="font-size:7px;font-weight:400;letter-spacing:0.04em;opacity:0.85;">@2026</span></span>
+                    <div class="flex flex-col justify-center flex-grow min-w-0 z-10 relative">
+                        <h1 class="text-[15px] font-black text-[#000000] leading-none tracking-wide truncate">DASHBOARD STOK</h1>
+                        <h2 class="display-brand-name text-[9px] font-bold text-[#000000]/70 tracking-[0.15em] leading-none uppercase mt-1.5">RADJA PRODUCTION</h2>
+                    </div>
+                    <span id="app-version-badge" class="text-[#000000]/60 select-none flex flex-col items-end justify-center leading-none gap-0.5 flex-shrink-0" style="font-family:'Montserrat',sans-serif;" title="Versi Aplikasi"><span style="font-size:8px;font-weight:600;letter-spacing:0.04em;">v3.0.2</span><span style="font-size:7px;font-weight:400;letter-spacing:0.03em;opacity:0.8;">@2026</span></span>
+                </div>
+
+                <!-- RINGKASAN STOK: langsung terlihat tanpa perlu klik -->
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="bg-cardBg border-2 border-borderDark rounded-xl px-2 py-3 flex flex-col items-center gap-1 text-center">
+                        <i class="fa-solid fa-boxes-stacked brand-text text-[13px]"></i>
+                        <div class="text-[16px] font-black text-black leading-none" id="kpi-total-stok">0</div>
+                        <div class="text-[8px] font-bold text-black/55 uppercase tracking-wide leading-tight">Total Stok</div>
+                    </div>
+                    <div class="bg-cardBg border-2 border-borderDark rounded-xl px-2 py-3 flex flex-col items-center gap-1 text-center">
+                        <i class="fa-solid fa-truck-ramp-box brand-text text-[13px]"></i>
+                        <div class="text-[16px] font-black text-black leading-none" id="kpi-total-brand">0</div>
+                        <div class="text-[8px] font-bold text-black/55 uppercase tracking-wide leading-tight">Barang Keluar</div>
+                    </div>
+                    <div class="brand-gradient-bg border-2 border-borderDark rounded-xl px-2 py-3 flex flex-col items-center gap-1 text-center cursor-pointer active:scale-95 transition-transform shadow-[0_4px_14px_rgba(255,140,0,0.22)]" onclick="bukaTransaksiVendor()">
+                        <i class="fa-solid fa-handshake text-black text-[13px]"></i>
+                        <div class="text-[16px] font-black text-black leading-none" id="kpi-vendor-aktif">0</div>
+                        <div class="text-[8px] font-bold text-black/70 uppercase tracking-wide leading-tight">Vendor Aktif</div>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="bg-cardBg rounded-xl p-3 border-2 border-borderDark flex flex-col items-center justify-center gap-1 shadow-sm">
-                        <div class="w-8 h-8 rounded-full bg-black/40 border-2 border-borderDark flex items-center justify-center mb-1"><i class="fa-solid fa-layer-group brand-text text-sm"></i></div>
-                        <span class="text-[9px] text-black font-bold tracking-wider">TOTAL STOK</span>
-                        <span class="text-xl font-black text-black" id="stok-total-masuk">0 <span class="text-[10px] brand-text font-bold">Pcs</span></span>
-                    </div>
-                    <div class="bg-cardBg rounded-xl p-3 border-2 border-borderDark flex flex-col items-center justify-center gap-1 shadow-sm">
-                        <div class="w-8 h-8 rounded-full bg-blue-500/10 border-2 border-blue-500/20 flex items-center justify-center mb-1"><i class="fa-solid fa-truck-ramp-box text-blue-500 text-sm"></i></div>
-                        <span class="text-[9px] text-black font-bold tracking-wider">BARANG KELUAR</span>
-                        <span class="text-xl font-black text-black" id="stok-total-keluar">0 <span class="text-[10px] text-blue-500 font-bold">Pcs</span></span>
-                    </div>
-                </div>
-                <div class="brand-gradient-bg rounded-xl p-4 shadow-[0_4px_15px_rgba(255,140,0,0.3)] flex justify-between items-center relative overflow-hidden submit-btn-shadow">
-                    <i class="fa-solid fa-wallet absolute -right-4 -bottom-4 text-[80px] text-black/10"></i>
-                    <div class="flex flex-col relative z-10">
-                        <span class="text-[10px] font-bold text-black/70 tracking-widest mb-1">TOTAL NOMINAL TRANSAKSI</span>
-                        <div class="flex items-start gap-1">
-                            <span class="text-sm font-bold text-[#000000] mt-1">Rp</span>
-                            <span class="text-3xl font-black text-[#000000] tracking-tight" id="stok-total-nominal">0</span>
+
+                <!-- STOK PER BRAND: konten utama, langsung terbuka saat masuk dashboard -->
+                <div id="stok-brand-card" class="bg-cardBg rounded-xl border-2 border-borderDark overflow-hidden flex flex-col">
+                    <div class="flex items-center gap-3 px-3.5 py-3 border-b-2 border-borderDark/70">
+                        <div class="w-9 h-9 rounded-lg brand-gradient-bg flex items-center justify-center flex-shrink-0">
+                            <i class="fa-solid fa-tags text-black text-[13px]"></i>
                         </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-[13px] font-black text-black uppercase tracking-wide leading-none">Stok per Brand</div>
+                            <div class="text-[10px] text-black/50 font-bold mt-1" id="brand-sort-label">Klik untuk urut stok 0 ke terbesar</div>
+                        </div>
+                        <button type="button" onclick="toggleBrandSort()" class="w-9 h-9 rounded-lg brand-gradient-bg border-2 border-borderDark flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform shadow-sm">
+                            <i class="fa-solid fa-sliders text-black text-[14px]" id="brand-sort-icon"></i>
+                        </button>
                     </div>
+                    <div id="stok-brand-list" class="flex flex-col gap-2 p-3"></div>
                 </div>
-                <div class="bg-cardBg rounded-xl p-4 border-2 border-borderDark flex flex-col">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-[11px] font-bold text-black tracking-wide"><i class="fa-solid fa-chart-simple brand-text mr-1"></i> GRAFIK TRANSAKSI</h3>
-                        <span class="text-[9px] text-black bg-darkBg px-2 py-1 rounded border-2 border-borderDark">Minggu Ini</span>
-                    </div>
-                    <!-- Legends -->
-                    <div class="flex items-center gap-3 mb-2 flex-wrap">
-                        <div class="flex items-center gap-1"><div class="w-3 h-0.5 bg-yellow-400 rounded-full"></div><span class="text-[8px] text-black">Stok Masuk</span></div>
-                        <div class="flex items-center gap-1"><div class="w-3 h-0.5 bg-red-500 rounded-full"></div><span class="text-[8px] text-black">Retur</span></div>
-                        <div class="flex items-center gap-1"><div class="w-3 h-0.5 bg-green-400 rounded-full"></div><span class="text-[8px] text-black">Penjualan</span></div>
-                    </div>
-                    <div id="stok-grafik-bar" class="w-full relative" style="height:140px;">
-                        <svg id="stok-grafik-svg" width="100%" height="140" viewBox="0 0 300 140" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"></svg>
-                    </div>
-                </div>
-                <div id="stok-brand-card" class="bg-cardBg rounded-xl border-2 border-borderDark overflow-hidden flex flex-col transition-all duration-200">
-                    <div class="brand-gradient-bg rounded-xl px-4 py-[30px] min-h-[94px] flex items-center gap-3 shadow-[0_2px_12px_rgba(255,140,0,0.25)] cursor-pointer" onclick="toggleStokAccordion('stok-brand-collapse','stok-brand-chevron','stok-brand-card')">
-    <i class="fa-solid fa-tags text-black text-base"></i>
-    <div class="flex-1">
-        <div class="text-[16px] font-black text-black uppercase tracking-wide leading-none">STOK PER BRAND</div>
-        <div class="text-[11px] text-black/60 font-bold mt-1" id="brand-sort-label">Klik untuk sort stok 0 ke atas</div>
-    </div>
-    <button type="button" onclick="event.stopPropagation(); toggleBrandSort()" class="w-9 h-9 rounded-lg bg-black/10 flex items-center justify-center flex-shrink-0">
-        <i class="fa-solid fa-arrow-up-wide-short text-black text-base" id="brand-sort-icon"></i>
-    </button>
-    <i class="fa-solid fa-chevron-down text-black text-base collapse-chevron flex-shrink-0" id="stok-brand-chevron"></i>
-</div>
-                    <div id="stok-brand-collapse" class="collapse-body collapsed">
-                        <div id="stok-brand-list" class="flex flex-col gap-2 px-3 pt-3 pb-3"></div>
-                    </div>
-                </div>
-                <div id="stok-vendor-card" class="bg-cardBg rounded-xl border-2 border-borderDark overflow-hidden flex flex-col transition-all duration-200">
-                    <div class="brand-gradient-bg rounded-xl px-4 py-[30px] min-h-[94px] flex items-center gap-3 shadow-[0_2px_12px_rgba(255,140,0,0.25)] cursor-pointer" onclick="toggleStokAccordion('stok-vendor-collapse','stok-vendor-chevron','stok-vendor-card')">
-                        <i class="fa-solid fa-handshake text-black text-base"></i>
-                        <div class="text-[16px] font-black text-black uppercase tracking-wide leading-none flex-1">TRANSAKSI VENDOR</div>
-                        <i class="fa-solid fa-chevron-down text-black text-base collapse-chevron flex-shrink-0" id="stok-vendor-chevron"></i>
-                    </div>
-                    <div id="stok-vendor-collapse" class="collapse-body collapsed">
-                        <div id="stok-vendor-list" class="flex flex-col gap-2 px-3 pt-3 pb-3"></div>
-                    </div>
-                </div>
+
             </div>
 
             <div id="stok-detail-view" class="hidden flex-col gap-4 min-h-screen pb-20 bg-[#F6DBB6] absolute top-0 left-0 w-full z-20 px-4 pt-4">
@@ -1401,6 +1386,14 @@ END $$;</textarea>
                 </div>
             </div>
 
+            <!-- SUMMARY CARDS -->
+            <div id="laba-total-omset" class="hidden">Rp 0</div>
+            <div class="rounded-xl p-4 border-2 flex flex-col gap-1" style="background:linear-gradient(135deg,#16a34a,#15803d);border-color:#166534;">
+                <div class="text-[9px] font-black text-white/90 tracking-wider flex items-center gap-1"><i class="fa-solid fa-sack-dollar text-[10px]"></i> LABA KOTOR</div>
+                <div id="laba-total-laba" class="text-[26px] font-black text-white leading-none">Rp 0</div>
+                <div id="laba-margin-persen" class="text-[10px] font-bold text-white/80 mt-1">Margin: 0%</div>
+            </div>
+
             <!-- FILTER PERIODE -->
             <div class="bg-cardBg rounded-xl p-3 border-2 border-borderDark flex flex-col gap-3">
                 <div class="text-[11px] font-black text-black flex items-center gap-1.5"><i class="fa-solid fa-calendar-days brand-text text-[10px]"></i> FILTER PERIODE</div>
@@ -1421,14 +1414,6 @@ END $$;</textarea>
                 <div class="text-center text-[9px] font-bold text-black bg-darkBg rounded-lg py-2 border-2 border-dashed border-borderDark">
                     <i class="fa-solid fa-eye mr-1"></i> Menampilkan: <span id="laba-periode-label">MINGGU INI</span>
                 </div>
-            </div>
-
-            <!-- SUMMARY CARDS -->
-            <div id="laba-total-omset" class="hidden">Rp 0</div>
-            <div class="rounded-xl p-4 border-2 flex flex-col gap-1" style="background:linear-gradient(135deg,#16a34a,#15803d);border-color:#166534;">
-                <div class="text-[9px] font-black text-white/90 tracking-wider flex items-center gap-1"><i class="fa-solid fa-sack-dollar text-[10px]"></i> LABA KOTOR</div>
-                <div id="laba-total-laba" class="text-[26px] font-black text-white leading-none">Rp 0</div>
-                <div id="laba-margin-persen" class="text-[10px] font-bold text-white/80 mt-1">Margin: 0%</div>
             </div>
 
             <!-- BREAKDOWN PER MODEL -->
@@ -1459,6 +1444,7 @@ END $$;</textarea>
                 <button onclick="switchMasterTab('model')" id="master-tab-model" class="whitespace-nowrap flex-1 py-2 text-[10px] font-bold rounded-lg text-black hover:text-black transition-all"><i class="fa-solid fa-shirt mr-1"></i>MODEL</button>
                 <button onclick="switchMasterTab('warna')" id="master-tab-warna" class="whitespace-nowrap flex-1 py-2 text-[10px] font-bold rounded-lg text-black hover:text-black transition-all"><i class="fa-solid fa-palette mr-1"></i>WARNA</button>
                 <button onclick="switchMasterTab('ukuran')" id="master-tab-ukuran" class="whitespace-nowrap flex-1 py-2 text-[10px] font-bold rounded-lg text-black hover:text-black transition-all"><i class="fa-solid fa-ruler mr-1"></i>UKURAN</button>
+                <button onclick="switchMasterTab('pengaturan')" id="master-tab-pengaturan" class="whitespace-nowrap flex-1 py-2 text-[10px] font-bold rounded-lg text-black hover:text-black transition-all"><i class="fa-solid fa-sliders mr-1"></i>PENGATURAN</button>
             </div>
 
             <!-- PANEL VENDOR -->
@@ -1543,55 +1529,14 @@ END $$;</textarea>
                 </div>
             </div>
 
-        <div style="height:90px;flex-shrink:0;"></div>
-        </div>
+            <!-- PANEL PENGATURAN -->
+            <div id="master-panel-pengaturan" class="hidden flex-col gap-3">
 
-        <!-- TAB PENGATURAN -->
-        <div id="tab-setting" class="tab-content hidden flex-col p-4 gap-4 relative z-10" >
-            <div class="flex items-stretch -mx-4 -mt-4 mb-2 shadow-[0_4px_16px_rgba(255,140,0,0.35)] brand-gradient-bg rounded-b-2xl overflow-hidden">
-                <div class="w-20 h-[72px] flex items-center justify-center flex-shrink-0 z-10 relative bg-black/5 border-r-2 border-black/10"><i class="fa-solid fa-sliders text-3xl text-[#000000]"></i></div>
-                <div class="h-[72px] flex flex-col justify-center px-4 flex-grow z-10 relative">
-                    <h1 class="text-[24px] font-black text-[#000000] leading-none tracking-wide mb-1">PENGATURAN</h1>
-                    <div class="w-full h-[1.5px] bg-[#ffffff]/30 mb-1"></div>
-                    <h2 class="text-[10px] font-bold text-[#000000] tracking-[0.10em] leading-none mt-0.5">KUSTOMISASI APLIKASI SAAS</h2>
-                </div>
-            </div>
-
-            <!-- PROFIL & IDENTITAS -->
-            <div class="bg-cardBg rounded-xl p-4 border-2 border-borderDark flex flex-col gap-4">
-                <div class="flex items-center gap-2 border-b-2 border-borderDark pb-2"><i class="fa-regular fa-id-badge brand-text"></i><h3 class="text-sm font-bold text-black tracking-wide">PROFIL & IDENTITAS</h3></div>
-                
-                <!-- Nama Brand -->
-                <div class="flex flex-col gap-1.5">
-                    <label class="text-[10px] font-bold text-black tracking-wider">NAMA KONVEKSI / BRAND</label>
-                    <div class="relative"><div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fa-solid fa-building text-black text-xs"></i></div><input type="text" id="input-brand-name" onkeyup="updateBrandName()" class="w-full bg-darkBg border-2 border-borderDark rounded-lg pl-9 pr-3 py-3 text-xs text-black font-medium focus:outline-none focus:border-[#FFB144] transition-colors" value="Radja Production"></div>
-                </div>
-
-                <!-- Upload Logo -->
-                <div class="flex flex-col gap-1.5">
-                    <label class="text-[10px] font-bold text-black tracking-wider">LOGO APLIKASI</label>
-                    <div class="flex items-center gap-3">
-                        <!-- Preview Logo -->
-                        <div id="logo-preview-wrap" class="w-16 h-16 rounded-xl border-4 border-borderDark bg-darkBg flex items-center justify-center flex-shrink-0 overflow-hidden">
-                            <img id="logo-preview-img" src="" alt="" class="w-full h-full object-contain hidden">
-                            <i id="logo-preview-icon" class="fa-solid fa-image text-black text-2xl"></i>
-                        </div>
-                        <div class="flex flex-col gap-2 flex-1">
-                            <label for="input-logo-upload" class="w-full bg-darkBg border-2 border-dashed border-[#FFB144] text-[10px] font-bold brand-text py-2.5 rounded-xl flex justify-center items-center gap-2 cursor-pointer hover:bg-[color:var(--brand-main)]/10 transition-colors">
-                                <i class="fa-solid fa-upload"></i> UPLOAD LOGO
-                            </label>
-                            <input type="file" id="input-logo-upload" accept="image/*" class="hidden" onchange="previewLogo(event)">
-                            <button onclick="hapusLogo()" class="w-full bg-darkBg border-2 border-red-500/30 text-red-400 text-[10px] font-bold py-2 rounded-xl hover:bg-red-500/10 transition-colors">
-                                <i class="fa-solid fa-trash-can mr-1"></i> Hapus Logo
-                            </button>
-                        </div>
-                    </div>
-                    <p class="text-[9px] text-black">Format: PNG, JPG, SVG. Logo akan tampil di header dashboard.</p>
-                </div>
-            </div>
+            <!-- SEMUA PENGATURAN DALAM 1 KOLOM ACCORDION -->
+            <div class="bg-cardBg rounded-xl border-2 border-borderDark flex flex-col overflow-hidden divide-y-2 divide-borderDark">
 
             <!-- FONT SELECTOR -->
-            <div class="bg-cardBg rounded-xl border-2 border-borderDark flex flex-col overflow-hidden">
+            <div class="flex flex-col">
                 <div class="flex items-center justify-between px-4 py-3 cursor-pointer select-none" onclick="toggleCollapse('font-collapse','font-chevron')">
                     <div class="flex items-center gap-2"><i class="fa-solid fa-font brand-text"></i><h3 class="text-sm font-bold text-black tracking-wide">FONT APLIKASI</h3></div>
                     <i id="font-chevron" class="fa-solid fa-chevron-down brand-text text-xs collapse-chevron"></i>
@@ -1635,7 +1580,7 @@ END $$;</textarea>
             </div>
 
             <!-- RIWAYAT PELUNASAN -->
-            <div class="bg-cardBg rounded-xl border-2 border-borderDark flex flex-col overflow-hidden">
+            <div class="flex flex-col">
                 <div class="flex items-center justify-between px-4 py-3 cursor-pointer select-none" onclick="toggleCollapse('pelunasan-setting-collapse','pelunasan-setting-chevron')">
                     <div class="flex items-center gap-2"><i class="fa-solid fa-money-bill-wave brand-text"></i><h3 class="text-sm font-bold text-black tracking-wide">RIWAYAT PELUNASAN</h3></div>
                     <i id="pelunasan-setting-chevron" class="fa-solid fa-chevron-down brand-text text-xs collapse-chevron"></i>
@@ -1655,12 +1600,8 @@ END $$;</textarea>
                 </div>
             </div>
 
-            <button id="btn-simpan-pengaturan" onclick="simpanPengaturan()" class="mt-2 w-full brand-gradient-bg text-black font-bold text-lg py-3.5 rounded-xl shadow-[0_4px_15px_rgba(255,140,0,0.3)] flex justify-center items-center gap-3 submit-btn-shadow">
-                <i class="fa-solid fa-check-double text-xl"></i> SIMPAN PENGATURAN
-            </button>
-
             <!-- KEAMANAN PIN -->
-            <div class="bg-cardBg rounded-xl border-2 border-borderDark flex flex-col overflow-hidden">
+            <div class="flex flex-col">
                 <div class="flex items-center justify-between px-4 py-3 cursor-pointer select-none" onclick="toggleCollapse('pin-collapse','pin-chevron')">
                     <div class="flex items-center gap-2"><i class="fa-solid fa-lock brand-text"></i><h3 class="text-sm font-bold text-black tracking-wide">KEAMANAN PIN</h3></div>
                     <i id="pin-chevron" class="fa-solid fa-chevron-down brand-text text-xs collapse-chevron"></i>
@@ -1694,7 +1635,7 @@ END $$;</textarea>
             </div>
 
             <!-- SQL SCHEMA -->
-            <div class="bg-cardBg rounded-xl border-2 border-borderDark flex flex-col overflow-hidden">
+            <div class="flex flex-col">
                 <div class="flex items-center justify-between px-4 py-3 cursor-pointer select-none" onclick="toggleCollapse('sql-schema-collapse','sql-schema-chevron')">
                     <div class="flex items-center gap-2"><i class="fa-solid fa-code brand-text"></i><h3 class="text-sm font-bold text-black tracking-wide">SQL SCHEMA DATABASE</h3></div>
                     <i id="sql-schema-chevron" class="fa-solid fa-chevron-down brand-text text-xs collapse-chevron"></i>
@@ -1721,7 +1662,7 @@ END $$;</textarea>
             </div>
 
             <!-- BACKUP & RESTORE DATA -->
-            <div class="bg-cardBg rounded-xl border-2 border-borderDark flex flex-col overflow-hidden">
+            <div class="flex flex-col">
                 <div class="flex items-center justify-between px-4 py-3 cursor-pointer select-none" onclick="toggleCollapse('backup-collapse','backup-chevron')">
                     <div class="flex items-center gap-2"><i class="fa-solid fa-cloud-arrow-down brand-text"></i><h3 class="text-sm font-bold text-black tracking-wide">BACKUP & RESTORE DATA</h3></div>
                     <i id="backup-chevron" class="fa-solid fa-chevron-down brand-text text-xs collapse-chevron"></i>
@@ -1772,9 +1713,23 @@ END $$;</textarea>
                 </div>
             </div>
 
+            <!-- SIMPAN PENGATURAN (di dalam kolom yang sama) -->
+            <div class="p-4">
+                <button id="btn-simpan-pengaturan" onclick="simpanPengaturan()" class="w-full brand-gradient-bg text-black font-bold text-lg py-3.5 rounded-xl shadow-[0_4px_15px_rgba(255,140,0,0.3)] flex justify-center items-center gap-3 submit-btn-shadow">
+                    <i class="fa-solid fa-check-double text-xl"></i> SIMPAN PENGATURAN
+                </button>
+            </div>
+
+            </div>
+            <!-- END SEMUA PENGATURAN DALAM 1 KOLOM ACCORDION -->
+            </div>
+            <!-- END PANEL PENGATURAN -->
 
         <div style="height:90px;flex-shrink:0;"></div>
         </div>
+
+        <!-- TAB PENGATURAN (kosong, konten dipindahkan ke DATA MASTER > PENGATURAN) -->
+        <div id="tab-setting" class="tab-content hidden flex-col p-4 gap-4 relative z-10"></div>
 
         <!-- BOTTOM NAV -->
         <div class="fixed bottom-0 w-full brand-gradient-bg border-t-2 border-[#e07800] flex justify-around items-center pt-3 z-50" style="padding-bottom: max(16px, env(safe-area-inset-bottom))">
@@ -1894,6 +1849,91 @@ END $$;</textarea>
         initRealtimeSync();
     }
 
+    // ==================== SLIDE TO UNLOCK (ala iPhone, menggantikan numpad PIN login) ====================
+    let _slideUnlockInit = false;
+    function _initSlideUnlock() {
+        const track = document.getElementById('slide-unlock-track');
+        const handle = document.getElementById('slide-unlock-handle');
+        const label = document.getElementById('slide-unlock-label');
+        if (!track || !handle) return;
+        _resetSlideUnlock();
+        if (_slideUnlockInit) return; // pasang listener sekali saja
+        _slideUnlockInit = true;
+
+        let dragging = false;
+        let startX = 0;
+        let maxX = 0;
+        const handleSize = 72; // w-[72px] h-[72px]
+        const edgePad = 6; // top-1.5 left-1.5
+
+        function computeMaxX() {
+            maxX = track.clientWidth - handleSize - edgePad * 2;
+        }
+        computeMaxX();
+        window.addEventListener('resize', computeMaxX);
+
+        function setHandleX(x) {
+            handle.style.left = (edgePad + x) + 'px';
+            label.style.opacity = String(Math.max(0, 1 - (x / maxX) * 1.6));
+        }
+
+        function pointerX(e) {
+            return (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
+        }
+
+        function onDown(e) {
+            computeMaxX();
+            dragging = true;
+            startX = pointerX(e) - (parseFloat(handle.style.left) || edgePad) + edgePad;
+            handle.style.cursor = 'grabbing';
+        }
+        function onMove(e) {
+            if (!dragging) return;
+            let x = pointerX(e) - startX;
+            x = Math.max(0, Math.min(maxX, x));
+            setHandleX(x);
+            if (e.cancelable) e.preventDefault();
+        }
+        function onUp() {
+            if (!dragging) return;
+            dragging = false;
+            handle.style.cursor = 'grab';
+            const currentX = parseFloat(handle.style.left) - edgePad || 0;
+            if (currentX >= maxX * 0.85) {
+                setHandleX(maxX);
+                pinHaptic([10, 40, 10]);
+                setTimeout(() => { masukApp(); }, 180);
+            } else {
+                setHandleX(0);
+            }
+        }
+
+        handle.addEventListener('pointerdown', onDown);
+        window.addEventListener('pointermove', onMove, { passive: false });
+        window.addEventListener('pointerup', onUp);
+
+        // Fallback touch events (in case pointer events tidak tersedia)
+        handle.addEventListener('touchstart', onDown, { passive: true });
+        window.addEventListener('touchmove', onMove, { passive: false });
+        window.addEventListener('touchend', onUp);
+    }
+
+    function _resetSlideUnlock() {
+        const handle = document.getElementById('slide-unlock-handle');
+        const label = document.getElementById('slide-unlock-label');
+        if (handle) handle.style.left = '6px';
+        if (label) label.style.opacity = '1';
+    }
+
+    function _updateSlideClock() {
+        const el = document.getElementById('lk-slide-clock');
+        if (!el) return;
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        el.textContent = hh + ':' + mm;
+    }
+
     // ==================== PIN SYSTEM ====================
     // Efek tekan tombol PIN — flash kuning sesaat
     function pinFlash(btn) {
@@ -1982,11 +2022,11 @@ END $$;</textarea>
             updatePinSetupUI();
             document.getElementById('pin-setup-screen').style.display = 'flex';
         } else {
-            // Sudah ada PIN → tampilkan login
-            _pinLoginVal = '';
-            updatePinLoginDots();
-            document.getElementById('pin-login-error').textContent = '';
+            // Sudah ada PIN → tampilkan slide to unlock (PIN login tidak lagi divalidasi)
             document.getElementById('pin-login-screen').style.display = 'flex';
+            _updateSlideClock();
+            if (!window._slideClockTimer) window._slideClockTimer = setInterval(_updateSlideClock, 1000 * 30);
+            _initSlideUnlock();
         }
     }
 
@@ -2666,15 +2706,10 @@ END $$;`;
             masterData.warna  = (w.data || []).map(x => ({ id: x.id, nama: x.nama, kode: x.kode }));
             masterData.ukuran = (u.data || []).map(x => ({ id: x.id, nama: x.nama }));
 
-            // Load pengaturan lebih awal agar theme/nama tampil sebelum render
+            // Load pengaturan lebih awal agar theme tampil sebelum render
             const pengArr = pengaturan.data || [];
-            const pNama = pengArr.find(p => p.key === 'brand_name');
             const pMain = pengArr.find(p => p.key === 'theme_main');
             const pSec  = pengArr.find(p => p.key === 'theme_secondary');
-            if (pNama) {
-                document.getElementById('input-brand-name').value = pNama.value;
-                document.querySelectorAll('.display-brand-name').forEach(el => el.textContent = pNama.value.toUpperCase());
-            }
             if (pMain && pSec) changeTheme(pMain.value, pSec.value, false);
 
             setLoadingText('MEMUAT RIWAYAT TRANSAKSI...');
@@ -2767,14 +2802,8 @@ END $$;`;
     async function fetchPengaturanData() {
         const { data } = await sbClient.from('pengaturan').select('*');
         const pengArr = data || [];
-        const pNama = pengArr.find(p => p.key === 'brand_name');
         const pMain = pengArr.find(p => p.key === 'theme_main');
         const pSec  = pengArr.find(p => p.key === 'theme_secondary');
-        if (pNama) {
-            const elInput = document.getElementById('input-brand-name');
-            if (elInput) elInput.value = pNama.value;
-            document.querySelectorAll('.display-brand-name').forEach(el => el.textContent = pNama.value.toUpperCase());
-        }
         if (pMain && pSec) changeTheme(pMain.value, pSec.value, false);
     }
     async function fetchRiwayatInputData() {
@@ -3130,37 +3159,9 @@ function updateSSK(tab, rowId) {
     }
 }
 
-    function hitungGrafik7Hari() {
-        const hari = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
-        const today = new Date();
-        const result = [];
-        for (let i = 6; i >= 0; i--) {
-            const d = new Date(today);
-            d.setDate(today.getDate() - i);
-            const label = hari[d.getDay()];
-            const tglStr = d.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' });
-            let masuk = 0, keluar = 0, penjualan = 0;
-            appData.riwayatInput.forEach(inp => {
-                if (inp.tanggal === tglStr) {
-                    const qty = inp.items.reduce((s, it) => s + it.qty, 0);
-                    if (inp.mode === 'masuk') masuk += qty;
-                    else keluar += qty; // retur dianggap keluar stok masuk
-                }
-            });
-            appData.riwayatTransaksi.forEach(trx => {
-                if (trx.tanggal === tglStr) {
-                    const qty = trx.items.reduce((s, it) => s + it.qty, 0);
-                    penjualan += qty;
-                }
-            });
-            result.push({ label, masuk, keluar, penjualan, isToday: i === 0 });
-        }
-        return result;
-    }
-
     let _brandSortMode = 'alpha';
     function renderStokDashboard() {
-        let totalMasuk = 0, totalRetur = 0, totalKeluar = 0, totalNominal = 0;
+        let totalMasuk = 0, totalRetur = 0, totalKeluar = 0;
         appData.riwayatInput.forEach(d => {
             const qty = d.items.reduce((s, i) => s + i.qty, 0);
             if (d.mode === 'retur') totalRetur += qty; else totalMasuk += qty;
@@ -3168,85 +3169,21 @@ function updateSSK(tab, rowId) {
         appData.riwayatTransaksi.forEach(d => {
             const qty = d.items.reduce((s, i) => s + i.qty, 0);
             totalKeluar += qty;
-            totalNominal += qty * (d.harga || 0);
         });
         const stokAktif = totalMasuk - totalRetur - totalKeluar;
         const elM = document.getElementById('stok-total-masuk');
         if (elM) elM.innerHTML = `${stokAktif.toLocaleString('id-ID')} <span class="text-[10px] brand-text font-bold">Pcs</span>`;
         const elK = document.getElementById('stok-total-keluar');
         if (elK) elK.innerHTML = `${totalKeluar.toLocaleString('id-ID')} <span class="text-[10px] text-blue-500 font-bold">Pcs</span>`;
-        const elN = document.getElementById('stok-total-nominal');
-        if (elN) elN.textContent = totalNominal.toLocaleString('id-ID');
-
-        const grafikData = hitungGrafik7Hari();
-        const svgEl = document.getElementById('stok-grafik-svg');
-        if (svgEl) {
-            const W = 300, H = 140;
-            const padL = 24, padR = 8, padT = 12, padB = 20;
-            const chartW = W - padL - padR;
-            const chartH = H - padT - padB;
-            const n = grafikData.length;
-            const allVals = grafikData.flatMap(g => [g.masuk, g.keluar, g.penjualan]);
-            const maxVal = Math.max(...allVals, 1);
-            const xPos = (i) => padL + (i / (n - 1)) * chartW;
-            const yPos = (v) => padT + chartH - (v / maxVal) * chartH;
-            const makePath = (key) => grafikData.map((g, i) => `${i===0?'M':'L'}${xPos(i).toFixed(1)},${yPos(g[key]).toFixed(1)}`).join(' ');
-            const makeArea = (key) => {
-                const pts = grafikData.map((g, i) => `${xPos(i).toFixed(1)},${yPos(g[key]).toFixed(1)}`).join(' ');
-                const first = `${xPos(0).toFixed(1)},${(padT+chartH).toFixed(1)}`;
-                const last = `${xPos(n-1).toFixed(1)},${(padT+chartH).toFixed(1)}`;
-                return `${first} ${pts} ${last}`;
-            };
-            const makeDots = (key, color) => grafikData.map((g, i) => {
-                const val = g[key];
-                if (val === 0) return '';
-                return `<circle cx="${xPos(i).toFixed(1)}" cy="${yPos(val).toFixed(1)}" r="${g.isToday?3.5:2.5}" fill="${color}" stroke="#ffffff" stroke-width="1.2"/>
-                    <text x="${xPos(i).toFixed(1)}" y="${(yPos(val)-5).toFixed(1)}" text-anchor="middle" font-size="6" fill="${color}" font-family="Montserrat,sans-serif" font-weight="bold">${val}</text>`;
-            }).join('');
-            // grid lines
-            const gridLines = [0.25, 0.5, 0.75, 1].map(f => {
-                const y = (padT + chartH - f * chartH).toFixed(1);
-                const lbl = Math.round(f * maxVal);
-                return `<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#ffffff" stroke-opacity="0.06" stroke-dasharray="3,3"/>
-                    <text x="${(padL-2).toFixed(1)}" y="${y}" text-anchor="end" dominant-baseline="middle" font-size="5.5" fill="#6b7280" font-family="Montserrat,sans-serif">${lbl}</text>`;
-            }).join('');
-            // baseline
-            const baseline = `<line x1="${padL}" y1="${(padT+chartH).toFixed(1)}" x2="${W-padR}" y2="${(padT+chartH).toFixed(1)}" stroke="#ffffff" stroke-opacity="0.12"/>`;
-            // x labels
-            const xLabels = grafikData.map((g, i) =>
-                `<text x="${xPos(i).toFixed(1)}" y="${(H-4).toFixed(1)}" text-anchor="middle" font-size="6.5" fill="${g.isToday?'#ff8c00':'#9ca3af'}" font-weight="${g.isToday?'bold':'normal'}" font-family="Montserrat,sans-serif">${g.label}</text>`
-            ).join('');
-            const hasData = allVals.some(v => v > 0);
-            svgEl.innerHTML = `
-                <defs>
-                    <linearGradient id="gMasuk" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#facc15" stop-opacity="0.25"/><stop offset="100%" stop-color="#facc15" stop-opacity="0.02"/></linearGradient>
-                    <linearGradient id="gKeluar" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ef4444" stop-opacity="0.2"/><stop offset="100%" stop-color="#ef4444" stop-opacity="0.02"/></linearGradient>
-                    <linearGradient id="gJual" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4ade80" stop-opacity="0.22"/><stop offset="100%" stop-color="#4ade80" stop-opacity="0.02"/></linearGradient>
-                    <filter id="glow"><feGaussianBlur stdDeviation="2" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-                </defs>
-                ${gridLines}
-                ${baseline}
-                <!-- Area fills -->
-                <polygon points="${makeArea('masuk')}" fill="url(#gMasuk)"/>
-                <polygon points="${makeArea('keluar')}" fill="url(#gKeluar)"/>
-                <polygon points="${makeArea('penjualan')}" fill="url(#gJual)"/>
-                <!-- Lines -->
-                <path d="${makePath('masuk')}" fill="none" stroke="#facc15" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" filter="url(#glow)"/>
-                <path d="${makePath('keluar')}" fill="none" stroke="#ef4444" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" filter="url(#glow)"/>
-                <path d="${makePath('penjualan')}" fill="none" stroke="#4ade80" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" filter="url(#glow)"/>
-                <!-- Dots & values -->
-                ${makeDots('masuk','#facc15')}
-                ${makeDots('keluar','#ef4444')}
-                ${makeDots('penjualan','#4ade80')}
-                ${xLabels}
-                ${!hasData ? `<text x="${W/2}" y="${H/2}" text-anchor="middle" dominant-baseline="middle" font-size="8" fill="#6b7280" font-family="Montserrat,sans-serif" font-style="italic">Belum ada data minggu ini</text>` : ''}
-            `;
-        }
 
         const brandListEl = document.getElementById('stok-brand-list');
         if (brandListEl) {
             if (masterData.brand.length === 0) {
                 brandListEl.innerHTML = '<div class="text-center text-black text-[11px] py-8 flex flex-col items-center gap-2"><i class="fa-solid fa-inbox text-2xl opacity-40"></i>Belum ada brand. Tambahkan di Tab Master.</div>';
+                const kpiTotalStokEl0 = document.getElementById('kpi-total-stok');
+                const kpiTotalBrandEl0 = document.getElementById('kpi-total-brand');
+                if (kpiTotalStokEl0) kpiTotalStokEl0.textContent = '0';
+                if (kpiTotalBrandEl0) kpiTotalBrandEl0.textContent = totalKeluar.toLocaleString('id-ID');
             } else {
                 const brandStok = masterData.brand.map(b => {
                     const stokMap = hitungStokBrand(b.id);
@@ -3254,37 +3191,54 @@ function updateSSK(tab, rowId) {
                     return { ...b, total };
                 }).filter(b => b.total !== 0 || appData.riwayatInput.some(d => d.brand === b.nama)).sort((a, b) => {
     if (_brandSortMode === 'zero-first') {
-        const aZero = a.total === 0 ? 0 : 1;
-        const bZero = b.total === 0 ? 0 : 1;
-        if (aZero !== bZero) return aZero - bZero;
+        return a.total - b.total;
     }
     return a.nama.localeCompare(b.nama, 'id', { sensitivity: 'base' });
 });
+                const kpiTotalStokEl = document.getElementById('kpi-total-stok');
+                const kpiTotalBrandEl = document.getElementById('kpi-total-brand');
+                if (kpiTotalStokEl) kpiTotalStokEl.textContent = brandStok.reduce((s, b) => s + Math.max(0, b.total), 0).toLocaleString('id-ID');
+                if (kpiTotalBrandEl) kpiTotalBrandEl.textContent = totalKeluar.toLocaleString('id-ID');
                 if (brandStok.length === 0) {
                     brandListEl.innerHTML = '<div class="text-center text-black text-[11px] py-8 flex flex-col items-center gap-2"><i class="fa-solid fa-inbox text-2xl opacity-40"></i>Belum ada data stok masuk.</div>';
                 } else {
                     const maxStok = Math.max(...brandStok.map(b => b.total), 1);
-                    brandListEl.innerHTML = brandStok.map(b => {
+                    const totalSemuaStok = brandStok.reduce((s, b) => s + Math.max(0, b.total), 0) || 1;
+                    brandListEl.innerHTML = brandStok.map((b, idx) => {
                         const pct = Math.max(2, Math.round((b.total / maxStok) * 100));
                         const isNegative = b.total < 0;
-                        return `<div onclick="openBrandDetail(${b.id}, '${b.nama}')" class="rounded-xl overflow-hidden cursor-pointer transition-all border-2 border-borderDark" style="background:#F6DBB6;">
-                            <div class="flex items-center justify-between px-3 py-2.5">
+                        const share = Math.max(0, Math.round((b.total / totalSemuaStok) * 100));
+                        const initials = b.nama.replace(/[^A-Za-z0-9 ]/g, '').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?';
+                        return `<div onclick="openBrandDetail(${b.id}, '${b.nama}')" class="relative rounded-2xl overflow-hidden cursor-pointer transition-transform active:scale-[0.98]" style="background:linear-gradient(135deg,#FBE4BE 0%,#F6DBB6 100%); box-shadow:0 2px 6px rgba(120,70,10,0.12);">
+                            ${!isNegative ? `<div class="absolute left-0 top-0 h-full w-2.5" style="background:var(--brand-gradient);"></div>` : ''}
+                            <div class="flex items-center justify-between pl-4 pr-3.5 py-3 gap-2">
                                 <div class="flex items-center gap-2.5 flex-grow min-w-0">
-                                    <div class="w-8 h-8 rounded-xl brand-gradient-bg flex items-center justify-center flex-shrink-0">
-                                        <i class="fa-solid fa-tags text-[11px] text-black"></i>
+                                    <div class="relative flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center font-black text-[11px]" style="background:rgba(0,0,0,0.06); color:#1a1d24;">
+                                        ${idx + 1}
+                                    </div>
+                                    <div class="w-9 h-9 rounded-xl brand-gradient-bg flex items-center justify-center flex-shrink-0 shadow-sm" style="box-shadow:0 2px 5px rgba(255,140,0,0.35);">
+                                        <span class="text-[11px] font-black text-black">${initials}</span>
                                     </div>
                                     <div class="flex-grow min-w-0">
-                                        <div class="text-[11px] font-black text-black uppercase tracking-wide leading-none truncate">${b.nama}</div>
-                                        <div class="flex items-center gap-1.5 mt-1.5">
-                                            <div class="flex-grow bg-black/40 rounded-full h-1.5 overflow-hidden">
-                                                <div class="${isNegative ? 'bg-red-500' : 'brand-gradient-bg'} h-full rounded-full" style="width:${isNegative ? 100 : pct}%"></div>
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="text-[11.5px] font-black text-black uppercase tracking-wide leading-none truncate">${b.nama}</span>
+                                        </div>
+                                        <div class="flex items-center gap-1.5 mt-2">
+                                            <div class="flex-grow bg-black/10 rounded-full h-2 overflow-hidden border border-black/5">
+                                                <div class="${isNegative ? 'bg-red-500' : 'brand-gradient-bg'} h-full rounded-full transition-all" style="width:${isNegative ? 100 : pct}%; box-shadow:${isNegative ? 'none' : '0 0 6px rgba(255,140,0,0.6)'};"></div>
                                             </div>
+                                            <span class="text-[8.5px] font-bold text-black/40 flex-shrink-0">${isNegative ? '' : share + '%'}</span>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="flex items-center gap-2 flex-shrink-0 ml-3">
-                                    <span class="text-[12px] font-black ${isNegative ? 'text-red-400' : 'brand-text'}">${b.total.toLocaleString('id-ID')} <span class="text-[9px]">Pcs</span></span>
-                                    <i class="fa-solid fa-chevron-right text-[10px]" style="color:rgba(255,140,0,0.5)"></i>
+                                <div class="flex items-center gap-2 flex-shrink-0 ml-1">
+                                    <div class="flex flex-col items-end">
+                                        <span class="text-[13px] font-black leading-none ${isNegative ? 'text-red-500' : 'brand-text'}">${b.total.toLocaleString('id-ID')}</span>
+                                        <span class="text-[8px] font-bold text-black/40 uppercase tracking-wide mt-0.5">Pcs</span>
+                                    </div>
+                                    <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(255,140,0,0.12);">
+                                        <i class="fa-solid fa-chevron-right text-[9px]" style="color:var(--brand-main);"></i>
+                                    </div>
                                 </div>
                             </div>
                         </div>`;
@@ -3294,9 +3248,11 @@ function updateSSK(tab, rowId) {
         }
 
         const vendorListEl = document.getElementById('stok-vendor-list');
+        const kpiVendorAktifEl = document.getElementById('kpi-vendor-aktif');
         if (vendorListEl) {
             if (masterData.vendor.length === 0 || appData.riwayatTransaksi.length === 0) {
                 vendorListEl.innerHTML = '<div class="text-center text-black text-[11px] py-8 flex flex-col items-center gap-2"><i class="fa-solid fa-inbox text-2xl opacity-40"></i>Belum ada transaksi vendor.</div>';
+                if (kpiVendorAktifEl) kpiVendorAktifEl.textContent = '0';
             } else {
                 const vendorMap = {};
                 appData.riwayatTransaksi.forEach(d => {
@@ -3306,6 +3262,7 @@ function updateSSK(tab, rowId) {
                     if (d.status === 'lunas') vendorMap[d.vendor].lunasNominal += nominal;
                     else vendorMap[d.vendor].credit++;
                 });
+                if (kpiVendorAktifEl) kpiVendorAktifEl.textContent = Object.keys(vendorMap).length.toLocaleString('id-ID');
                 vendorListEl.innerHTML = Object.entries(vendorMap).sort(([a], [b]) => a.localeCompare(b, 'id', { sensitivity: 'base' })).map(([nama, stat]) => `
                     <div class="rounded-xl overflow-hidden transition-all border-2 border-borderDark" style="background:#F6DBB6;">
                         <div class="flex items-center justify-between px-3 py-2.5">
@@ -3329,8 +3286,8 @@ function updateSSK(tab, rowId) {
     _brandSortMode = _brandSortMode === 'alpha' ? 'zero-first' : 'alpha';
     const label = document.getElementById('brand-sort-label');
     const icon = document.getElementById('brand-sort-icon');
-    if (label) label.textContent = _brandSortMode === 'zero-first' ? 'Stok 0 di atas — klik untuk abjad' : 'Klik untuk sort stok 0 ke atas';
-    if (icon) icon.className = _brandSortMode === 'zero-first' ? 'fa-solid fa-arrow-down-wide-short text-black text-sm' : 'fa-solid fa-arrow-up-wide-short text-black text-sm';
+    if (label) label.textContent = _brandSortMode === 'zero-first' ? 'Urut stok 0 → terbesar — klik untuk abjad' : 'Klik untuk urut stok 0 ke terbesar';
+    if (icon) icon.className = _brandSortMode === 'zero-first' ? 'fa-solid fa-filter-circle-xmark text-black text-sm' : 'fa-solid fa-sliders text-black text-sm';
     renderStokDashboard();
 }
 
@@ -3366,18 +3323,6 @@ function updateSSK(tab, rowId) {
         if (_trxIsSaving && tabName !== 'transaksi') {
             showToast('⏳ Sedang menyimpan transaksi, harap tunggu...');
             return;
-        }
-        // Jika user mau buka tab master, minta PIN dulu (kecuali sudah unlock)
-        if (tabName === 'master' && !_masterUnlocked) {
-            _pinMasterVal = '';
-            updatePinMasterDots();
-            document.getElementById('pin-master-error').textContent = '';
-            document.getElementById('pin-master-screen').style.display = 'flex';
-            return;
-        }
-        // Reset unlock saat pindah dari master ke tab lain
-        if (_activeTab === 'master' && tabName !== 'master') {
-            _masterUnlocked = false;
         }
         _doSwitchTab(tabName);
     }
@@ -3459,6 +3404,7 @@ function updateSSK(tab, rowId) {
             }
             if (tabName === 'master') renderBrandOptions();
             if (tabName === 'laba') {
+                renderStokDashboard();
                 if (_labaNeedsReset) {
                     if (typeof setLabaFilterMingguIni === 'function') setLabaFilterMingguIni();
                     _labaNeedsReset = false;
@@ -3949,11 +3895,6 @@ function updateSSK(tab, rowId) {
     }
 
     // ==================== WHITE LABEL ====================
-    function updateBrandName() {
-        const val = document.getElementById('input-brand-name').value;
-        document.querySelectorAll('.display-brand-name').forEach(d => { d.innerText = val.toUpperCase() || 'NAMA KONVEKSI'; });
-    }
-
     // ==================== COLLAPSE (accordion) ====================
     const collapseGroups = {
         'font-collapse': 'font-chevron',
@@ -3988,6 +3929,21 @@ function updateSSK(tab, rowId) {
         if (!body) return;
         body.classList.toggle('collapsed');
         if (chevron) chevron.classList.toggle('rotated');
+    }
+
+    // Klik card "VENDOR AKTIF" di ringkasan atas -> buka POPUP TRANSAKSI VENDOR terpisah
+    // (bukan menyatu / scroll di dalam dashboard).
+    function bukaTransaksiVendor() {
+        const popup = document.getElementById('popup-transaksi-vendor');
+        if (!popup) return;
+        popup.classList.remove('hidden');
+        popup.style.display = 'flex';
+    }
+    function tutupTransaksiVendor() {
+        const popup = document.getElementById('popup-transaksi-vendor');
+        if (!popup) return;
+        popup.classList.add('hidden');
+        popup.style.display = 'none';
     }
 
     // ==================== BACKGROUND MODE ====================
@@ -4025,19 +3981,6 @@ function updateSSK(tab, rowId) {
     }
     window.togglePelunasanLimit = togglePelunasanLimit;
 
-    function previewLogo(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const src = e.target.result;
-            applyLogo(src);
-            localStorage.setItem('app_logo', src);
-            showToast('✅ Logo diperbarui! Jangan lupa simpan.');
-        };
-        reader.readAsDataURL(file);
-    }
-
     function applyLogo(src) {
         if (!src) return;
         // Header dashboard
@@ -4048,36 +3991,6 @@ function updateSSK(tab, rowId) {
             headerLogoImg.classList.remove('hidden');
             headerLogoSvg.classList.add('hidden');
         }
-        // Preview di pengaturan
-        const previewImg = document.getElementById('logo-preview-img');
-        const previewIcon = document.getElementById('logo-preview-icon');
-        if (previewImg && previewIcon) {
-            previewImg.src = src;
-            previewImg.classList.remove('hidden');
-            previewIcon.classList.add('hidden');
-        }
-    }
-
-    function hapusLogo() {
-        localStorage.removeItem('app_logo');
-        // Reset header
-        const headerLogoImg = document.getElementById('header-logo-img');
-        const headerLogoSvg = document.getElementById('header-logo-svg');
-        if (headerLogoImg && headerLogoSvg) {
-            headerLogoImg.classList.add('hidden');
-            headerLogoSvg.classList.remove('hidden');
-        }
-        // Reset preview
-        const previewImg = document.getElementById('logo-preview-img');
-        const previewIcon = document.getElementById('logo-preview-icon');
-        if (previewImg && previewIcon) {
-            previewImg.src = '';
-            previewImg.classList.add('hidden');
-            previewIcon.classList.remove('hidden');
-        }
-        const fileInput = document.getElementById('input-logo-upload');
-        if (fileInput) fileInput.value = '';
-        showToast('🗑️ Logo dihapus.');
     }
 
     // ==================== FONT ====================
@@ -4127,10 +4040,8 @@ function updateSSK(tab, rowId) {
     }
 
     async function simpanPengaturan() {
-        const nama = document.getElementById('input-brand-name').value;
         const main = getComputedStyle(document.documentElement).getPropertyValue('--brand-main').trim();
         const sec  = main === '#ff8c00' ? '#ffb347' : main; // fallback
-        updateBrandName();
         // Simpan font ke localStorage
         const fontFamily = document.body.style.fontFamily || '';
         if (fontFamily && activeFont !== 'Default') {
@@ -4144,7 +4055,6 @@ function updateSSK(tab, rowId) {
         setButtonLoading(btnSimpanPengaturan, true, 'MENYIMPAN...');
         try {
             const { error } = await sbClient.from('pengaturan').upsert([
-                { key: 'brand_name', value: nama },
                 { key: 'theme_main', value: main },
                 { key: 'theme_secondary', value: sec }
             ], { onConflict: 'key' });
@@ -4685,7 +4595,7 @@ function updateSSK(tab, rowId) {
     }
 
     function switchMasterTab(tab) {
-        const panels = ['vendor','brand','model','warna','ukuran'];
+        const panels = ['vendor','brand','model','warna','ukuran','pengaturan'];
         panels.forEach(p => {
             document.getElementById('master-panel-' + p).classList.add('hidden');
             document.getElementById('master-panel-' + p).classList.remove('flex');
@@ -4695,6 +4605,15 @@ function updateSSK(tab, rowId) {
         document.getElementById('master-panel-' + tab).classList.add('flex');
         document.getElementById('master-tab-' + tab).className = "whitespace-nowrap flex-1 py-2 text-[10px] font-bold rounded-lg bg-cardBg brand-text shadow-sm transition-all";
         if (tab === 'model') renderBrandOptions();
+        if (tab === 'pengaturan') {
+            Object.entries(collapseGroups).forEach(([id, chev]) => {
+                const el = document.getElementById(id);
+                const ic = document.getElementById(chev);
+                if (el) el.classList.add('collapsed');
+                if (ic) ic.classList.remove('rotated');
+            });
+            muatStatusPIN();
+        }
     }
 
     // ==== Mekanisme terpusat untuk menutup dropdown saat tap di luar area ====
@@ -9831,11 +9750,7 @@ function updateSSK(tab, rowId) {
     });
 
     function exitApp() {
-        _pinLoginVal = '';
-        const dots = document.querySelectorAll('#pin-login-dots .pin-dot');
-        dots.forEach(d => d.classList.remove('active'));
-        const err = document.getElementById('pin-login-error');
-        if (err) err.textContent = '';
+        _resetSlideUnlock();
         document.getElementById('pin-login-screen').style.display = 'flex';
     }
 
@@ -9939,6 +9854,22 @@ function updateSSK(tab, rowId) {
     });
 
     </script>
+
+    <!-- POPUP TRANSAKSI VENDOR (dibuka dari klik card VENDOR AKTIF) -->
+    <div id="popup-transaksi-vendor" class="hidden fixed inset-0 z-[99998] items-center justify-center" style="background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);padding:16px;" onclick="if(event.target===this) tutupTransaksiVendor()">
+        <div style="background:#F6DBB6;border-radius:20px;width:100%;max-width:420px;max-height:80vh;border:2px solid rgba(255,177,68,0.4);overflow:hidden;display:flex;flex-direction:column;">
+            <div style="background:linear-gradient(90deg,#ff8c00,#ffb347);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:34px;height:34px;background:rgba(0,0,0,0.18);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;"><i class="fa-solid fa-handshake"></i></div>
+                    <span style="font-family:Montserrat,sans-serif;font-weight:900;font-size:13px;color:#000;letter-spacing:0.5px;">TRANSAKSI VENDOR</span>
+                </div>
+                <button onclick="tutupTransaksiVendor()" style="width:32px;height:32px;background:rgba(0,0,0,0.18);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#000;font-size:14px;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div style="padding:12px;overflow-y:auto;flex:1;">
+                <div id="stok-vendor-list" class="flex flex-col gap-2"></div>
+            </div>
+        </div>
+    </div>
 
     <!-- MODAL KOREKSI STOK -->
     <div id="modal-koreksi-stok" class="hidden fixed inset-0 z-[999] items-end justify-center" style="background:rgba(0,0,0,0.7);">
