@@ -1029,7 +1029,7 @@
                             <label class="text-[10px] font-bold text-black tracking-wider">NOMINAL</label>
                             <div class="relative">
                                 <span class="absolute inset-y-0 left-3 flex items-center text-black text-xs font-bold">Rp</span>
-                                <input id="beban-input-nominal" type="number" inputmode="numeric" min="0" placeholder="0" class="w-full bg-darkBg border-2 border-borderDark rounded-lg pl-9 pr-3 py-2.5 text-xs text-black placeholder-black/50 outline-none focus:border-[#FFB144] transition-colors">
+                                <input id="beban-input-nominal" type="text" inputmode="numeric" placeholder="0" oninput="formatRupiahInputBeban(this)" class="w-full bg-darkBg border-2 border-borderDark rounded-lg pl-9 pr-3 py-2.5 text-xs text-black placeholder-black/50 outline-none focus:border-[#FFB144] transition-colors">
                             </div>
                         </div>
                         <div class="flex flex-col gap-1.5">
@@ -4980,9 +4980,19 @@ function updateSSK(tab, rowId) {
         return String(str ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
     }
 
+    function formatRupiahInputBeban(el) {
+        const raw = el.value.replace(/\D/g, '');
+        el.value = raw ? parseInt(raw, 10).toLocaleString('id-ID') : '';
+    }
+
+    function parseRupiahInputBeban(el) {
+        if (!el) return 0;
+        return parseInt(String(el.value || '').replace(/\D/g, ''), 10) || 0;
+    }
+
     async function simpanBebanInput() {
         const kategori = document.getElementById('beban-input-kategori').value.trim();
-        const nominal = parseInt(document.getElementById('beban-input-nominal').value) || 0;
+        const nominal = parseRupiahInputBeban(document.getElementById('beban-input-nominal'));
         const tanggal = document.getElementById('beban-input-tanggal').value || new Date().toISOString().slice(0, 10);
         const keterangan = document.getElementById('beban-input-keterangan').value.trim();
 
