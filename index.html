@@ -1367,7 +1367,7 @@
                     <div class="flex items-center gap-2 border-b-2 border-borderDark pb-2"><i class="fa-solid fa-truck-fast brand-text"></i><h3 class="text-sm font-bold text-black tracking-wide">TAMBAH VENDOR</h3></div>
                     <div class="flex flex-col gap-1.5"><label class="text-[10px] font-bold text-black tracking-wider">NAMA VENDOR</label><div class="relative"><div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fa-solid fa-building text-black text-xs"></i></div><input id="input-vendor-nama" type="text" class="w-full bg-darkBg border-2 border-borderDark rounded-lg pl-9 pr-3 py-2.5 text-xs text-black placeholder-black focus:outline-none focus:border-[#FFB144] transition-colors" placeholder="input nama vendor..."></div></div>
                     <div class="flex flex-col gap-1.5"><label class="text-[10px] font-bold text-black tracking-wider">NO. TELEPON</label><div class="relative"><div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fa-solid fa-phone text-black text-xs"></i></div><input id="input-vendor-telp" type="tel" class="w-full bg-darkBg border-2 border-borderDark rounded-lg pl-9 pr-3 py-2.5 text-xs text-black placeholder-black focus:outline-none focus:border-[#FFB144] transition-colors" placeholder="08xx-xxxx-xxxx"></div></div>
-                    <button onclick="simpanVendor()" class="w-full brand-gradient-bg text-black font-bold text-sm py-3 rounded-xl flex justify-center items-center gap-2 submit-btn-shadow mt-1"><i class="fa-solid fa-plus"></i> SIMPAN VENDOR</button>
+                    <button id="btn-simpan-vendor" onclick="simpanVendor()" class="w-full brand-gradient-bg text-black font-bold text-sm py-3 rounded-xl flex justify-center items-center gap-2 submit-btn-shadow mt-1"><i class="fa-solid fa-plus"></i> SIMPAN VENDOR</button>
                 </div>
                 <div class="bg-cardBg rounded-xl border-2 border-borderDark overflow-hidden">
                     <div class="brand-gradient-bg text-black text-[10px] font-black flex items-center justify-between px-4 py-2"><span><i class="fa-solid fa-list mr-1"></i>DAFTAR VENDOR</span><span id="vendor-count" class="bg-black/20 px-2 py-0.5 rounded-full text-[9px]">0 data</span></div>
@@ -1380,7 +1380,7 @@
                 <div class="bg-cardBg rounded-xl p-4 border-2 border-borderDark flex flex-col gap-3">
                     <div class="flex items-center gap-2 border-b-2 border-borderDark pb-2"><i class="fa-solid fa-tags brand-text"></i><h3 class="text-sm font-bold text-black tracking-wide">TAMBAH BRAND</h3></div>
                     <div class="flex flex-col gap-1.5"><label class="text-[10px] font-bold text-black tracking-wider">NAMA BRAND</label><div class="relative"><div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fa-solid fa-tag text-black text-xs"></i></div><input id="input-brand-nama" type="text" class="w-full bg-darkBg border-2 border-borderDark rounded-lg pl-9 pr-3 py-2.5 text-xs text-black placeholder-black focus:outline-none focus:border-[#FFB144] transition-colors" placeholder="input nama brand..."></div></div>
-                    <button onclick="simpanBrand()" class="w-full brand-gradient-bg text-black font-bold text-sm py-3 rounded-xl flex justify-center items-center gap-2 submit-btn-shadow mt-1"><i class="fa-solid fa-plus"></i> SIMPAN BRAND</button>
+                    <button id="btn-simpan-brand" onclick="simpanBrand()" class="w-full brand-gradient-bg text-black font-bold text-sm py-3 rounded-xl flex justify-center items-center gap-2 submit-btn-shadow mt-1"><i class="fa-solid fa-plus"></i> SIMPAN BRAND</button>
                 </div>
                 <div class="bg-cardBg rounded-xl border-2 border-borderDark overflow-hidden">
                     <div class="brand-gradient-bg text-black text-[10px] font-black flex items-center justify-between px-4 py-2"><span><i class="fa-solid fa-list mr-1"></i>DAFTAR BRAND</span><span id="brand-count" class="bg-black/20 px-2 py-0.5 rounded-full text-[9px]">0 data</span></div>
@@ -1401,7 +1401,7 @@
                         </div>
                         <button onclick="tambahModelRow()" class="w-full py-2.5 rounded-lg dashed-border-brand brand-text font-medium text-sm flex items-center justify-center gap-2 hover:bg-[#fdf6ec] mt-1"><i class="fa-solid fa-plus"></i> Tambah Model Lain</button>
                     </div>
-                    <button onclick="simpanModel()" class="w-full brand-gradient-bg text-black font-bold text-sm py-3 rounded-xl flex justify-center items-center gap-2 submit-btn-shadow"><i class="fa-solid fa-floppy-disk"></i> SIMPAN MODEL</button>
+                    <button id="btn-simpan-model" onclick="simpanModel()" class="w-full brand-gradient-bg text-black font-bold text-sm py-3 rounded-xl flex justify-center items-center gap-2 submit-btn-shadow"><i class="fa-solid fa-floppy-disk"></i> SIMPAN MODEL</button>
                 </div>
                 <div class="bg-cardBg rounded-xl border-2 border-borderDark overflow-hidden">
                     <div class="brand-gradient-bg text-black text-[10px] font-black flex items-center justify-between px-4 py-2"><span><i class="fa-solid fa-list mr-1"></i>DAFTAR MODEL</span><span id="model-count" class="bg-black/20 px-2 py-0.5 rounded-full text-[9px]">0 data</span></div>
@@ -1418,7 +1418,7 @@
                         <div id="warna-rows-container" class="flex flex-col divide-y divide-borderDark"></div>
                     </div>
                     <button onclick="tambahWarnaRow()" class="w-full py-2.5 rounded-lg dashed-border-brand brand-text font-medium text-sm flex items-center justify-center gap-2 hover:bg-[#fdf6ec] mt-1"><i class="fa-solid fa-plus"></i> Tambah Warna Lain</button>
-                    <button onclick="simpanWarna()" class="w-full brand-gradient-bg text-black font-bold text-sm py-3 rounded-xl flex justify-center items-center gap-2 submit-btn-shadow"><i class="fa-solid fa-floppy-disk"></i> SIMPAN WARNA</button>
+                    <button id="btn-simpan-warna" onclick="simpanWarna()" class="w-full brand-gradient-bg text-black font-bold text-sm py-3 rounded-xl flex justify-center items-center gap-2 submit-btn-shadow"><i class="fa-solid fa-floppy-disk"></i> SIMPAN WARNA</button>
                 </div>
                 <div class="bg-cardBg rounded-xl border-2 border-borderDark overflow-hidden">
                     <div class="brand-gradient-bg text-black text-[10px] font-black flex items-center justify-between px-4 py-2"><span><i class="fa-solid fa-list mr-1"></i>DAFTAR WARNA</span><span id="warna-count" class="bg-black/20 px-2 py-0.5 rounded-full text-[9px]">0 data</span></div>
@@ -1435,7 +1435,7 @@
                         <div id="ukuran-rows-container" class="flex flex-col divide-y divide-borderDark"></div>
                     </div>
                     <button onclick="tambahUkuranRow()" class="w-full py-2.5 rounded-lg dashed-border-brand brand-text font-medium text-sm flex items-center justify-center gap-2 hover:bg-[#fdf6ec] mt-1"><i class="fa-solid fa-plus"></i> Tambah Ukuran Lain</button>
-                    <button onclick="simpanUkuran()" class="w-full brand-gradient-bg text-black font-bold text-sm py-3 rounded-xl flex justify-center items-center gap-2 submit-btn-shadow"><i class="fa-solid fa-floppy-disk"></i> SIMPAN UKURAN</button>
+                    <button id="btn-simpan-ukuran" onclick="simpanUkuran()" class="w-full brand-gradient-bg text-black font-bold text-sm py-3 rounded-xl flex justify-center items-center gap-2 submit-btn-shadow"><i class="fa-solid fa-floppy-disk"></i> SIMPAN UKURAN</button>
                 </div>
                 <div class="bg-cardBg rounded-xl border-2 border-borderDark overflow-hidden">
                     <div class="brand-gradient-bg text-black text-[10px] font-black flex items-center justify-between px-4 py-2"><span><i class="fa-solid fa-list mr-1"></i>DAFTAR UKURAN</span><span id="ukuran-count" class="bg-black/20 px-2 py-0.5 rounded-full text-[9px]">0 data</span></div>
@@ -1555,7 +1555,7 @@
                 </div>
             </div>
 
-            <button onclick="simpanPengaturan()" class="mt-2 w-full brand-gradient-bg text-black font-bold text-lg py-3.5 rounded-xl shadow-[0_4px_15px_rgba(255,140,0,0.3)] flex justify-center items-center gap-3 submit-btn-shadow">
+            <button id="btn-simpan-pengaturan" onclick="simpanPengaturan()" class="mt-2 w-full brand-gradient-bg text-black font-bold text-lg py-3.5 rounded-xl shadow-[0_4px_15px_rgba(255,140,0,0.3)] flex justify-center items-center gap-3 submit-btn-shadow">
                 <i class="fa-solid fa-check-double text-xl"></i> SIMPAN PENGATURAN
             </button>
 
@@ -3678,7 +3678,7 @@ function updateSSK(tab, rowId) {
         const tanggal = now.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' });
         const jam = now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
         const btnSimpan = document.getElementById('koreksi-btn-simpan');
-        if (btnSimpan) { btnSimpan.disabled = true; btnSimpan.textContent = 'Menyimpan...'; }
+        setButtonLoading(btnSimpan, true, 'MENYIMPAN...');
         try {
             const { data: ri, error: riErr } = await sbClient.from('riwayat_input').insert({
                 mode: 'masuk', brand: brandNama, model: model,
@@ -3706,7 +3706,7 @@ function updateSSK(tab, rowId) {
         } catch(err) {
             showToast('❌ Gagal koreksi: ' + (err.message || err));
         } finally {
-            if (btnSimpan) { btnSimpan.disabled = false; btnSimpan.textContent = 'SIMPAN'; }
+            setButtonLoading(btnSimpan, false);
         }
     }
 
@@ -4038,6 +4038,8 @@ function updateSSK(tab, rowId) {
             localStorage.removeItem('app_font_name');
             localStorage.removeItem('app_font_family');
         }
+        const btnSimpanPengaturan = document.getElementById('btn-simpan-pengaturan');
+        setButtonLoading(btnSimpanPengaturan, true, 'MENYIMPAN...');
         try {
             const { error } = await sbClient.from('pengaturan').upsert([
                 { key: 'brand_name', value: nama },
@@ -4047,6 +4049,7 @@ function updateSSK(tab, rowId) {
             if (error) throw error;
             showToast('✅ Pengaturan disimpan!');
         } catch(e) { showToast('❌ Gagal simpan pengaturan: ' + (e.message || '')); }
+        finally { setButtonLoading(btnSimpanPengaturan, false); }
     }
 
     // ==================== MASTER DATA: VENDOR ====================
@@ -4057,7 +4060,10 @@ function updateSSK(tab, rowId) {
         // Cek duplikat
         const isDuplikat = masterData.vendor.some(v => v.nama.toUpperCase() === nama.toUpperCase());
         if (isDuplikat) { showToast('⚠️ Vendor "' + nama.toUpperCase() + '" sudah ada!'); return; }
+        const btnSimpanVendor = document.getElementById('btn-simpan-vendor');
+        setButtonLoading(btnSimpanVendor, true, 'MENYIMPAN...');
         const { data, error } = await sbClient.from('vendor').insert({ nama, telp }).select().single();
+        setButtonLoading(btnSimpanVendor, false);
         if (error) { showToast('❌ Gagal simpan vendor'); return; }
         masterData.vendor.push({ id: data.id, nama: data.nama, telp: data.telp || '' });
         document.getElementById('input-vendor-nama').value = '';
@@ -4100,7 +4106,10 @@ function updateSSK(tab, rowId) {
         // Cek duplikat
         const isDuplikat = masterData.brand.some(b => b.nama.toUpperCase() === nama.toUpperCase());
         if (isDuplikat) { showToast('⚠️ Brand "' + nama.toUpperCase() + '" sudah ada!'); return; }
+        const btnSimpanBrand = document.getElementById('btn-simpan-brand');
+        setButtonLoading(btnSimpanBrand, true, 'MENYIMPAN...');
         const { data, error } = await sbClient.from('brand').insert({ nama: nama.toUpperCase() }).select().single();
+        setButtonLoading(btnSimpanBrand, false);
         if (error) { showToast('❌ Gagal: ' + error.message); return; }
         masterData.brand.push({ id: data.id, nama: data.nama });
         document.getElementById('input-brand-nama').value = '';
@@ -4190,7 +4199,10 @@ function updateSSK(tab, rowId) {
             if (toInsert.length === 0) return;
         }
         if (toInsert.length === 0) { showAlert('Isi minimal satu nama model!', {type:'warning'}); return; }
+        const btnSimpanModel = document.getElementById('btn-simpan-model');
+        setButtonLoading(btnSimpanModel, true, 'MENYIMPAN...');
         const { data, error } = await sbClient.from('model').insert(toInsert).select();
+        setButtonLoading(btnSimpanModel, false);
         if (error) { showToast('❌ Gagal simpan model'); return; }
         data.forEach(m => masterData.model.push({ id: m.id, brandId: m.brand_id, brandNama: m.brand_nama, nama: m.nama, harga: m.harga || 0, hargaModal: m.harga_modal || 0 }));
         document.getElementById('model-rows-container').innerHTML = '';
@@ -4417,7 +4429,10 @@ function updateSSK(tab, rowId) {
             if (toInsert.length === 0) return;
         }
         if (toInsert.length === 0) { showAlert('Isi minimal satu nama warna!', {type:'warning'}); return; }
+        const btnSimpanWarna = document.getElementById('btn-simpan-warna');
+        setButtonLoading(btnSimpanWarna, true, 'MENYIMPAN...');
         const { data, error } = await sbClient.from('warna').insert(toInsert).select();
+        setButtonLoading(btnSimpanWarna, false);
         if (error) { showToast('❌ Gagal simpan warna'); return; }
         data.forEach(w => masterData.warna.push({ id: w.id, nama: w.nama, kode: w.kode }));
         document.getElementById('warna-rows-container').innerHTML = '';
@@ -4519,7 +4534,10 @@ function updateSSK(tab, rowId) {
             if (toInsert.length === 0) return;
         }
         if (toInsert.length === 0) { showAlert('Isi minimal satu nama ukuran!', {type:'warning'}); return; }
+        const btnSimpanUkuran = document.getElementById('btn-simpan-ukuran');
+        setButtonLoading(btnSimpanUkuran, true, 'MENYIMPAN...');
         const { data, error } = await sbClient.from('ukuran').insert(toInsert).select();
+        setButtonLoading(btnSimpanUkuran, false);
         if (error) { showToast('❌ Gagal: ' + error.message); return; }
         data.forEach(u => masterData.ukuran.push({ id: u.id, nama: u.nama }));
         document.getElementById('ukuran-rows-container').innerHTML = '';
@@ -5216,7 +5234,7 @@ function updateSSK(tab, rowId) {
 
         _inputIsSaving = true;
         const btnSimpanInput = document.getElementById('btn-simpan-input');
-        if (btnSimpanInput) btnSimpanInput.disabled = true;
+        setButtonLoading(btnSimpanInput, true, 'MENYIMPAN...');
         try {
             const now = new Date();
             const tanggal = now.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' });
@@ -5251,7 +5269,7 @@ function updateSSK(tab, rowId) {
             showToast(savedMode === 'retur' ? '🔄 Retur disimpan!' : '✅ Data masuk disimpan!');
         } finally {
             _inputIsSaving = false;
-            if (btnSimpanInput) btnSimpanInput.disabled = false;
+            setButtonLoading(btnSimpanInput, false);
         }
     }
 
@@ -6583,12 +6601,12 @@ function updateSSK(tab, rowId) {
             var btnSimpan = document.createElement("button");
             btnSimpan.textContent = "SIMPAN";
             btnSimpan.style.cssText = "padding:10px 22px;border:none;border-radius:10px;font-family:Montserrat,sans-serif;font-weight:900;font-size:12px;cursor:pointer;background:linear-gradient(90deg,#ff8c00,#ffb347);color:#000;";
-            btnSimpan.onclick = function() { simpanEditInputItem(riwayatId, itemIdx, qtyLama, maxQty, minQty, isRetur); };
+            btnSimpan.onclick = function() { simpanEditInputItem(riwayatId, itemIdx, qtyLama, maxQty, minQty, isRetur, btnSimpan); };
             btnsEl.appendChild(btnSimpan);
         }, 30);
     }
 
-    async function simpanEditInputItem(riwayatId, itemIdx, qtyLama, maxQty, minQty, isRetur) {
+    async function simpanEditInputItem(riwayatId, itemIdx, qtyLama, maxQty, minQty, isRetur, btnEl) {
         var input = document.getElementById("edit-qty-input");
         var qtyBaru = parseInt(input ? input.value : "0") || 0;
 
@@ -6602,6 +6620,7 @@ function updateSSK(tab, rowId) {
         var item = record.items[itemIdx];
         if (!item.id) { showToast("ID item tidak ditemukan. Coba refresh halaman."); return; }
 
+        setButtonLoading(btnEl, true, 'MENYIMPAN...');
         try {
             var result = await sbClient.from("riwayat_input_item").update({ qty: qtyBaru }).eq("id", item.id);
             if (result.error) throw result.error;
@@ -6613,6 +6632,7 @@ function updateSSK(tab, rowId) {
             showToast("Qty diperbarui: " + qtyLama + " pcs ke " + qtyBaru + " pcs");
         } catch(e) {
             showToast("Gagal update: " + (e.message || e));
+            setButtonLoading(btnEl, false);
         }
     }
 
@@ -8167,7 +8187,7 @@ function updateSSK(tab, rowId) {
                     </div>
 
                     <!-- Tombol Simpan -->
-                    <button onclick="simpanBayarSebagian('${encodeURIComponent(vendor)}', ${totalHutang})"
+                    <button id="btn-simpan-bayar-sebagian" onclick="simpanBayarSebagian('${encodeURIComponent(vendor)}', ${totalHutang})"
                         style="width:100%;background:linear-gradient(90deg,#ff8c00,#ffb347);border:none;border-radius:14px;padding:16px;font-family:Montserrat,sans-serif;font-weight:900;font-size:13px;color:#000;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
                         <i class="fa-solid fa-hand-holding-dollar"></i> SIMPAN PEMBAYARAN SEBAGIAN
                     </button>
@@ -8221,6 +8241,9 @@ function updateSSK(tab, rowId) {
         const tanggal = now.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' });
         const jam = now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
 
+        const btnSimpanBayarSebagian = document.getElementById('btn-simpan-bayar-sebagian');
+        setButtonLoading(btnSimpanBayarSebagian, true, 'MEMPROSES...');
+
         // Sistem: TOTAL - PEMBAYARAN SEBAGIAN langsung
         // Simpan 1 record ke pelunasan dengan transaksi_id = null (bukan partial per-transaksi)
         const { data, error } = await sbClient.from('pelunasan').insert({
@@ -8234,6 +8257,7 @@ function updateSSK(tab, rowId) {
 
         if (error) {
             showToast('❌ Gagal menyimpan: ' + error.message);
+            setButtonLoading(btnSimpanBayarSebagian, false);
             return;
         }
 
