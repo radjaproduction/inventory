@@ -2590,6 +2590,41 @@ END $$;`;
     window.masterData = masterData;
     window.appData    = appData;
 
+    // ==================== CACHE STOK: watcher auto-invalidate ====================
+    // hitungStokItem() di-cache supaya tidak looping ulang seluruh riwayat setiap dipanggil.
+    // Cache ini otomatis dikosongkan kapanpun appData.riwayatInput / appData.riwayatTransaksi
+    // berubah, baik lewat assignment baru (=) maupun lewat method mutasi (push/unshift/splice/
+    // pop/shift/sort/reverse) pada array yang sedang dipakai — jadi tidak perlu diinvalidate
+    // manual satu-satu di setiap tempat data riwayat diubah.
+    let _stokItemCache = new Map();
+    function _invalidateStokItemCache() { _stokItemCache.clear(); }
+    function _watchRiwayatArray(arr) {
+        if (!arr || arr.__stokWatched) return arr;
+        ['push', 'unshift', 'splice', 'pop', 'shift', 'sort', 'reverse'].forEach(method => {
+            const original = arr[method];
+            Object.defineProperty(arr, method, {
+                value: function (...args) { _invalidateStokItemCache(); return original.apply(this, args); },
+                enumerable: false, configurable: true, writable: true
+            });
+        });
+        Object.defineProperty(arr, '__stokWatched', { value: true, enumerable: false, configurable: true });
+        return arr;
+    }
+    (function _installRiwayatCacheWatcher() {
+        let _riBacking = _watchRiwayatArray(appData.riwayatInput);
+        let _rtBacking = _watchRiwayatArray(appData.riwayatTransaksi);
+        Object.defineProperty(appData, 'riwayatInput', {
+            get() { return _riBacking; },
+            set(val) { _riBacking = _watchRiwayatArray(val); _invalidateStokItemCache(); },
+            enumerable: true, configurable: true
+        });
+        Object.defineProperty(appData, 'riwayatTransaksi', {
+            get() { return _rtBacking; },
+            set(val) { _rtBacking = _watchRiwayatArray(val); _invalidateStokItemCache(); },
+            enumerable: true, configurable: true
+        });
+    })();
+
     // ==================== LOAD SEMUA DATA DARI SUPABASE ====================
     async function muatSemuaData() {
         const loadingText = document.querySelector('#loading-overlay span');
@@ -2950,7 +2985,7 @@ function hitungStokEfektifTrx(modelNama, warnaNama, ukuranNama, kecualiRowId, br
     const uTarget = (ukuranNama || "").trim().toUpperCase();
 
     // Kurangi qty dari baris lain di form yang sama
-    document.querySelectorAll('#trx-variasi-list > div').forEach(row => {
+    _getTrxRows().forEach(row => {
         const rowId = row.id.replace('trx-row-', '');
         if (String(rowId) === String(kecualiRowId)) return;
         
@@ -2978,7 +3013,12 @@ function hitungStokItem(modelNama, warnaNama, ukuranNama, brandNama, brandId) {
     const uNama = (ukuranNama || "").trim().toUpperCase();
     const bNama = (brandNama || "").trim().toUpperCase();
     const key = `${mNama}||${wNama}||${uNama}`;
-    
+
+    // Cek cache dulu (per kombinasi model+warna+ukuran+brand). Cache otomatis kosong
+    // begitu appData.riwayatInput / appData.riwayatTransaksi berubah (lihat watcher di atas).
+    const cacheKey = `${key}||${bNama}||${brandId ?? ''}`;
+    if (_stokItemCache.has(cacheKey)) return _stokItemCache.get(cacheKey);
+
     // Helper: cek apakah record d cocok dengan brand yang diminta
     // Prioritaskan lookup by ID (robust), fallback ke nama string
     function brandMatch(d) {
@@ -3013,6 +3053,7 @@ function hitungStokItem(modelNama, warnaNama, ukuranNama, brandNama, brandId) {
             }
         });
     });
+    _stokItemCache.set(cacheKey, stok);
     return stok;
 }
 
@@ -3307,6 +3348,7 @@ function updateSSK(tab, rowId) {
         document.getElementById('trx-model-display').textContent = 'Pilih model';
         document.getElementById('trx-variasi-list').innerHTML = '';
         trxRowCount = 0;
+        _invalidateTrxRowsCache();
         setStatusBayar('credit');
         tambahVariasiTrx();
     }
@@ -3834,6 +3876,7 @@ function updateSSK(tab, rowId) {
 
         if (subTab === 'kredit') {
             _filterTrxStatus = 'kredit';
+            _rtPage = 1; // reset halaman biar tidak nyangkut di halaman lama saat ganti sub-tab
             listTransaksi.classList.remove('hidden'); listTransaksi.classList.add('flex');
             totalBar.classList.remove('hidden'); totalBar.classList.add('flex');
             // Render langsung (instan), tidak lewat debounce, khusus saat membuka sub-tab TRANSAKSI
@@ -3846,11 +3889,13 @@ function updateSSK(tab, rowId) {
             if (innerBar) innerBar.classList.remove('hidden');
             _updateTransaksiInnerTabButtons(subTab);
             if (subTab === 'lunas') {
+                _rtPage = 1;
                 listTransaksi.classList.remove('hidden'); listTransaksi.classList.add('flex');
                 totalBar.classList.remove('hidden'); totalBar.classList.add('flex');
                 if (typeof _renderRiwayatTransaksiOri === 'function') _renderRiwayatTransaksiOri();
                 else renderRiwayatTransaksi();
             } else if (subTab === 'pelunasan') {
+                _pelPage = 1;
                 if (listPelunasan) { listPelunasan.classList.remove('hidden'); listPelunasan.classList.add('flex'); }
                 if (pelunasanBar) pelunasanBar.classList.remove('hidden');
                 renderPelunasanView();
@@ -4527,6 +4572,7 @@ function updateSSK(tab, rowId) {
                     // Update nama di riwayat & transaksi local cache
                     appData.riwayatInput.forEach(r => { if (r.model === namaLama && r.brand === m.brandNama) r.model = namaBaru; });
                     appData.riwayatTransaksi.forEach(t => { if (t.model === namaLama && t.brand === m.brandNama) t.model = namaBaru; });
+                    _invalidateStokItemCache(); // rename mengubah field .model di item yang sudah ada (bukan push/splice), jadi invalidate manual
                     renderModelList();
                     showToast('✅ Model berhasil di-rename!');
                 } catch(err) {
@@ -5642,6 +5688,17 @@ function updateSSK(tab, rowId) {
     let trxState = { vendorId: null, vendorNama: '', brandId: null, brandNama: '', modelId: null, modelNama: '', modelHarga: 0, modelHargaModal: 0, statusBayar: 'credit' };
     window.trxState = trxState;
     let trxRowCount = 0;
+    // Cache referensi elemen baris #trx-variasi-list, supaya hitungStokEfektifTrx/refreshSemuaSSKTrx
+    // tidak perlu querySelectorAll ulang di setiap keystroke qty (hemat DOM query saat baris banyak).
+    // Cache di-invalidate otomatis setiap kali baris ditambah/dihapus/dibersihkan.
+    let _trxRowsCache = null;
+    function _invalidateTrxRowsCache() { _trxRowsCache = null; }
+    function _getTrxRows() {
+        if (_trxRowsCache) return _trxRowsCache;
+        const list = document.getElementById('trx-variasi-list');
+        _trxRowsCache = list ? Array.from(list.children) : [];
+        return _trxRowsCache;
+    }
 
     function setStatusBayar(status) {
         trxState.statusBayar = status;
@@ -6057,6 +6114,7 @@ function updateSSK(tab, rowId) {
 	            </div>`;
 	        row.classList.add('hidden');
 	        list.appendChild(row);
+	        _invalidateTrxRowsCache();
 	        if (trxState.modelNama) _updateTrxRowsLockState();
 	        refreshTrxRowSummary(id);
 	        _renumberTrxRows();
@@ -6114,13 +6172,14 @@ function updateSSK(tab, rowId) {
         _updateInputRowBtn(id);
     }
 	    function refreshSemuaSSKTrx() {
-	        document.querySelectorAll('#trx-variasi-list > div').forEach(row => {
+	        _getTrxRows().forEach(row => {
 	            const rowId = row.id.replace('trx-row-', '');
 	            updateSSK('trx', rowId);
 	            refreshTrxRowSummary(rowId);
 	        });
 	    }
-    function onQtyTrxInput(el, id) {
+    let _trxQtyDebounceTimers = {};
+    function _trxQtyRecalc(el, id) {
         const raw = el.value;
         if (raw === '' || raw === '-') return;
         const maxStok = _getMaxStokTrx(id);
@@ -6131,7 +6190,22 @@ function updateSSK(tab, rowId) {
         refreshSemuaSSKTrx();
         _updateTrxRowBtn(id);
     }
+    function onQtyTrxInput(el, id) {
+        const raw = el.value;
+        if (raw === '' || raw === '-') return;
+        // Debounce: hitung ulang stok (loop berat) hanya setelah user berhenti mengetik sejenak,
+        // bukan di setiap huruf/angka. Nilai yang diketik tetap tampil apa adanya di input.
+        clearTimeout(_trxQtyDebounceTimers[id]);
+        _trxQtyDebounceTimers[id] = setTimeout(() => {
+            delete _trxQtyDebounceTimers[id];
+            _trxQtyRecalc(el, id);
+        }, 180);
+    }
     function onQtyTrxBlur(el, id) {
+        // Saat blur, batalkan debounce yang masih tertunda dan hitung ulang final secara langsung
+        // supaya nilai final selalu ter-clamp & konsisten sebelum user pindah fokus/simpan.
+        clearTimeout(_trxQtyDebounceTimers[id]);
+        delete _trxQtyDebounceTimers[id];
         let val = parseInt(el.value);
         if (isNaN(val) || val < 0) val = 0;
         const maxStok = _getMaxStokTrx(id);
@@ -6144,6 +6218,7 @@ function updateSSK(tab, rowId) {
     function hapusRowTrx(id) {
         const el = document.getElementById('trx-row-' + id);
         if (el) el.remove();
+        _invalidateTrxRowsCache();
         const list = document.getElementById('trx-variasi-list');
         if (list.children.length > 0) {
             const firstId = list.children[0].id.replace('trx-row-', '');
@@ -6323,6 +6398,7 @@ function updateSSK(tab, rowId) {
         document.getElementById('trx-model-display').textContent = 'Pilih model';
         document.getElementById('trx-variasi-list').innerHTML = '';
         trxRowCount = 0;
+        _invalidateTrxRowsCache();
         setStatusBayar('credit');
         tambahVariasiTrx();
         renderRiwayatTransaksi();
@@ -6352,6 +6428,7 @@ function updateSSK(tab, rowId) {
         document.getElementById('trx-model-display').textContent = 'Pilih model';
         document.getElementById('trx-variasi-list').innerHTML = '';
         trxRowCount = 0;
+        _invalidateTrxRowsCache();
         setStatusBayar('credit');
         tambahVariasiTrx();
         _updateTrxRowsLockState();
@@ -6471,6 +6548,7 @@ function updateSSK(tab, rowId) {
         updateFilterTanggalBadge();
         selectedTrxIds.clear();
         updateCetakBar();
+        _rtPage = 1; _pelPage = 1; // filter tanggal berubah -> kembali ke halaman 1 biar tidak bingung
         const activeSubTab = getActiveRiwayatSubTab();
         if (activeSubTab === 'kredit' || activeSubTab === 'lunas') renderRiwayatTransaksi();
         else if (activeSubTab === 'pelunasan') renderPelunasanView();
@@ -6892,6 +6970,7 @@ function updateSSK(tab, rowId) {
             var result = await sbClient.from("riwayat_input_item").update({ qty: qtyBaru }).eq("id", item.id);
             if (result.error) throw result.error;
             item.qty = qtyBaru;
+            _invalidateStokItemCache();
             _modal.close();
             renderRiwayatInput();
             renderStokDashboard();
@@ -6942,9 +7021,46 @@ function updateSSK(tab, rowId) {
     
     let _filterTrxStatus = 'kredit'; // default: panel TRANSAKSI menampilkan status KREDIT
 
+    // PAGINATION: pagination dilakukan di level GRUP VENDOR (bukan di level transaksi/data),
+    // supaya total nominal, ceklis "Semua" per vendor, dan cache (_vendorGroupCache) tetap
+    // dihitung dari SELURUH data yang sudah difilter — bukan cuma data yang tampil di halaman aktif.
+    let _rtPage = 1;
+    const RT_PAGE_SIZE = 8; // jumlah vendor yang ditampilkan per halaman di Riwayat Transaksi
+
+    function rtGoToPage(page) {
+        _rtPage = page;
+        renderRiwayatTransaksi();
+        const list = document.getElementById('riwayat-transaksi-list');
+        if (list) list.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    window.rtGoToPage = rtGoToPage;
+
+    function _renderPaginationControls(opts) {
+        const { currentPage, totalPages, totalItems, itemLabel, onPageChangeFn } = opts;
+        if (totalPages <= 1) return '';
+        const prevDisabled = currentPage <= 1;
+        const nextDisabled = currentPage >= totalPages;
+        return `
+            <div class="flex items-center justify-between gap-2 mt-3 mb-2 px-1">
+                <div class="text-[9px] text-black/60 font-bold whitespace-nowrap">${totalItems} ${itemLabel}</div>
+                <div class="flex items-center gap-1.5">
+                    <button onclick="${onPageChangeFn}(${currentPage - 1})" ${prevDisabled ? 'disabled' : ''}
+                        class="w-7 h-7 rounded-lg border-2 border-borderDark flex items-center justify-center text-[10px] ${prevDisabled ? 'opacity-30 cursor-not-allowed' : 'bg-cardBg active:scale-95'} transition-transform">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <div class="text-[10px] font-black text-black px-2 whitespace-nowrap">${currentPage} / ${totalPages}</div>
+                    <button onclick="${onPageChangeFn}(${currentPage + 1})" ${nextDisabled ? 'disabled' : ''}
+                        class="w-7 h-7 rounded-lg border-2 border-borderDark flex items-center justify-center text-[10px] ${nextDisabled ? 'opacity-30 cursor-not-allowed' : 'bg-cardBg active:scale-95'} transition-transform">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>`;
+    }
+
     function setFilterTrxStatus(mode) {
         // KREDIT & LUNAS sekarang mode eksklusif (bukan toggle). KREDIT -> daftar transaksi kredit.
         // LUNAS -> sub-tab LUNAS (list transaksi lunas) / PELUNASAN / BAYAR SEBAGIAN, default ke LUNAS.
+        _rtPage = 1; // reset halaman tiap ganti filter status, biar tidak nyangkut di halaman lama yang mungkin sudah kosong
         if (mode === 'kredit') {
             switchRiwayatSubTab('kredit');
             renderRiwayatTransaksi(); // PERBAIKAN: Panggil render secara eksplisit
@@ -7037,13 +7153,21 @@ function updateSSK(tab, rowId) {
             vendorGroups[d.vendor].push(d);
         });
 
-        _vendorGroupCache = vendorGroups;
+        _vendorGroupCache = vendorGroups; // PENTING: cache tetap berisi SEMUA vendor & transaksinya (tidak dipotong halaman),
+                                           // supaya "✓ Semua" per vendor & cetak/lunasi tetap benar walau vendor itu ada di halaman lain.
 
         // PERBAIKAN PERFORMA: Render kerangka vendor dulu, lalu isi detailnya secara bertahap.
         // Ini mencegah UI freeze saat data transaksi sangat banyak.
         const sortedVendors = Object.keys(vendorGroups).sort((a, b) => a.localeCompare(b, 'id', { sensitivity: 'base' }));
 
-        list.innerHTML = bannerHiddenOld + bannerKorup + sortedVendors.map(vendor => {
+        // PAGINATION: batasi jumlah VENDOR yang di-render ke DOM per halaman.
+        // Total, cache, dan hitungan tetap pakai sortedVendors/vendorGroups yang lengkap di atas.
+        const rtTotalPages = Math.max(1, Math.ceil(sortedVendors.length / RT_PAGE_SIZE));
+        if (_rtPage > rtTotalPages) _rtPage = rtTotalPages;
+        if (_rtPage < 1) _rtPage = 1;
+        const pageVendors = sortedVendors.slice((_rtPage - 1) * RT_PAGE_SIZE, _rtPage * RT_PAGE_SIZE);
+
+        list.innerHTML = bannerHiddenOld + bannerKorup + pageVendors.map(vendor => {
             const vendorLabel = String(vendor || '').trim() ? vendor : 'VENDOR TIDAK DIKETAHUI';
             const vendorKey = (vendorLabel || 'vendor_tidak_diketahui').replace(/\s+/g,'_');
             const trxList = vendorGroups[vendor] || [];
@@ -7083,16 +7207,22 @@ function updateSSK(tab, rowId) {
                     <div class="text-center text-black text-xs py-4">Memuat...</div>
                 </div>
             </div>`;
-        }).join('');
+        }).join('') + _renderPaginationControls({
+            currentPage: _rtPage,
+            totalPages: rtTotalPages,
+            totalItems: sortedVendors.length,
+            itemLabel: 'vendor',
+            onPageChangeFn: 'rtGoToPage'
+        });
 
         // Batalkan render detail sebelumnya jika ada
         if (_renderTrxVendorTimeout) clearTimeout(_renderTrxVendorTimeout);
 
-        // Render detail transaksi per vendor secara bertahap
+        // Render detail transaksi per vendor secara bertahap (HANYA vendor di halaman aktif)
         let vendorIndex = 0;
         function renderNextVendor() {
-            if (vendorIndex >= sortedVendors.length) return;
-            const vendor = sortedVendors[vendorIndex];
+            if (vendorIndex >= pageVendors.length) return;
+            const vendor = pageVendors[vendorIndex];
             const vendorKey = (vendor || 'vendor_tidak_diketahui').replace(/\s+/g,'_');
             const bodyEl = document.getElementById(`vg-body-${vendorKey}`);
             try {
@@ -7734,6 +7864,7 @@ function updateSSK(tab, rowId) {
                 if (error) throw error;
                 item.qty = qtyBaru;
             }
+            _invalidateStokItemCache();
             _modal.close();
             renderRiwayatTransaksi();
             renderStokDashboard();
@@ -7931,6 +8062,7 @@ function updateSSK(tab, rowId) {
                     if (error) throw error;
                 }
                 trx.items = trx.items.filter((_, i) => !selectedIdxs.includes(i));
+                _invalidateStokItemCache();
                 showToast(`🗑️ ${selectedIdxs.length} item dihapus, ${totalQtyHapus} pcs kembali ke stok.`);
             }
 
@@ -7950,6 +8082,19 @@ function updateSSK(tab, rowId) {
         batas.setHours(0,0,0,0);
         return tgl >= batas;
     }
+
+    // PAGINATION Pelunasan: sama seperti Riwayat Transaksi, dipaginasi di level VENDOR,
+    // bukan di level transaksi/total, supaya totalHutang & LUNAS SEMUA per vendor tetap akurat.
+    let _pelPage = 1;
+    const PEL_PAGE_SIZE = 8;
+
+    function pelGoToPage(page) {
+        _pelPage = page;
+        renderPelunasanView();
+        const list = document.getElementById('riwayat-pelunasan-list');
+        if (list) list.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    window.pelGoToPage = pelGoToPage;
 
     function renderPelunasanView() {
         selectedPelunasan.clear(); updatePelunasanActionBar();
@@ -7984,7 +8129,17 @@ function updateSSK(tab, rowId) {
 
         const pelSeenData = JSON.parse(localStorage.getItem('pel_seen_vendor') || '{}');
 
-        list.innerHTML = Object.entries(vendorGroups).sort(([a], [b]) => a.localeCompare(b, 'id', { sensitivity: 'base' })).map(([vendor, trxList]) => {
+        // PAGINATION: sortedVendorEntries berisi SEMUA vendor (untuk hitung total halaman).
+        // Yang dipotong per halaman cuma pageEntries (buat di-render ke DOM).
+        // Setiap vendor tetap membawa trxList LENGKAP miliknya sendiri, jadi total tagihan/hutang
+        // per vendor & tombol LUNAS SEMUA tetap dihitung dari data utuh, bukan potongan halaman.
+        const sortedVendorEntries = Object.entries(vendorGroups).sort(([a], [b]) => a.localeCompare(b, 'id', { sensitivity: 'base' }));
+        const pelTotalPages = Math.max(1, Math.ceil(sortedVendorEntries.length / PEL_PAGE_SIZE));
+        if (_pelPage > pelTotalPages) _pelPage = pelTotalPages;
+        if (_pelPage < 1) _pelPage = 1;
+        const pageEntries = sortedVendorEntries.slice((_pelPage - 1) * PEL_PAGE_SIZE, _pelPage * PEL_PAGE_SIZE);
+
+        list.innerHTML = pageEntries.map(([vendor, trxList]) => {
             const vendorKey = 'pel_' + vendor.replace(/\s+/g,'_');
             // Hitung total nominal semua transaksi credit vendor ini
             const totalNominalVendor = trxList.filter(t => t.status === 'credit').reduce((sum, t) => {
@@ -8174,7 +8329,13 @@ function updateSSK(tab, rowId) {
                     </div>` : ''}
                     ${cards}</div>
             </div>`;
-        }).join('');
+        }).join('') + _renderPaginationControls({
+            currentPage: _pelPage,
+            totalPages: pelTotalPages,
+            totalItems: sortedVendorEntries.length,
+            itemLabel: 'vendor',
+            onPageChangeFn: 'pelGoToPage'
+        });
 
         // Action bar untuk pelunasan terpilih (dibuat sekali saja, hindari duplikat tiap render)
         if (!document.getElementById('pelunasan-action-bar')) {
