@@ -1328,7 +1328,7 @@
 
             <!-- BREAKDOWN PER MODEL -->
             <div class="bg-cardBg rounded-xl border-2 border-borderDark overflow-hidden">
-                <div class="px-3 py-2.5 text-[10px] font-black text-black border-b-2 border-borderDark flex items-center gap-1.5"><i class="fa-solid fa-layer-group brand-text text-[10px]"></i> RINCIAN LABA PER MODEL</div>
+                <div class="flex items-center gap-2 px-4 py-3 border-b-2 border-borderDark"><i class="fa-solid fa-layer-group brand-text"></i><h3 class="text-sm font-bold text-black tracking-wide">RINCIAN LABA PER MODEL</h3></div>
                 <div id="laba-breakdown-list" class="flex flex-col"></div>
             </div>
             <div class="bg-yellow-500/10 border-2 border-yellow-500/25 rounded-lg px-3 py-2.5 text-[9px] text-black leading-relaxed">
@@ -2328,14 +2328,6 @@
         await konekSupabase(url, key);
     }
 
-    function resetKonfigurasi() {
-        showConfirm('Ganti koneksi Supabase?\nAnda akan diminta memasukkan URL & Key baru.', function() {
-            localStorage.removeItem('sb_url');
-            localStorage.removeItem('sb_key');
-            location.reload();
-        }, {title:'GANTI KONEKSI', type:'warning', icon:'🔌', ok:'YA, GANTI'});
-    }
-
     // Utility: Promise dengan timeout
     function withTimeout(promise, ms, label) {
         const timer = new Promise((_, reject) =>
@@ -2886,17 +2878,6 @@ async function fetchBayarSebagianData() {
                 console.warn('Realtime refresh gagal:', e.message);
             }
         }, 250);
-    }
-
-    // Render ulang semua tampilan yang berbasis data (dipakai saat load awal / restore backup,
-    // BUKAN dipakai lagi oleh realtime sync — realtime sekarang render granular via REALTIME_GROUP_HANDLERS di atas)
-    function renderSemuaTampilanData() {
-        renderVendorList(); renderBrandList(); renderModelList();
-        renderWarnaList(); renderUkuranList(); renderBrandOptions();
-        renderStokDashboard();
-        if (typeof _renderRiwayatTransaksiOri === 'function') _renderRiwayatTransaksiOri();
-        if (typeof _renderRiwayatInputOri === 'function') _renderRiwayatInputOri();
-        if (typeof _renderPelunasanViewOri === 'function') _renderPelunasanViewOri();
     }
 
     function initUI() {
@@ -4152,14 +4133,6 @@ function updateSSK(tab, rowId) {
         return '#' + [r,g,b].map(x => Math.round(x*255).toString(16).padStart(2,'0')).join('');
     }
 
-    function cpLightenHex(hex, amount = 40) {
-        let r = parseInt(hex.slice(1,3),16);
-        let g = parseInt(hex.slice(3,5),16);
-        let b = parseInt(hex.slice(5,7),16);
-        return '#' + [Math.min(255,r+amount), Math.min(255,g+amount), Math.min(255,b+amount)]
-            .map(x => x.toString(16).padStart(2,'0')).join('');
-    }
-
     function cpDrawCanvas() {
         const canvas = document.getElementById('cp-canvas');
         if (!canvas) return;
@@ -4221,60 +4194,6 @@ function updateSSK(tab, rowId) {
         const label = document.getElementById('cp-hex-label');
         if (preview) preview.style.background = hex;
         if (label) label.textContent = hex;
-    }
-
-    function cpGetPos(e, canvas) {
-        const rect = canvas.getBoundingClientRect();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        return {
-            x: Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)),
-            y: Math.max(0, Math.min(1, (clientY - rect.top) / rect.height))
-        };
-    }
-
-    function cpStartDrag(e, type) {
-        e.preventDefault();
-        cp.dragging = type;
-        cpOnDrag(e, type);
-        const moveEvt = e.touches ? 'touchmove' : 'mousemove';
-        const upEvt = e.touches ? 'touchend' : 'mouseup';
-        function onMove(ev) { ev.preventDefault(); cpOnDrag(ev, type); }
-        function onUp() {
-            cp.dragging = null;
-            document.removeEventListener(moveEvt, onMove);
-            document.removeEventListener(upEvt, onUp);
-        }
-        document.addEventListener(moveEvt, onMove, { passive: false });
-        document.addEventListener(upEvt, onUp);
-    }
-
-    function cpOnDrag(e, type) {
-        if (type === 'canvas') {
-            const canvas = document.getElementById('cp-canvas');
-            const pos = cpGetPos(e, canvas);
-            cp.sat = pos.x;
-            cp.val = 1 - pos.y;
-            cpDrawCanvas();
-        } else if (type === 'hue') {
-            const canvas = document.getElementById('cp-hue');
-            const pos = cpGetPos(e, canvas);
-            cp.hue = pos.x * 360;
-            cpDrawCanvas();
-            cpDrawHue();
-        }
-        cpUpdatePreview();
-    }
-
-    function cpApplyColor() {
-        const hex = cpHsvToHex(cp.hue, cp.sat, cp.val);
-        const secondary = cpLightenHex(hex, 40);
-        changeTheme(hex, secondary);
-        document.querySelectorAll('.theme-btn').forEach(b => {
-            b.classList.remove('ring-2', 'ring-white', 'ring-offset-2', 'ring-offset-cardBg');
-            b.querySelector('.check-icon').classList.add('hidden');
-        });
-        showToast('🎨 Warna kustom diterapkan! Jangan lupa simpan.');
     }
 
     function cpInit() {
@@ -4887,155 +4806,6 @@ function updateSSK(tab, rowId) {
         _clearActiveDropdownRefs();
     }, true);
 
-    function bukaDropdownWarna(tab, rowId) {
-        const trigger = document.getElementById(`${tab}-warna-sel-${rowId}`);
-        if (!trigger) return;
-        if (_toggleDropdownIfSameTrigger(trigger)) return;
-        const existing = document.getElementById('warna-dropdown-popup');
-        if (existing) existing.remove();
-        if (tab === 'trx' && !trxState.modelNama) { showToast('⚠️ Pilih MODEL terlebih dahulu!'); return; }
-        if (tab === 'input' && !inputState.modelId) { showToast('⚠️ Pilih MODEL terlebih dahulu!'); return; }
-        if (masterData.warna.length === 0) { showAlert('Belum ada warna.\nTambahkan di Tab Master > Warna.', {type:'warning'}); return; }
-
-        let warnaList = masterData.warna;
-        if (tab === 'trx' && trxState.modelNama) {
-            warnaList = masterData.warna.filter(w => {
-                return masterData.ukuran.some(u => hitungStokEfektifTrx(trxState.modelNama, w.nama, u.nama, rowId, trxState.brandNama, trxState.brandId) > 0);
-            });
-            if (warnaList.length === 0) { showAlert('Tidak ada warna dengan stok tersedia untuk model ini.', {type:'warning'}); return; }
-        }
-        
-        if (tab === 'input' && inputState.mode === 'retur' && inputState.modelNama) {
-            warnaList = masterData.warna.filter(w => {
-                return masterData.ukuran.some(u => hitungStokItem(inputState.modelNama, w.nama, u.nama, inputState.brandNama, inputState.brandId) > 0);
-            });
-            if (warnaList.length === 0) { showAlert('Tidak ada warna dengan stok tersedia untuk model ini.', {type:'warning'}); return; }
-        }
-
-        const popup = document.createElement('div');
-        popup.id = 'warna-dropdown-popup';
-        popup.className = 'fixed z-[999] bg-[#ffffff] border-2 border-[#FFB144] rounded-xl shadow-2xl overflow-hidden';
-        popup.style.minWidth = '200px'; popup.style.maxHeight = '300px'; popup.style.overflowY = 'auto';
-        warnaList.forEach(w => {
-            const item = document.createElement('div');
-            item.className = 'flex items-center gap-3 px-5 py-4 cursor-pointer hover:bg-[#F6DBB6] transition-colors border-b-2 border-[#FFB144] last:border-0';
-            item.innerHTML = `<div class="w-6 h-6 rounded flex-shrink-0 border-2 border-white/20" style="background:${w.kode}"></div><span class="text-sm font-bold text-black capitalize">${w.nama}</span>`;
-            item.onclick = () => { pilihWarna(tab, rowId, w.nama, w.kode); popup.remove(); _clearActiveDropdownRefs(); };
-            popup.appendChild(item);
-        });
-        const rect = trigger.getBoundingClientRect();
-        popup.style.top = (rect.bottom + 4) + 'px'; popup.style.left = rect.left + 'px';
-        document.body.appendChild(popup);
-        _setActiveDropdown(popup, trigger);
-    }
-    function pilihWarna(tab, rowId, nama, kode) {
-        const dot = document.getElementById(`${tab}-warna-dot-${rowId}`);
-        const label = document.getElementById(`${tab}-warna-label-${rowId}`);
-        if (dot) dot.style.background = kode;
-        if (label) label.textContent = nama;
-        const sskEl = document.getElementById(`${tab}-ssk-${rowId}`);
-        if (sskEl) sskEl.value = '';
-        updateSSK(tab, rowId);
-        if (tab === 'input') {
-            refreshInputRowSummary(rowId);
-            _updateInputRowBtn(rowId);
-        }
-        if (tab === 'trx') _updateTrxRowBtn(rowId);
-    }
-    function bukaDropdownUkuran(tab, rowId) {
-        const trigger = document.getElementById(`${tab}-ukuran-sel-${rowId}`);
-        if (!trigger) return;
-        if (_toggleDropdownIfSameTrigger(trigger)) return;
-        const existing = document.getElementById('ukuran-dropdown-popup');
-        if (existing) existing.remove();
-        if (tab === 'trx' && !trxState.modelNama) { showToast('⚠️ Pilih MODEL terlebih dahulu!'); return; }
-        if (tab === 'input' && !inputState.modelId) { showToast('⚠️ Pilih MODEL terlebih dahulu!'); return; }
-        if (masterData.ukuran.length === 0) { showAlert('Belum ada ukuran.\nTambahkan di Tab Master > Ukuran.', {type:'warning'}); return; }
-
-        let ukuranList = masterData.ukuran;
-        if (tab === 'trx' && trxState.modelNama) {
-            const warnaLabel = document.getElementById(`trx-warna-label-${rowId}`);
-            const warnaNama = warnaLabel ? warnaLabel.textContent.trim() : '';
-            if (warnaNama && warnaNama !== 'Pilih') {
-                ukuranList = masterData.ukuran.filter(u => hitungStokEfektifTrx(trxState.modelNama, warnaNama, u.nama, rowId, trxState.brandNama, trxState.brandId) > 0);
-                if (ukuranList.length === 0) { showAlert('Tidak ada ukuran dengan stok tersedia untuk warna ini.', {type:'warning'}); return; }
-            } else {
-                ukuranList = masterData.ukuran.filter(u =>
-                    masterData.warna.some(w => hitungStokEfektifTrx(trxState.modelNama, w.nama, u.nama, rowId, trxState.brandNama, trxState.brandId) > 0)
-                );
-                if (ukuranList.length === 0) { showAlert('Tidak ada ukuran dengan stok tersedia untuk model ini.', {type:'warning'}); return; }
-            }
-        }
-
-        const popup = document.createElement('div');
-        popup.id = 'ukuran-dropdown-popup';
-        popup.className = 'fixed z-[999] bg-[#ffffff] border-2 border-[#FFB144] rounded-xl shadow-2xl overflow-hidden';
-        popup.style.minWidth = '160px'; popup.style.maxHeight = '300px'; popup.style.overflowY = 'auto';
-        sortUkuran(ukuranList).forEach(u => {
-            const item = document.createElement('div');
-            item.className = 'px-5 py-4 cursor-pointer hover:bg-[#F6DBB6] text-sm font-bold text-black transition-colors border-b-2 border-[#FFB144] last:border-0';
-            item.textContent = u.nama;
-            item.onclick = () => { pilihUkuran(tab, rowId, u.nama); popup.remove(); _clearActiveDropdownRefs(); };
-            popup.appendChild(item);
-        });
-        const rect = trigger.getBoundingClientRect();
-        popup.style.top = (rect.bottom + 4) + 'px'; popup.style.left = rect.left + 'px';
-        document.body.appendChild(popup);
-        _setActiveDropdown(popup, trigger);
-    }
-    function pilihUkuran(tab, rowId, nama) {
-        const label = document.getElementById(`${tab}-ukuran-label-${rowId}`);
-        if (label) label.textContent = nama;
-        updateSSK(tab, rowId);
-        if (tab === 'input') {
-            refreshInputRowSummary(rowId);
-            _updateInputRowBtn(rowId);
-        }
-        if (tab === 'trx') _updateTrxRowBtn(rowId);
-    }
-
-    function tambahVariasiDariKolom(tab, rowId, keep) {
-        if (tab === 'input' && !inputState.modelId) { showToast('⚠️ Pilih MODEL terlebih dahulu!'); return; }
-        if (tab === 'trx' && !trxState.modelNama) { showToast('⚠️ Pilih MODEL terlebih dahulu!'); return; }
-
-        const list = document.getElementById(`${tab}-variasi-list`);
-        if (!list) return;
-
-        const warnaNama = document.getElementById(`${tab}-warna-label-${rowId}`)?.textContent?.trim() || '';
-        const ukuranNama = document.getElementById(`${tab}-ukuran-label-${rowId}`)?.textContent?.trim() || '';
-
-        if (keep === 'warna' && (!warnaNama || warnaNama === 'Pilih')) {
-            showToast('⚠️ Pilih WARNA terlebih dahulu!');
-            return;
-        }
-        if (keep === 'ukuran' && (!ukuranNama || ukuranNama === 'Pilih')) {
-            showToast('⚠️ Pilih UKURAN terlebih dahulu!');
-            return;
-        }
-
-        if (tab === 'input') tambahVariasiInput();
-        if (tab === 'trx') tambahVariasiTrx();
-
-        const newRow = list.lastElementChild;
-        const newId = newRow?.id?.replace(`${tab}-row-`, '');
-        if (!newId) return;
-
-        if (keep === 'warna') {
-            const warnaData = masterData.warna.find(w => (w.nama || '').trim().toUpperCase() === warnaNama.toUpperCase());
-            const dotColor = document.getElementById(`${tab}-warna-dot-${rowId}`)?.style?.background || '#888';
-            pilihWarna(tab, newId, warnaNama, warnaData?.kode || dotColor);
-        } else {
-            pilihUkuran(tab, newId, ukuranNama);
-        }
-
-        updateSSK(tab, newId);
-        if (tab === 'input') _updateInputRowBtn(newId);
-        if (tab === 'trx') {
-            _updateTrxRowsLockState();
-            _updateTrxRowBtn(newId);
-            refreshSemuaSSKTrx();
-        }
-    }
     function tutupSemuaDropdownPopup() {
         ['generic-dropdown-popup', 'warna-dropdown-popup', 'ukuran-dropdown-popup'].forEach(id => {
             const el = document.getElementById(id);
@@ -5210,21 +4980,6 @@ function updateSSK(tab, rowId) {
         }
     }
 
-    function clearRowInput(id) {
-        const dotEl = document.getElementById('input-warna-dot-' + id);
-        const warnaEl = document.getElementById('input-warna-label-' + id);
-        const ukuranEl = document.getElementById('input-ukuran-label-' + id);
-        const qtyEl = document.getElementById('input-qty-' + id);
-        const sskEl = document.getElementById('input-ssk-' + id);
-        if (dotEl) dotEl.style.background = '#888';
-        if (warnaEl) warnaEl.textContent = 'Pilih warna';
-        if (ukuranEl) ukuranEl.textContent = 'Pilih ukuran';
-        if (qtyEl) qtyEl.value = 0;
-        if (sskEl) sskEl.value = '';
-        refreshInputRowSummary(id);
-        _updateInputRowBtn(id);
-    }
-
     function updateInputVariasiState() {
         const enabled = !!inputState.modelId;
         const btnTambah = document.getElementById('btn-tambah-variasi-input');
@@ -5300,14 +5055,6 @@ function updateSSK(tab, rowId) {
         refreshInputRowSummary(id);
         _renumberInputRows();
         if (inputState.modelId) openInputVariasiSheet(id);
-    }
-    function changeQtyInput(id, delta) {
-        const el = document.getElementById('input-qty-' + id);
-        if (!el) return;
-        el.value = Math.max(1, (parseInt(el.value) || 1) + delta);
-        updateSSK('input', id);
-        refreshInputRowSummary(id);
-        _updateInputRowBtn(id);
     }
     function hapusRowInput(id) {
         const el = document.getElementById('input-row-' + id);
@@ -5817,21 +5564,6 @@ function updateSSK(tab, rowId) {
         }
     }
 
-	    function clearRowTrx(id) {
-	        const dotEl = document.getElementById('trx-warna-dot-' + id);
-	        const warnaEl = document.getElementById('trx-warna-label-' + id);
-	        const ukuranEl = document.getElementById('trx-ukuran-label-' + id);
-        const qtyEl = document.getElementById('trx-qty-' + id);
-        const sskEl = document.getElementById('trx-ssk-' + id);
-        if (dotEl) dotEl.style.background = '#888';
-        if (warnaEl) warnaEl.textContent = 'Pilih';
-        if (ukuranEl) ukuranEl.textContent = 'Pilih';
-	        if (qtyEl) { qtyEl.value = 0; const mb = qtyEl.parentElement?.querySelector('button:first-child'); if (mb) mb.style.opacity = '0.3'; const pb = qtyEl.parentElement?.querySelector('button:last-child'); if (pb) pb.style.opacity = '1'; }
-	        if (sskEl) sskEl.value = '';
-	        refreshTrxRowSummary(id);
-	        _updateTrxRowBtn(id);
-	    }
-
 	    let activeTrxSheetRowId = null;
 	    let trxSheetDraft = null;
 
@@ -6140,20 +5872,6 @@ function updateSSK(tab, rowId) {
         return Math.max(0, hitungStokEfektifTrx(modelNama, warnaNama, ukuranNama, id, trxState.brandNama, trxState.brandId));
     }
 
-    function changeQtyTrx(id, delta) {
-        if (!trxState.modelNama) { showToast('⚠️ Pilih MODEL terlebih dahulu!'); return; }
-        const el = document.getElementById('trx-qty-' + id);
-        if (!el) return;
-        const maxStok = _getMaxStokTrx(id);
-        const newVal = Math.min(maxStok, Math.max(0, (parseInt(el.value) || 0) + delta));
-        el.value = newVal;
-        const minusBtn = el.parentElement?.querySelector('button:first-child');
-        if (minusBtn) minusBtn.style.opacity = newVal <= 0 ? '0.3' : '1';
-        const plusBtn = el.parentElement?.querySelector('button:last-child');
-        if (plusBtn) plusBtn.style.opacity = (maxStok !== Infinity && newVal >= maxStok) ? '0.3' : '1';
-        updateSSK('trx', id);
-        _updateTrxRowBtn(id);
-    }
     function onQtyInputTab(el, id) {
         const raw = el.value;
         if (raw === '' || raw === '-') return;
@@ -6663,7 +6381,7 @@ function updateSSK(tab, rowId) {
 
     const LABA_BREAKDOWN_PAGE_SIZE = 15;
     let _labaBreakdownRows = [];
-    let _labaBreakdownShowCount = LABA_BREAKDOWN_PAGE_SIZE;
+    let _labaBreakdownPage = 1;
 
     function _renderLabaBreakdownList() {
         const listEl = document.getElementById('laba-breakdown-list');
@@ -6675,11 +6393,13 @@ function updateSSK(tab, rowId) {
             return;
         }
 
-        const visibleRows = rows.slice(0, _labaBreakdownShowCount);
-        const sisa = rows.length - visibleRows.length;
+        const totalPages = Math.max(1, Math.ceil(rows.length / LABA_BREAKDOWN_PAGE_SIZE));
+        if (_labaBreakdownPage > totalPages) _labaBreakdownPage = totalPages;
+        if (_labaBreakdownPage < 1) _labaBreakdownPage = 1;
+        const visibleRows = rows.slice((_labaBreakdownPage - 1) * LABA_BREAKDOWN_PAGE_SIZE, _labaBreakdownPage * LABA_BREAKDOWN_PAGE_SIZE);
 
         let html = visibleRows.map((r, idx) => {
-            const noUrut = idx + 1;
+            const noUrut = (_labaBreakdownPage - 1) * LABA_BREAKDOWN_PAGE_SIZE + idx + 1;
             return `<div class="flex items-center justify-between px-3 py-2.5 border-b-2 border-borderDark last:border-0">
                 <div class="min-w-0 flex-1 flex items-start gap-2">
                     <div class="w-5 flex-shrink-0 pt-0.5 text-center text-[10px] font-black text-black">${noUrut}</div>
@@ -6694,20 +6414,22 @@ function updateSSK(tab, rowId) {
             </div>`;
         }).join('');
 
-        if (sisa > 0) {
-            html += `<button onclick="loadMoreLabaBreakdown()" class="w-full py-2.5 text-[9.5px] font-black text-black flex items-center justify-center gap-1.5 border-t-2 border-borderDark" style="background:linear-gradient(90deg,#ff8c00,#ffb347);">
-                <i class="fa-solid fa-chevron-down"></i> MUAT LEBIH BANYAK (${sisa} lagi)
-            </button>`;
-        }
+        html += _renderPaginationControls({
+            currentPage: _labaBreakdownPage,
+            totalPages,
+            totalItems: rows.length,
+            itemLabel: 'model',
+            onPageChangeFn: 'changeLabaBreakdownPage'
+        });
 
         listEl.innerHTML = html;
     }
 
-    function loadMoreLabaBreakdown() {
-        _labaBreakdownShowCount += LABA_BREAKDOWN_PAGE_SIZE;
+    function changeLabaBreakdownPage(page) {
+        _labaBreakdownPage = page;
         _renderLabaBreakdownList();
     }
-    window.loadMoreLabaBreakdown = loadMoreLabaBreakdown;
+    window.changeLabaBreakdownPage = changeLabaBreakdownPage;
 
     function renderLabaKotor() {
         const listEl = document.getElementById('laba-breakdown-list');
@@ -6741,7 +6463,7 @@ function updateSSK(tab, rowId) {
         document.getElementById('laba-margin-persen').textContent = 'Margin: ' + margin.toFixed(1) + '%';
 
         _labaBreakdownRows = Object.values(perModel).sort((a, b) => b.omset - a.omset);
-        _labaBreakdownShowCount = LABA_BREAKDOWN_PAGE_SIZE; // reset paginasi setiap kali filter/data berubah
+        _labaBreakdownPage = 1; // reset paginasi setiap kali filter/data berubah
         _renderLabaBreakdownList();
     }
     window.renderLabaKotor = renderLabaKotor;
@@ -7364,16 +7086,6 @@ function updateSSK(tab, rowId) {
     let _vendorGroupCache = {};
     let _openVendorKey = null;
     let _renderTrxVendorTimeout = null;
-
-    function filterVendorGroups(query) {
-        const q = query.trim().toLowerCase();
-        const list = document.getElementById('riwayat-transaksi-list');
-        if (!list) return;
-        list.querySelectorAll('[data-vendor-group]').forEach(el => {
-            const vendorName = el.getAttribute('data-vendor-group').toLowerCase();
-            el.style.display = (!q || vendorName.includes(q)) ? '' : 'none';
-        });
-    }
 
     function togglePilihTrx(id, uid) {
         const trx = appData.riwayatTransaksi.find(d => d.id === id);
@@ -8843,18 +8555,6 @@ function updateSSK(tab, rowId) {
         }).join('');
     }
 
-    async function hapusRiwayatBayarSebagian(id, vendorEncoded) {
-        showConfirm('Hapus catatan bayar sebagian ini?', async function() {
-            const { error } = await sbClient.from('pelunasan').delete().eq('id', id);
-            if (error) { showToast('❌ Gagal hapus: ' + error.message); return; }
-            appData.pelunasan = appData.pelunasan.filter(p => p.id !== id);
-            renderBayarSebagianView();
-            renderPelunasanView();
-            renderRiwayatTransaksi();
-            showToast('🗑️ Catatan dihapus.');
-        }, {title:'HAPUS CATATAN', type:'danger', icon:'🗑️', ok:'YA, HAPUS'});
-    }
-
     // ==================== PELUNASAN TERPILIH (CEKLIS) ====================
     const selectedPelunasan = new Map(); // { trxId => sisaHutang }
 
@@ -9209,18 +8909,6 @@ function updateSSK(tab, rowId) {
         </div>`;
 
         showPrintOverlay(docHtml, 'SURAT TAGIHAN', noTagihan + ' — ' + vendor, noTagihan + '-' + vendor + '.jpg');
-    }
-
-    async function hapusPelunasanSebagian(pelId) {
-        pelId = Number(pelId);
-        showConfirm('Hapus catatan bayar sebagian ini?', async function() {
-            const { error } = await sbClient.from('pelunasan').delete().eq('id', pelId);
-            if (error) { showToast('❌ Gagal hapus: ' + error.message); return; }
-            appData.pelunasan = appData.pelunasan.filter(p => Number(p.id) !== pelId);
-            renderPelunasanView();
-            renderRiwayatTransaksi();
-            showToast('🗑️ Catatan bayar sebagian dihapus.');
-        }, {title:'HAPUS BAYAR SEBAGIAN', type:'danger', icon:'🗑️', ok:'YA, HAPUS'});
     }
 
     function showToast(msg) {
