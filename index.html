@@ -6548,7 +6548,7 @@ function updateSSK(tab, rowId) {
         updateFilterTanggalBadge();
         selectedTrxIds.clear();
         updateCetakBar();
-        _rtPage = 1; _pelPage = 1; // filter tanggal berubah -> kembali ke halaman 1 biar tidak bingung
+        _rtPage = 1; _pelPage = 1; _riPage = 1; // filter tanggal berubah -> kembali ke halaman 1 biar tidak bingung
         const activeSubTab = getActiveRiwayatSubTab();
         if (activeSubTab === 'kredit' || activeSubTab === 'lunas') renderRiwayatTransaksi();
         else if (activeSubTab === 'pelunasan') renderPelunasanView();
@@ -6751,6 +6751,21 @@ function updateSSK(tab, rowId) {
         return !Array.isArray(d.items) || d.items.length === 0;
     }
 
+    // PAGINATION Riwayat Input: list ini flat (tidak dikelompokkan per vendor), jadi
+    // dipaginasi langsung per-item. Ditambah render bertahap (mirip Riwayat Transaksi)
+    // supaya saat pindah halaman/filter, banyak kartu tidak bikin UI freeze sesaat.
+    let _riPage = 1;
+    const RI_PAGE_SIZE = 20;
+    let _renderRiInputTimeout = null;
+
+    function riGoToPage(page) {
+        _riPage = page;
+        renderRiwayatInput();
+        const list = document.getElementById('riwayat-input-list');
+        if (list) list.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    window.riGoToPage = riGoToPage;
+
     function renderRiwayatInput() {
         const list = document.getElementById('riwayat-input-list');
         if (appData.riwayatInput.length === 0) {
@@ -6779,45 +6794,91 @@ function updateSSK(tab, rowId) {
                     <i class="fa-regular fa-trash-can mr-1"></i> HAPUS DATA KORUP
                 </button>
             </div>` : '';
-        list.innerHTML = bannerKorup + filtered.map((d, idx) => {
-            const isRetur = d.mode === 'retur';
-            const borderClass = isRetur ? 'border-red-500/40' : 'border-borderDark';
-            const badgeClass = isRetur ? 'bg-red-500/20 text-red-400 border-red-500/40' : 'bg-green-500/20 text-green-400 border-green-500/40';
-            const badgeText = isRetur ? '↩ RETUR' : '↓ MASUK';
-            const totalQty = d.items.reduce((s, i) => s + i.qty, 0);
+
+        // PAGINATION: filtered tetap lengkap (dipakai utk banner korup & total halaman),
+        // yang dipotong per halaman cuma pageItems (yang benar-benar di-render ke DOM).
+        const riTotalPages = Math.max(1, Math.ceil(filtered.length / RI_PAGE_SIZE));
+        if (_riPage > riTotalPages) _riPage = riTotalPages;
+        if (_riPage < 1) _riPage = 1;
+        const pageItems = filtered.slice((_riPage - 1) * RI_PAGE_SIZE, _riPage * RI_PAGE_SIZE);
+
+        if (_renderRiInputTimeout) clearTimeout(_renderRiInputTimeout);
+
+        // Render kerangka kartu kosong dulu (cepat), lalu isi detail tiap kartu secara bertahap
+        // via requestAnimationFrame supaya tidak freeze walau halaman berisi puluhan kartu sekaligus.
+        // Nomor urut dihitung GLOBAL (ikut offset halaman), bukan cuma index di halaman aktif,
+        // jadi halaman 2 lanjut dari nomor terakhir halaman 1, bukan mulai dari 1 lagi.
+        const riPageOffset = (_riPage - 1) * RI_PAGE_SIZE;
+        list.innerHTML = bannerKorup + pageItems.map((d, idx) => {
             const uid = 'ri-' + (d.id || idx);
-            const itemsPreview = d.items.slice(0,2).map(i => `<span class="text-[8px] bg-darkBg border-2 border-borderDark rounded px-1.5 py-0.5 text-black">${i.warna}/${i.ukuran}:<b class="text-black">${i.qty}</b></span>`).join('') + (d.items.length > 2 ? `<span class="text-[8px] text-black">+${d.items.length-2} lagi</span>` : '');
-            return `<div class="bg-cardBg rounded-lg border-2 ${borderClass} overflow-hidden">
-                <div class="flex items-center justify-between px-3 py-2 cursor-pointer select-none" onclick="toggleRiwayatCard('${uid}')">
-                    <div class="flex-1 min-w-0 mr-2">
-                        <div class="flex items-center gap-1.5">
-                            <span class="text-[10px] font-black text-black truncate">${d.brand} — ${d.model}</span>
-                            <span class="text-[8px] font-black px-1.5 py-0.5 rounded border-2 flex-shrink-0 ${badgeClass}">${badgeText}</span>
-                        </div>
-                        <div class="flex items-center gap-2 mt-0.5">
-                            <span class="text-[8px] text-black">${d.tanggal} ${d.jam}</span>
-                            <span class="text-[8px] brand-text font-bold">${totalQty} pcs</span>
-                            <div class="flex gap-1 flex-wrap" id="${uid}-preview">${itemsPreview}</div>
-                        </div>
-                    </div>
-                    <i id="${uid}-chevron" class="fa-solid fa-chevron-down text-[9px] text-black flex-shrink-0 transition-transform"></i>
-                </div>
-                <div id="${uid}-body" class="hidden px-3 pb-2 border-t-2 border-borderDark">
-                    ${isRetur && d.keterangan ? `<div class="text-[9px] text-red-400 italic pt-1.5"><i class="fa-solid fa-comment-dots mr-1"></i>${d.keterangan}</div>` : ''}
-                    <div class="flex flex-col gap-1 pt-1.5">
-                        ${d.items.map((i, iIdx) => `
-                        <div class="flex items-center justify-between bg-darkBg border-2 border-borderDark rounded px-2 py-1.5 gap-2">
-                            <span class="text-[9px] text-black flex-1">${i.warna} / ${i.ukuran}: <span class="text-black font-bold">${i.qty}</span> pcs</span>
-                            <button onclick="event.stopPropagation();bukaModalEditInputItem(${d.id},'${d.model}','${i.warna}','${i.ukuran}',${i.qty},${iIdx},'${d.mode}')"
-                                class="w-6 h-6 rounded bg-yellow-500/10 border-2 border-yellow-500/30 text-yellow-400 flex items-center justify-center hover:bg-yellow-500/20 transition-colors flex-shrink-0"
-                                title="Edit qty">
-                                <i class="fa-solid fa-pen text-[9px]"></i>
-                            </button>
-                        </div>`).join('')}
-                    </div>
+            const noUrut = riPageOffset + idx + 1;
+            return `<div class="flex items-start gap-2">
+                <div class="w-6 flex-shrink-0 pt-2.5 text-center text-[10px] font-black text-black">${noUrut}</div>
+                <div id="card-${uid}" class="flex-1 min-w-0 bg-cardBg rounded-lg border-2 border-borderDark overflow-hidden">
+                    <div class="text-center text-black text-xs py-3 opacity-60">Memuat...</div>
                 </div>
             </div>`;
-        }).join('');
+        }).join('') + _renderPaginationControls({
+            currentPage: _riPage,
+            totalPages: riTotalPages,
+            totalItems: filtered.length,
+            itemLabel: 'data',
+            onPageChangeFn: 'riGoToPage'
+        });
+
+        let itemIndex = 0;
+        function renderNextInputItem() {
+            if (itemIndex >= pageItems.length) return;
+            const d = pageItems[itemIndex];
+            const idx = itemIndex;
+            const uid = 'ri-' + (d.id || idx);
+            const cardEl = document.getElementById(`card-${uid}`);
+            try {
+                if (cardEl) {
+                    const isRetur = d.mode === 'retur';
+                    const borderClass = isRetur ? 'border-red-500/40' : 'border-borderDark';
+                    const badgeClass = isRetur ? 'bg-red-500/20 text-red-400 border-red-500/40' : 'bg-green-500/20 text-green-400 border-green-500/40';
+                    const badgeText = isRetur ? '↩ RETUR' : '↓ MASUK';
+                    const totalQty = d.items.reduce((s, i) => s + i.qty, 0);
+                    const itemsPreview = d.items.slice(0,2).map(i => `<span class="text-[8px] bg-darkBg border-2 border-borderDark rounded px-1.5 py-0.5 text-black">${i.warna}/${i.ukuran}:<b class="text-black">${i.qty}</b></span>`).join('') + (d.items.length > 2 ? `<span class="text-[8px] text-black">+${d.items.length-2} lagi</span>` : '');
+                    cardEl.className = `flex-1 min-w-0 bg-cardBg rounded-lg border-2 ${borderClass} overflow-hidden`;
+                    cardEl.innerHTML = `<div class="flex items-center justify-between px-3 py-2 cursor-pointer select-none" onclick="toggleRiwayatCard('${uid}')">
+                        <div class="flex-1 min-w-0 mr-2">
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-[10px] font-black text-black truncate">${d.brand} — ${d.model}</span>
+                                <span class="text-[8px] font-black px-1.5 py-0.5 rounded border-2 flex-shrink-0 ${badgeClass}">${badgeText}</span>
+                            </div>
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <span class="text-[8px] text-black">${d.tanggal} ${d.jam}</span>
+                                <span class="text-[8px] brand-text font-bold">${totalQty} pcs</span>
+                                <div class="flex gap-1 flex-wrap" id="${uid}-preview">${itemsPreview}</div>
+                            </div>
+                        </div>
+                        <i id="${uid}-chevron" class="fa-solid fa-chevron-down text-[9px] text-black flex-shrink-0 transition-transform"></i>
+                    </div>
+                    <div id="${uid}-body" class="hidden px-3 pb-2 border-t-2 border-borderDark">
+                        ${isRetur && d.keterangan ? `<div class="text-[9px] text-red-400 italic pt-1.5"><i class="fa-solid fa-comment-dots mr-1"></i>${d.keterangan}</div>` : ''}
+                        <div class="flex flex-col gap-1 pt-1.5">
+                            ${d.items.map((i, iIdx) => `
+                            <div class="flex items-center justify-between bg-darkBg border-2 border-borderDark rounded px-2 py-1.5 gap-2">
+                                <span class="text-[9px] text-black flex-1">${i.warna} / ${i.ukuran}: <span class="text-black font-bold">${i.qty}</span> pcs</span>
+                                <button onclick="event.stopPropagation();bukaModalEditInputItem(${d.id},'${d.model}','${i.warna}','${i.ukuran}',${i.qty},${iIdx},'${d.mode}')"
+                                    class="w-6 h-6 rounded bg-yellow-500/10 border-2 border-yellow-500/30 text-yellow-400 flex items-center justify-center hover:bg-yellow-500/20 transition-colors flex-shrink-0"
+                                    title="Edit qty">
+                                    <i class="fa-solid fa-pen text-[9px]"></i>
+                                </button>
+                            </div>`).join('')}
+                        </div>
+                    </div>`;
+                }
+            } catch (itemErr) {
+                console.warn('Gagal render 1 data input (id: ' + (d && d.id) + '):', itemErr.message);
+                if (cardEl) cardEl.innerHTML = '<div class="text-center text-red-400 text-xs py-3">Gagal memuat data ini.</div>';
+            }
+            itemIndex++;
+            _renderRiInputTimeout = setTimeout(() => requestAnimationFrame(renderNextInputItem), 16);
+        }
+        requestAnimationFrame(renderNextInputItem);
     }
 
     function renderRiwayatReturInline() {
@@ -7237,8 +7298,11 @@ function updateSSK(tab, rowId) {
                             const totalQty = items.reduce((s, i) => s + (i.qty || 0), 0);
                             const totalNominal = totalQty * (d.harga || 0);
                             const uid = 'rt-' + (d.id || idx);
+                            const noUrut = idx + 1;
                             const itemsPreview = items.slice(0,2).map(i => `<span class="text-[8px] bg-darkBg border-2 border-borderDark rounded px-1.5 py-0.5 text-black">${i.warna}/${i.ukuran}:<b class="text-black">${i.qty}</b></span>`).join('') + (items.length > 2 ? `<span class="text-[8px] text-black">+${items.length-2} lagi</span>` : '');
-                            return `<div id="card-${uid}" class="bg-cardBg rounded-lg border-2 border-borderDark overflow-hidden transition-all">
+                            return `<div class="flex items-start gap-2">
+                                <div class="w-5 flex-shrink-0 pt-3 text-center text-[10px] font-black text-black">${noUrut}</div>
+                                <div id="card-${uid}" class="flex-1 min-w-0 bg-cardBg rounded-lg border-2 border-borderDark overflow-hidden transition-all">
                                 <div class="flex items-center gap-2.5 px-3 py-2.5">
                                     <div onclick="event.stopPropagation();togglePilihTrx(${d.id},'${uid}')" id="chk-${uid}" class="w-5 h-5 rounded border-4 border-gray-600 flex items-center justify-center flex-shrink-0 cursor-pointer transition-all"></div>
                                     <div class="flex-1 min-w-0 cursor-pointer" onclick="toggleRiwayatCard('${uid}')">
@@ -7267,7 +7331,7 @@ function updateSSK(tab, rowId) {
                                            <p class="text-[9px] text-black text-center mt-1"><i class="fa-solid fa-lock text-[8px] mr-1"></i>Transaksi LUNAS tidak dapat diedit atau dihapus.</p>`
                                     ) : ''}
                                 </div>
-                            </div>`;
+                            </div></div>`;
                         } catch (cardErr) {
                             console.warn('Lewati 1 transaksi rusak (vendor: ' + vendor + ', id: ' + (d && d.id) + '):', cardErr.message);
                             return '';
@@ -8159,7 +8223,7 @@ function updateSSK(tab, rowId) {
             // Cek apakah vendor ini punya bayar sebagian (readonly mode)
             const hasBayarSebagian = riwayatBayarSebagianVendor.length > 0;
 
-            const cards = trxList.map(t => {
+            const cards = trxList.map((t, idx) => {
                 const totalQty = t.items.reduce((s, i) => s + i.qty, 0);
                 const totalNominal = totalQty * t.harga;
                 const riwayatBayar = appData.pelunasan.filter(p => Number(p.transaksi_id) === Number(t.id));
@@ -8169,6 +8233,7 @@ function updateSSK(tab, rowId) {
                 const persen = totalNominal > 0 ? Math.min(100, Math.round(sudahBayar / totalNominal * 100)) : 0;
                 const isLunas = t.status === 'lunas';
                 const uid = 'pel-' + t.id; // Unique ID untuk elemen DOM
+                const noUrut = idx + 1;
 
                 const adaTersembunyi = riwayatBayar.length > riwayatBayarTampil.length;
                 const riwayatBayarHtml = (riwayatBayarTampil.length > 0
@@ -8185,7 +8250,9 @@ function updateSSK(tab, rowId) {
 
                 // Jika vendor punya bayar sebagian → card readonly (tidak bisa buka, tidak ada tombol lunas)
                 if (hasBayarSebagian) {
-                    return `<div id="card-${uid}" class="bg-cardBg rounded-lg border-2 ${isLunas ? 'border-green-500/30' : 'border-borderDark'} overflow-hidden opacity-80">
+                    return `<div class="flex items-start gap-2">
+                        <div class="w-5 flex-shrink-0 pt-3 text-center text-[10px] font-black text-black">${noUrut}</div>
+                        <div id="card-${uid}" class="flex-1 min-w-0 bg-cardBg rounded-lg border-2 ${isLunas ? 'border-green-500/30' : 'border-borderDark'} overflow-hidden opacity-80">
                         <div class="flex items-center gap-2.5 px-3 py-2.5 select-none">
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-2">
@@ -8199,11 +8266,13 @@ function updateSSK(tab, rowId) {
                             </div>
                             <i class="fa-solid fa-lock text-[10px] text-black flex-shrink-0 ml-2"></i>
                         </div>
-                    </div>`;
+                    </div></div>`;
                 }
 
                 // FITUR BARU: Tambahkan checkbox untuk pelunasan parsial
-                return `<div id="card-${uid}" class="bg-cardBg rounded-lg border-2 ${isLunas ? 'border-green-500/30' : 'border-borderDark'} overflow-hidden transition-all">
+                return `<div class="flex items-start gap-2">
+                    <div class="w-5 flex-shrink-0 pt-3 text-center text-[10px] font-black text-black">${noUrut}</div>
+                    <div id="card-${uid}" class="flex-1 min-w-0 bg-cardBg rounded-lg border-2 ${isLunas ? 'border-green-500/30' : 'border-borderDark'} overflow-hidden transition-all">
                     <div class="flex items-center gap-2.5 px-3 py-2.5 select-none">
                         <div onclick="event.stopPropagation();togglePilihPelunasan(${t.id}, ${sisaHutang}, '${t.vendor}', '${uid}')"
                              id="chk-${uid}"
@@ -8249,7 +8318,7 @@ function updateSSK(tab, rowId) {
                             </div>
                         </div>` : ''}
                     </div>
-                </div>`;
+                </div></div>`;
             }).join('');
 
             const jumlahCredit = trxList.filter(t => t.status === 'credit').length;
