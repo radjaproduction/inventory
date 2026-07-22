@@ -269,6 +269,38 @@
         #tab-transaksi .tab-bottom-spacer {
             display: none;
         }
+        /* Kunci tinggi tab STOK ke layar (tidak ikut memanjang mengikuti
+           jumlah brand). Scroll normalnya cukup terjadi di dalam kolom
+           STOK PER BRAND saja (stok-brand-list, karena flex:1 + overflow-y:auto),
+           sehingga header & 3 kartu ringkasan di atas tetap diam terlihat.
+           overflow-y:auto di sini hanya fallback (mis. saat detail brand
+           dibuka, kontennya absolute & bisa lebih tinggi dari layar). */
+        #tab-stok.tab-content.flex {
+            height: 100dvh;
+            height: 100vh;
+            max-height: 100dvh;
+            max-height: 100vh;
+            min-height: 0;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        #stok-dashboard-view {
+            flex: 1 1 auto;
+            min-height: 0;
+            /* Sisakan ruang persis setinggi nav bar fixed di bawah, supaya
+               batas bawah kolom STOK PER BRAND naik pas ke batas atas nav bar */
+            padding-bottom: 84px;
+        }
+        #stok-brand-card {
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+        #stok-brand-list {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
         /* Body dikunci (tidak bisa scroll) selama tab INPUT DATA / TRANSAKSI aktif */
         body.lock-page-scroll {
             overflow: hidden;
@@ -971,7 +1003,6 @@
             </button>
         </div>
 
-        <div style="height:90px;flex-shrink:0;"></div>
         </div>
 
         <!-- TAB INPUT DATA -->
@@ -1846,6 +1877,9 @@ END $$;</textarea>
         hideLoadingOverlay();
         document.getElementById('pin-login-screen').style.display = 'none';
         document.getElementById('main-app').style.display = 'block';
+        // Tab default saat masuk adalah 'stok', kunci scroll body dari awal
+        // supaya konsisten dengan _doSwitchTab('stok') (lihat switchTab()).
+        document.body.classList.add('lock-page-scroll');
         await muatSemuaData();
         initUI();
         muatStatusPIN();
@@ -3380,9 +3414,9 @@ function updateSSK(tab, rowId) {
         if (barInput) barInput.style.display = tabName === 'input' ? 'flex' : 'none';
         if (barTrx) barTrx.style.display = tabName === 'transaksi' ? 'flex' : 'none';
 
-        // Kunci scroll halaman khusus tab INPUT DATA & TRANSAKSI,
-        // supaya scroll hanya terjadi di dalam kolom VARIASI ITEM
-        if (tabName === 'input' || tabName === 'transaksi') {
+        // Kunci scroll halaman khusus tab INPUT DATA, TRANSAKSI, & STOK,
+        // supaya scroll hanya terjadi di dalam kolom VARIASI ITEM / STOK PER BRAND
+        if (tabName === 'input' || tabName === 'transaksi' || tabName === 'stok') {
             document.body.classList.add('lock-page-scroll');
         } else {
             document.body.classList.remove('lock-page-scroll');
