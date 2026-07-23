@@ -1560,7 +1560,7 @@ END $$;</textarea>
 
             <!-- OVERLAY + SLIDE-IN DRAWER (menu Data Master, geser dari kanan ke kiri) -->
             <div id="master-drawer-overlay" onclick="closeMasterDrawer()" class="hidden fixed inset-0 bg-black/60 z-40 backdrop-blur-[2px]"></div>
-            <div id="master-drawer" class="fixed top-0 right-0 h-full w-[78%] max-w-[280px] bg-darkBg border-l-2 border-borderDark z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col p-3 gap-1.5 shadow-2xl">
+            <div id="master-drawer" class="fixed inset-0 m-auto w-[78%] max-w-[280px] h-fit max-h-[85vh] overflow-y-auto bg-darkBg border-2 border-borderDark rounded-2xl z-50 transform scale-90 opacity-0 transition-all duration-300 ease-in-out flex flex-col p-3 gap-1.5 shadow-2xl">
                 <div class="flex items-center justify-between mb-2 pb-2 border-b-2 border-borderDark flex-shrink-0">
                     <span class="text-xs font-black text-black tracking-wide"><i class="fa-solid fa-database brand-text mr-1.5"></i>MENU MASTER</span>
                     <button onclick="closeMasterDrawer()" class="w-8 h-8 rounded-lg bg-cardBg border-2 border-borderDark flex items-center justify-center active:scale-95 transition-transform"><i class="fa-solid fa-xmark text-black text-sm"></i></button>
@@ -4763,24 +4763,20 @@ function updateSSK(tab, rowId) {
         closeMasterDrawer();
     }
 
-    // ==== Drawer menu DATA MASTER: geser dari kanan ke kiri, dibuka via tombol hamburger ATAU swipe tangan ====
+    // ==== Modal menu DATA MASTER: muncul di tengah layar, tinggi menyesuaikan isi, dibuka via tombol hamburger ====
     function _masterDrawerSnap(open) {
         const drawer = document.getElementById('master-drawer');
         const overlay = document.getElementById('master-drawer-overlay');
         if (!drawer || !overlay) return;
         if (open) overlay.classList.remove('hidden');
-        drawer.style.transition = 'transform 0.3s ease-in-out';
+        drawer.style.transition = 'transform 0.25s ease-in-out, opacity 0.25s ease-in-out';
         requestAnimationFrame(() => {
-            drawer.style.transform = open ? 'translateX(0)' : 'translateX(100%)';
+            drawer.style.transform = open ? 'scale(1)' : 'scale(0.9)';
+            drawer.style.opacity = open ? '1' : '0';
         });
         const cleanup = () => {
             drawer.removeEventListener('transitionend', cleanup);
-            drawer.style.transition = '';
-            drawer.style.transform = '';
-            if (open) {
-                drawer.classList.remove('translate-x-full');
-            } else {
-                drawer.classList.add('translate-x-full');
+            if (!open) {
                 overlay.classList.add('hidden');
             }
         };
@@ -4789,8 +4785,9 @@ function updateSSK(tab, rowId) {
     function openMasterDrawer() { _masterDrawerSnap(true); }
     function closeMasterDrawer() { _masterDrawerSnap(false); }
 
-    // ==== Swipe tangan untuk buka/tutup drawer DATA MASTER ====
+    // ==== (Swipe tangan dinonaktifkan karena menu sekarang berupa modal di tengah, bukan drawer geser) ====
     (function() {
+        return; // fitur swipe-edge tidak dipakai lagi untuk modal center
         const EDGE_ZONE = 24;      // lebar area di tepi kanan layar untuk mulai swipe-buka (px)
         const MOVE_THRESHOLD = 8;  // pergerakan minimal sebelum dianggap "drag" nyata, bukan tap (px)
         let touchStartX = null, touchStartY = null;
