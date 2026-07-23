@@ -5030,6 +5030,7 @@ function updateSSK(tab, rowId) {
     let _bebanSumberFilterInput = 'semua';
     function setBebanSumberFilterInput(which) {
         _bebanSumberFilterInput = which;
+        _bebanInputPage = 1;
         const map = { 'semua': 'beban-sumber-semua', 'ADMIN': 'beban-sumber-admin', 'OWNER': 'beban-sumber-owner' };
         Object.entries(map).forEach(([key, id]) => {
             const btn = document.getElementById(id);
@@ -5075,8 +5076,12 @@ function updateSSK(tab, rowId) {
         const kategoriUnik = [...new Set(_cacheBebanInput.map(r => r.kategori))];
         datalist.innerHTML = kategoriUnik.map(k => `<option value="${escapeHtmlBeban(k)}">`).join('');
 
+        _bebanInputPage = 1;
         renderBebanInputList();
     }
+
+    const BEBAN_INPUT_PAGE_SIZE = 10;
+    let _bebanInputPage = 1;
 
     function renderBebanInputList() {
         const listEl = document.getElementById('beban-input-list');
@@ -5088,23 +5093,51 @@ function updateSSK(tab, rowId) {
             listEl.innerHTML = '<div class="text-center text-[10px] text-black/50 font-bold py-6">Belum ada catatan biaya' + (_bebanSumberFilterInput === 'semua' ? ' minggu ini.' : ' dari ' + _bebanSumberFilterInput + ' minggu ini.') + '</div>';
             return;
         }
-        listEl.innerHTML = dataTampil.map(r => `
+
+        const totalPages = Math.max(1, Math.ceil(dataTampil.length / BEBAN_INPUT_PAGE_SIZE));
+        if (_bebanInputPage > totalPages) _bebanInputPage = totalPages;
+        if (_bebanInputPage < 1) _bebanInputPage = 1;
+        const visibleRows = dataTampil.slice((_bebanInputPage - 1) * BEBAN_INPUT_PAGE_SIZE, _bebanInputPage * BEBAN_INPUT_PAGE_SIZE);
+
+        let html = visibleRows.map((r, idx) => {
+            const noUrut = (_bebanInputPage - 1) * BEBAN_INPUT_PAGE_SIZE + idx + 1;
+            return `
             <div class="bg-cardBg rounded-xl p-3 flex items-center justify-between border-2 border-borderDark">
-                <div class="flex-1 min-w-0">
-                    <div class="text-xs font-bold text-black truncate flex items-center gap-1.5">
-                        ${escapeHtmlBeban(r.kategori)}
-                        <span class="text-[8px] font-black px-1.5 py-0.5 rounded border-2 flex-shrink-0 ${r.sumber === 'OWNER' ? 'bg-purple-500/15 text-purple-600 border-purple-500/40' : 'bg-blue-500/15 text-blue-600 border-blue-500/40'}">${escapeHtmlBeban(r.sumber || 'ADMIN')}</span>
+                <div class="flex items-start gap-2 flex-1 min-w-0">
+                    <div class="w-4 flex-shrink-0 pt-0.5 text-center text-[9px] font-black text-black">${noUrut}</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-xs font-bold text-black flex items-center gap-1.5">
+                            <span class="truncate inline-block" style="width:88px">${escapeHtmlBeban(r.kategori)}</span>
+                            <span class="text-[8px] font-black px-1.5 py-0.5 rounded border-2 flex-shrink-0 ${r.sumber === 'OWNER' ? 'bg-purple-500/15 text-purple-600 border-purple-500/40' : 'bg-blue-500/15 text-blue-600 border-blue-500/40'}">${escapeHtmlBeban(r.sumber || 'ADMIN')}</span>
+                        </div>
+                        <div class="text-[9px] text-black/60 font-bold mt-0.5">${escapeHtmlBeban(r.tanggal)}${r.keterangan ? ' • ' + escapeHtmlBeban(r.keterangan) : ''}</div>
                     </div>
-                    <div class="text-[9px] text-black/60 font-bold mt-0.5">${escapeHtmlBeban(r.tanggal)}${r.keterangan ? ' • ' + escapeHtmlBeban(r.keterangan) : ''}</div>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
-                    <span class="text-[11px] font-black text-red-500">Rp ${(r.nominal || 0).toLocaleString('id-ID')}</span>
-                    ${r.foto ? `<button onclick="lihatFotoBebanInput(${r.id})" class="w-7 h-7 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 flex items-center justify-center text-blue-600 text-[10px]"><i class="fa-solid fa-image"></i></button>` : ''}
+                    ${r.foto ? `<button onclick="lihatFotoBebanInput(${r.id})" class="w-7 h-7 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 flex items-center justify-center text-blue-600 text-[10px]"><i class="fa-solid fa-image"></i></button>` : '<div class="w-7 h-7 flex-shrink-0"></div>'}
+                    <span class="text-[11px] font-black text-red-500 text-right inline-block" style="width:105px">Rp ${(r.nominal || 0).toLocaleString('id-ID')}</span>
                     <button onclick="hapusBebanInput(${r.id})" class="w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 flex items-center justify-center text-red-600 text-[10px]"><i class="fa-solid fa-trash"></i></button>
                 </div>
             </div>
-        `).join('');
+        `;
+        }).join('');
+
+        html += _renderPaginationControls({
+            currentPage: _bebanInputPage,
+            totalPages,
+            totalItems: dataTampil.length,
+            itemLabel: 'biaya',
+            onPageChangeFn: 'changeBebanInputPage'
+        });
+
+        listEl.innerHTML = html;
     }
+
+    function changeBebanInputPage(page) {
+        _bebanInputPage = page;
+        renderBebanInputList();
+    }
+    window.changeBebanInputPage = changeBebanInputPage;
 
 
 
