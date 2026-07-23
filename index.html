@@ -248,6 +248,12 @@
             /* Sisakan ruang di bawah supaya tombol "Tambah Item/Variasi" tidak
                ketutupan action-bar (CLEAR/SIMPAN) + nav bar yang posisinya fixed */
             padding-bottom: 170px;
+            /* padding-top dihapus: trik margin negatif (-mt-4) pada header sticky
+               tidak bisa menutupi padding-top saat elemen ini jadi scroll container
+               sendiri (overflow-y:auto), sehingga header selalu menyisakan celah
+               di atas. Padding atas dihilangkan di sini, header disesuaikan (hapus
+               -mt-4) supaya tetap mepet ke atas seperti tab lain. */
+            padding-top: 0;
         }
         #tab-input.tab-content.flex::after,
         #tab-transaksi.tab-content.flex::after {
@@ -282,6 +288,10 @@
             min-height: 0;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
+            /* padding-top dihapus: sama seperti tab-input/tab-transaksi, trik margin
+               negatif (-mt-4) pada header tidak bisa menutupi padding-top saat elemen
+               ini jadi scroll container sendiri (overflow-y:auto). */
+            padding-top: 0;
         }
         #stok-dashboard-view {
             flex: 1 1 auto;
@@ -917,18 +927,19 @@
 
         <div id="tab-stok" class="tab-content flex flex-col p-4 gap-3 relative z-10" >
             <div id="stok-dashboard-view" class="flex flex-col gap-3">
-                <div class="flex items-center gap-3 -mx-4 -mt-4 mb-1 px-4 py-3 shadow-[0_4px_14px_rgba(255,140,0,0.22)] brand-gradient-bg rounded-b-2xl relative overflow-hidden">
-                    <div class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 bg-black/10">
-                        <img id="header-logo-img" src="" alt="Logo" class="w-8 h-8 object-contain hidden">
-                        <svg id="header-logo-svg" class="w-7 h-auto" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" version="1.1" viewBox="0 0 3996.74 2715.33">
+                <div class="flex items-stretch -mx-4 mb-2 shadow-[0_4px_16px_rgba(255,140,0,0.35)] brand-gradient-bg rounded-b-2xl overflow-hidden flex-shrink-0 sticky top-0 z-30">
+                    <div class="w-20 h-[72px] flex items-center justify-center flex-shrink-0 z-10 relative bg-black/5 border-r-2 border-black/10">
+                        <img id="header-logo-img" src="" alt="Logo" class="w-10 h-10 object-contain hidden">
+                        <svg id="header-logo-svg" class="w-9 h-auto" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" version="1.1" viewBox="0 0 3996.74 2715.33">
                             <path fill="#000000" d="M1379.8 2078.49l-339.7 -450.38 -797.43 0 819.99 1087.21 369.69 0 427.79 0 778.91 0c746.73,0 1357.68,-610.94 1357.68,-1357.67 0,-746.72 -610.94,-1357.66 -1357.68,-1357.66l-685.55 0c242.92,127.17 422.11,359.81 476.47,636.83l209.08 0c396.43,0 720.83,324.36 720.83,720.83 0,396.44 -324.35,720.83 -720.83,720.83l-1259.26 0zm906.78 -104.15l-261.1 -346.23 -0.04 0 -84.57 -112.11c240.44,-141.62 402.14,-403.18 402.14,-701.94 0,-448.98 -365.11,-814.06 -814.05,-814.06l-1528.97 0 480.33 636.83 1048.65 0c97.46,0 177.22,79.74 177.22,177.22 0,97.51 -79.76,177.25 -177.22,177.25l-781.29 0 741.44 983.04 797.46 0z"/>
                         </svg>
                     </div>
-                    <div class="flex flex-col justify-center flex-grow min-w-0 z-10 relative">
-                        <h1 class="text-[26px] font-black text-[#000000] leading-none tracking-wide truncate">STOK</h1>
-                        <h2 class="display-brand-name text-[9px] font-bold text-[#000000]/70 tracking-[0.15em] leading-none uppercase mt-1.5">RADJA PRODUCTION</h2>
+                    <div class="h-[72px] flex flex-col justify-center px-4 flex-grow min-w-0 z-10 relative">
+                        <h1 class="text-[26px] font-black text-[#000000] leading-none tracking-wide truncate mb-1">STOK</h1>
+                        <div class="w-full h-[1.5px] bg-[#ffffff]/30 mb-1"></div>
+                        <h2 class="display-brand-name text-[10px] font-bold text-[#000000] tracking-[0.15em] leading-none uppercase">RADJA PRODUCTION</h2>
                     </div>
-                    <span id="app-version-badge" class="text-[#000000]/60 select-none flex flex-col items-end justify-center leading-none gap-0.5 flex-shrink-0" style="font-family:'Montserrat',sans-serif;" title="Versi Aplikasi"><span style="font-size:8px;font-weight:600;letter-spacing:0.04em;">v3.0.2</span><span style="font-size:7px;font-weight:400;letter-spacing:0.03em;opacity:0.8;">@2026</span></span>
+                    <span id="app-version-badge" class="text-[#000000]/60 select-none flex flex-col items-end justify-center leading-none gap-0.5 flex-shrink-0 z-10 relative pr-4" style="font-family:'Montserrat',sans-serif;" title="Versi Aplikasi"><span style="font-size:8px;font-weight:600;letter-spacing:0.04em;">v3.0.2</span><span style="font-size:7px;font-weight:400;letter-spacing:0.03em;opacity:0.8;">@2026</span></span>
                 </div>
 
                 <!-- RINGKASAN STOK: langsung terlihat tanpa perlu klik -->
@@ -1006,7 +1017,7 @@
 
         <!-- TAB INPUT DATA -->
         <div id="tab-input" class="tab-content hidden flex-col p-4 gap-4 relative z-10" >
-            <div class="flex items-stretch -mx-4 -mt-4 mb-2 shadow-[0_4px_16px_rgba(255,140,0,0.35)] brand-gradient-bg rounded-b-2xl overflow-hidden flex-shrink-0 sticky top-0 z-30">
+            <div class="flex items-stretch -mx-4 mb-2 shadow-[0_4px_16px_rgba(255,140,0,0.35)] brand-gradient-bg rounded-b-2xl overflow-hidden flex-shrink-0 sticky top-0 z-30">
                 <div class="w-20 h-[72px] flex items-center justify-center flex-shrink-0 z-10 relative bg-black/5 border-r-2 border-black/10">
                     <svg class="w-12 h-auto" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3996.74 2715.33"><path fill="#000000" d="M1379.8 2078.49l-339.7 -450.38 -797.43 0 819.99 1087.21 369.69 0 427.79 0 778.91 0c746.73,0 1357.68,-610.94 1357.68,-1357.67 0,-746.72 -610.94,-1357.66 -1357.68,-1357.66l-685.55 0c242.92,127.17 422.11,359.81 476.47,636.83l209.08 0c396.43,0 720.83,324.36 720.83,720.83 0,396.44 -324.35,720.83 -720.83,720.83l-1259.26 0zm906.78 -104.15l-261.1 -346.23 -0.04 0 -84.57 -112.11c240.44,-141.62 402.14,-403.18 402.14,-701.94 0,-448.98 -365.11,-814.06 -814.05,-814.06l-1528.97 0 480.33 636.83 1048.65 0c97.46,0 177.22,79.74 177.22,177.22 0,97.51 -79.76,177.25 -177.22,177.25l-781.29 0 741.44 983.04 797.46 0z"/></svg>
                 </div>
@@ -1315,7 +1326,7 @@ END $$;</textarea>
 
         <!-- TAB TRANSAKSI -->
         <div id="tab-transaksi" class="tab-content hidden flex-col p-4 gap-4 relative z-10" >
-            <div class="flex items-stretch -mx-4 -mt-4 mb-2 shadow-[0_4px_16px_rgba(255,140,0,0.35)] brand-gradient-bg rounded-b-2xl overflow-hidden sticky top-0 z-30">
+            <div class="flex items-stretch -mx-4 mb-2 shadow-[0_4px_16px_rgba(255,140,0,0.35)] brand-gradient-bg rounded-b-2xl overflow-hidden flex-shrink-0 sticky top-0 z-30">
                 <div class="w-20 h-[72px] flex items-center justify-center flex-shrink-0 z-10 relative bg-black/5 border-r-2 border-black/10"><i class="fa-solid fa-handshake text-3xl text-[#000000]"></i></div>
                 <div class="h-[72px] flex flex-col justify-center px-4 flex-grow z-10 relative">
                     <h1 class="text-[26px] font-black text-[#000000] leading-none tracking-wide mb-1">TRANSAKSI</h1>
@@ -2738,10 +2749,10 @@ END $$;`;
 
             setLoadingText('MEMUAT RIWAYAT TRANSAKSI...');
             const [riDataRaw, riItemsData, trxDataRaw, trxItemsData] = await withTimeout(Promise.all([
-                fetchAllRows('riwayat_input', '*', 'id', true),
-                fetchAllRows('riwayat_input_item', '*', 'id', true),
-                fetchAllRows('transaksi', '*', 'id', true),
-                fetchAllRows('transaksi_item', '*', 'id', true),
+                fetchAllRows('riwayat_input', '*'),
+                fetchAllRows('riwayat_input_item', '*'),
+                fetchAllRows('transaksi', '*'),
+                fetchAllRows('transaksi_item', '*'),
             ]), TIMEOUT_MS, 'Muat riwayat');
             // Urutan tampil: terbaru dulu
             const ri = { data: [...riDataRaw].sort((a, b) => b.id - a.id) };
@@ -2832,8 +2843,8 @@ END $$;`;
     }
     async function fetchRiwayatInputData() {
         const [riData, riItemsData] = await Promise.all([
-            fetchAllRows('riwayat_input', '*', 'id', true),
-            fetchAllRows('riwayat_input_item', '*', 'id', true),
+            fetchAllRows('riwayat_input', '*'),
+            fetchAllRows('riwayat_input_item', '*'),
         ]);
         const riItemsMap = {};
         riItemsData.forEach(i => {
@@ -2849,8 +2860,8 @@ END $$;`;
     }
     async function fetchTransaksiData() {
         const [trxData, trxItemsData] = await Promise.all([
-            fetchAllRows('transaksi', '*', 'id', true),
-            fetchAllRows('transaksi_item', '*', 'id', true),
+            fetchAllRows('transaksi', '*'),
+            fetchAllRows('transaksi_item', '*'),
         ]);
         const trxItemsMap = {};
         trxItemsData.forEach(i => {
@@ -2865,7 +2876,7 @@ END $$;`;
         }));
     }
     async function fetchPelunasanData() {
-        const pelData = await fetchAllRows('pelunasan', '*', 'id', true);
+        const pelData = await fetchAllRows('pelunasan', '*');
         appData.pelunasan = pelData.sort((a, b) => b.id - a.id).map(p => ({
             id: p.id, transaksi_id: p.transaksi_id, vendor: p.vendor,
             jumlah: p.jumlah || 0, keterangan: p.keterangan || '',
@@ -2875,7 +2886,7 @@ END $$;`;
 
 async function fetchBayarSebagianData() {
     try {
-        const bsData = await fetchAllRows('bayar_sebagian', '*', 'id', true);
+        const bsData = await fetchAllRows('bayar_sebagian', '*');
         appData.bayarSebagian = bsData.sort((a, b) => b.id - a.id).map(bs => ({
             id: bs.id,
             vendor: bs.vendor,
@@ -9496,7 +9507,7 @@ function updateSSK(tab, rowId) {
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> MENGAMBIL DATA...';
             showToast('⏳ Menyiapkan backup...');
 
-            const _sbFetchAll = async (table) => { try { return await fetchAllRows(table, '*', 'id', true); } catch(e) { return []; } };
+            const _sbFetchAll = async (table) => { try { return await fetchAllRows(table, '*'); } catch(e) { return []; } };
             const [vData, bData, mData, wData, uData, riData, riItemsData, trxData, trxItemsData, pelData, pengaturanRes] = await Promise.all([
     _sbFetchAll('vendor'),
     _sbFetchAll('brand'),
