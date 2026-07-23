@@ -572,6 +572,53 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             z-index: 9998; padding: 24px; gap: 16px;
         }
+
+        /* ===== SKELETON LOADING: TAB STOK ===== */
+        .skel-bar {
+            background: linear-gradient(90deg, rgba(120,70,10,0.07) 25%, rgba(255,140,0,0.18) 37%, rgba(120,70,10,0.07) 63%);
+            background-size: 400% 100%;
+            animation: skelShimmer 1.5s ease-in-out infinite;
+            border-radius: 6px;
+        }
+        @keyframes skelShimmer {
+            0% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .kpi-skel {
+            color: transparent !important;
+            background: linear-gradient(90deg, rgba(120,70,10,0.07) 25%, rgba(255,140,0,0.2) 37%, rgba(120,70,10,0.07) 63%);
+            background-size: 400% 100%;
+            animation: skelShimmer 1.5s ease-in-out infinite;
+            border-radius: 6px;
+            display: inline-block;
+            min-width: 26px;
+        }
+        .skel-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 11px 14px; border-radius: 16px;
+            background: linear-gradient(135deg,#FBE4BE 0%,#F6DBB6 100%);
+            opacity: 0; animation: skelRowIn 0.4s ease forwards;
+        }
+        .skel-row:nth-child(1){ animation-delay:.03s }
+        .skel-row:nth-child(2){ animation-delay:.11s }
+        .skel-row:nth-child(3){ animation-delay:.19s }
+        .skel-row:nth-child(4){ animation-delay:.27s }
+        @keyframes skelRowIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .skel-dots span {
+            display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+            background: var(--brand-main, #ff8c00); margin: 0 2px;
+            animation: skelDotBounce 1s infinite ease-in-out both;
+        }
+        .skel-dots span:nth-child(1){ animation-delay: -0.28s }
+        .skel-dots span:nth-child(2){ animation-delay: -0.14s }
+        .skel-dots span:nth-child(3){ animation-delay: 0s }
+        @keyframes skelDotBounce {
+            0%, 80%, 100% { transform: scale(0.4); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
     </style>
 </head>
 <body class="w-full min-h-screen overflow-x-hidden bg-light">
@@ -946,17 +993,17 @@
                 <div class="grid grid-cols-3 gap-2">
                     <div class="bg-cardBg border-2 border-borderDark rounded-xl px-2 py-3 flex flex-col items-center gap-1 text-center">
                         <i class="fa-solid fa-boxes-stacked brand-text text-[13px]"></i>
-                        <div class="text-[16px] font-black text-black leading-none" id="kpi-total-stok">0</div>
+                        <div class="text-[16px] font-black text-black leading-none kpi-skel" id="kpi-total-stok">0</div>
                         <div class="text-[8px] font-bold text-black/55 uppercase tracking-wide leading-tight">Total Stok</div>
                     </div>
                     <div class="bg-cardBg border-2 border-borderDark rounded-xl px-2 py-3 flex flex-col items-center gap-1 text-center">
                         <i class="fa-solid fa-truck-ramp-box brand-text text-[13px]"></i>
-                        <div class="text-[16px] font-black text-black leading-none" id="kpi-total-brand">0</div>
+                        <div class="text-[16px] font-black text-black leading-none kpi-skel" id="kpi-total-brand">0</div>
                         <div class="text-[8px] font-bold text-black/55 uppercase tracking-wide leading-tight">Barang Keluar</div>
                     </div>
                     <div class="brand-gradient-bg border-2 border-borderDark rounded-xl px-2 py-3 flex flex-col items-center gap-1 text-center cursor-pointer active:scale-95 transition-transform shadow-[0_4px_14px_rgba(255,140,0,0.22)]" onclick="bukaTransaksiVendor()">
                         <i class="fa-solid fa-handshake text-black text-[13px]"></i>
-                        <div class="text-[16px] font-black text-black leading-none" id="kpi-vendor-aktif">0</div>
+                        <div class="text-[16px] font-black text-black leading-none kpi-skel" id="kpi-vendor-aktif">0</div>
                         <div class="text-[8px] font-bold text-black/70 uppercase tracking-wide leading-tight">Vendor Aktif</div>
                     </div>
                 </div>
@@ -975,7 +1022,30 @@
                             <i class="fa-solid fa-sliders text-black text-[14px]" id="brand-sort-icon"></i>
                         </button>
                     </div>
-                    <div id="stok-brand-list" class="flex flex-col gap-2 p-3"></div>
+                    <div id="stok-brand-list" class="flex flex-col gap-2 p-3">
+                        <div class="flex items-center justify-center gap-2 pb-1 text-[10px] font-bold text-black/45 uppercase tracking-wide">
+                            <span>Memuat data stok</span>
+                            <span class="skel-dots"><span></span><span></span><span></span></span>
+                        </div>
+                        <div class="skel-row">
+                            <div class="skel-bar" style="width:22px;height:22px;border-radius:9999px;flex-shrink:0;"></div>
+                            <div class="skel-bar" style="width:32px;height:32px;border-radius:10px;flex-shrink:0;"></div>
+                            <div class="flex-1 flex flex-col gap-2"><div class="skel-bar" style="width:55%;height:10px;"></div><div class="skel-bar" style="width:80%;height:6px;"></div></div>
+                            <div class="skel-bar" style="width:30px;height:14px;flex-shrink:0;"></div>
+                        </div>
+                        <div class="skel-row">
+                            <div class="skel-bar" style="width:22px;height:22px;border-radius:9999px;flex-shrink:0;"></div>
+                            <div class="skel-bar" style="width:32px;height:32px;border-radius:10px;flex-shrink:0;"></div>
+                            <div class="flex-1 flex flex-col gap-2"><div class="skel-bar" style="width:65%;height:10px;"></div><div class="skel-bar" style="width:45%;height:6px;"></div></div>
+                            <div class="skel-bar" style="width:30px;height:14px;flex-shrink:0;"></div>
+                        </div>
+                        <div class="skel-row">
+                            <div class="skel-bar" style="width:22px;height:22px;border-radius:9999px;flex-shrink:0;"></div>
+                            <div class="skel-bar" style="width:32px;height:32px;border-radius:10px;flex-shrink:0;"></div>
+                            <div class="flex-1 flex flex-col gap-2"><div class="skel-bar" style="width:40%;height:10px;"></div><div class="skel-bar" style="width:70%;height:6px;"></div></div>
+                            <div class="skel-bar" style="width:30px;height:14px;flex-shrink:0;"></div>
+                        </div>
+                    </div>
                 </div>
 
             </div>
@@ -1061,11 +1131,11 @@
                             <div class="flex flex-col gap-1.5 w-[104px] flex-shrink-0">
                                 <label class="text-[9px] font-bold text-black tracking-wider leading-tight">FOTO KWITANSI/BON <span class="text-red-500">*wajib</span></label>
                                 <input type="file" id="beban-input-foto" accept="image/*" capture="environment" class="hidden" onchange="prosesFotoBeban(event)">
-                                <div id="beban-foto-placeholder" onclick="document.getElementById('beban-input-foto').click()" class="flex-1 w-full border-2 border-dashed border-borderDark rounded-lg flex flex-col items-center justify-center gap-1.5 cursor-pointer px-1 text-center">
+                                <div id="beban-foto-placeholder" onclick="document.getElementById('beban-input-foto').click()" class="flex-1 w-full min-h-[132px] border-2 border-dashed border-borderDark rounded-lg flex flex-col items-center justify-center gap-1.5 cursor-pointer px-1 text-center">
                                     <i class="fa-solid fa-camera text-black/40 text-lg"></i>
                                     <span class="text-[8px] font-bold text-black/50 leading-tight">Ketuk untuk foto kwitansi/bon</span>
                                 </div>
-                                <div id="beban-foto-preview-wrapper" class="hidden relative flex-1">
+                                <div id="beban-foto-preview-wrapper" class="hidden relative flex-1 min-h-[132px]">
                                     <img id="beban-foto-preview" class="w-full h-full rounded-lg border-2 border-borderDark object-cover" src="">
                                     <button type="button" onclick="hapusFotoBeban()" class="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg text-[10px]"><i class="fa-solid fa-xmark"></i></button>
                                 </div>
@@ -1087,10 +1157,6 @@
                                 <div class="flex flex-col gap-1">
                                     <label class="text-[10px] font-bold text-black tracking-wider">TANGGAL</label>
                                     <input id="beban-input-tanggal" type="date" class="w-full bg-darkBg border-2 border-borderDark rounded-lg px-3 py-2.5 text-xs text-black outline-none focus:border-[#FFB144]">
-                                </div>
-                                <div class="flex flex-col gap-1">
-                                    <label class="text-[10px] font-bold text-black tracking-wider">KETERANGAN (opsional)</label>
-                                    <input id="beban-input-keterangan" type="text" placeholder="catatan tambahan..." class="w-full bg-darkBg border-2 border-borderDark rounded-lg px-3 py-2.5 text-xs text-black placeholder-black/50 outline-none focus:border-[#FFB144]">
                                 </div>
                             </div>
                         </div>
@@ -3252,8 +3318,8 @@ function updateSSK(tab, rowId) {
                 brandListEl.innerHTML = '<div class="text-center text-black text-[11px] py-8 flex flex-col items-center gap-2"><i class="fa-solid fa-inbox text-2xl opacity-40"></i>Belum ada brand. Tambahkan di Tab Master.</div>';
                 const kpiTotalStokEl0 = document.getElementById('kpi-total-stok');
                 const kpiTotalBrandEl0 = document.getElementById('kpi-total-brand');
-                if (kpiTotalStokEl0) kpiTotalStokEl0.textContent = '0';
-                if (kpiTotalBrandEl0) kpiTotalBrandEl0.textContent = totalKeluar.toLocaleString('id-ID');
+                if (kpiTotalStokEl0) { kpiTotalStokEl0.textContent = '0'; kpiTotalStokEl0.classList.remove('kpi-skel'); }
+                if (kpiTotalBrandEl0) { kpiTotalBrandEl0.textContent = totalKeluar.toLocaleString('id-ID'); kpiTotalBrandEl0.classList.remove('kpi-skel'); }
             } else {
                 const brandStok = masterData.brand.map(b => {
                     const stokMap = hitungStokBrand(b.id);
@@ -3267,8 +3333,8 @@ function updateSSK(tab, rowId) {
 });
                 const kpiTotalStokEl = document.getElementById('kpi-total-stok');
                 const kpiTotalBrandEl = document.getElementById('kpi-total-brand');
-                if (kpiTotalStokEl) kpiTotalStokEl.textContent = brandStok.reduce((s, b) => s + Math.max(0, b.total), 0).toLocaleString('id-ID');
-                if (kpiTotalBrandEl) kpiTotalBrandEl.textContent = totalKeluar.toLocaleString('id-ID');
+                if (kpiTotalStokEl) { kpiTotalStokEl.textContent = brandStok.reduce((s, b) => s + Math.max(0, b.total), 0).toLocaleString('id-ID'); kpiTotalStokEl.classList.remove('kpi-skel'); }
+                if (kpiTotalBrandEl) { kpiTotalBrandEl.textContent = totalKeluar.toLocaleString('id-ID'); kpiTotalBrandEl.classList.remove('kpi-skel'); }
                 if (brandStok.length === 0) {
                     brandListEl.innerHTML = '<div class="text-center text-black text-[11px] py-8 flex flex-col items-center gap-2"><i class="fa-solid fa-inbox text-2xl opacity-40"></i>Belum ada data stok masuk.</div>';
                 } else {
@@ -3321,7 +3387,7 @@ function updateSSK(tab, rowId) {
         if (vendorListEl) {
             if (masterData.vendor.length === 0 || appData.riwayatTransaksi.length === 0) {
                 vendorListEl.innerHTML = '<div class="text-center text-black text-[11px] py-8 flex flex-col items-center gap-2"><i class="fa-solid fa-inbox text-2xl opacity-40"></i>Belum ada transaksi vendor.</div>';
-                if (kpiVendorAktifEl) kpiVendorAktifEl.textContent = '0';
+                if (kpiVendorAktifEl) { kpiVendorAktifEl.textContent = '0'; kpiVendorAktifEl.classList.remove('kpi-skel'); }
             } else {
                 const vendorMap = {};
                 appData.riwayatTransaksi.forEach(d => {
@@ -3331,7 +3397,7 @@ function updateSSK(tab, rowId) {
                     if (d.status === 'lunas') vendorMap[d.vendor].lunasNominal += nominal;
                     else vendorMap[d.vendor].credit++;
                 });
-                if (kpiVendorAktifEl) kpiVendorAktifEl.textContent = Object.keys(vendorMap).length.toLocaleString('id-ID');
+                if (kpiVendorAktifEl) { kpiVendorAktifEl.textContent = Object.keys(vendorMap).length.toLocaleString('id-ID'); kpiVendorAktifEl.classList.remove('kpi-skel'); }
                 vendorListEl.innerHTML = Object.entries(vendorMap).sort(([a], [b]) => a.localeCompare(b, 'id', { sensitivity: 'base' })).map(([nama, stat]) => `
                     <div class="rounded-xl overflow-hidden transition-all border-2 border-borderDark" style="background:#F6DBB6;">
                         <div class="flex items-center justify-between px-3 py-2.5">
@@ -5046,7 +5112,7 @@ function updateSSK(tab, rowId) {
         const kategori = document.getElementById('beban-input-kategori').value.trim();
         const nominal = parseRupiahInputBeban(document.getElementById('beban-input-nominal'));
         const tanggal = document.getElementById('beban-input-tanggal').value || new Date().toISOString().slice(0, 10);
-        const keterangan = document.getElementById('beban-input-keterangan').value.trim();
+        const keterangan = '';
 
         if (!kategori) { showAlert('Isi jenis biaya!', {type:'warning'}); return; }
         if (nominal <= 0) { showAlert('Nominal harus lebih dari 0!', {type:'warning'}); return; }
@@ -5059,7 +5125,6 @@ function updateSSK(tab, rowId) {
             if (error) throw error;
             document.getElementById('beban-input-kategori').value = '';
             document.getElementById('beban-input-nominal').value = '';
-            document.getElementById('beban-input-keterangan').value = '';
             resetFotoBebanForm();
             showToast('✅ Biaya disimpan!');
             await loadBebanInputList();
