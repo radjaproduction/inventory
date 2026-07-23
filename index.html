@@ -3055,8 +3055,11 @@ async function fetchBayarSebagianData() {
         tambahModelRow();
         tambahWarnaRow();
         tambahUkuranRow();
-        tambahVariasiInput();
-        tambahVariasiTrx();
+        // Reset penuh form Input Data & Transaksi (bukan sekadar tambah baris) supaya
+        // tidak ada baris "pristine" tersisa dari sesi sebelumnya (mis. setelah Exit lalu
+        // login PIN lagi) yang bisa memicu toast validasi secara tiba-tiba.
+        _clearInputForm();
+        _clearTrxForm();
         updateInputVariasiState();
         _updateTrxRowsLockState();
 
