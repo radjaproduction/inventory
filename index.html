@@ -929,8 +929,8 @@
             <div id="stok-dashboard-view" class="flex flex-col gap-3">
                 <div class="flex items-stretch -mx-4 mb-2 shadow-[0_4px_16px_rgba(255,140,0,0.35)] brand-gradient-bg rounded-b-2xl overflow-hidden flex-shrink-0 sticky top-0 z-30">
                     <div class="w-20 h-[72px] flex items-center justify-center flex-shrink-0 z-10 relative bg-black/5 border-r-2 border-black/10">
-                        <img id="header-logo-img" src="" alt="Logo" class="w-10 h-10 object-contain hidden">
-                        <svg id="header-logo-svg" class="w-9 h-auto" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" version="1.1" viewBox="0 0 3996.74 2715.33">
+                        <img id="header-logo-img" src="" alt="Logo" class="w-12 h-12 object-contain hidden">
+                        <svg id="header-logo-svg" class="w-12 h-auto" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" version="1.1" viewBox="0 0 3996.74 2715.33">
                             <path fill="#000000" d="M1379.8 2078.49l-339.7 -450.38 -797.43 0 819.99 1087.21 369.69 0 427.79 0 778.91 0c746.73,0 1357.68,-610.94 1357.68,-1357.67 0,-746.72 -610.94,-1357.66 -1357.68,-1357.66l-685.55 0c242.92,127.17 422.11,359.81 476.47,636.83l209.08 0c396.43,0 720.83,324.36 720.83,720.83 0,396.44 -324.35,720.83 -720.83,720.83l-1259.26 0zm906.78 -104.15l-261.1 -346.23 -0.04 0 -84.57 -112.11c240.44,-141.62 402.14,-403.18 402.14,-701.94 0,-448.98 -365.11,-814.06 -814.05,-814.06l-1528.97 0 480.33 636.83 1048.65 0c97.46,0 177.22,79.74 177.22,177.22 0,97.51 -79.76,177.25 -177.22,177.25l-781.29 0 741.44 983.04 797.46 0z"/>
                         </svg>
                     </div>
@@ -1056,36 +1056,42 @@
                         <div class="text-[13px] font-black leading-none">CATAT BIAYA OPERASIONAL</div>
                     </div>
                     <div class="p-4 flex flex-col gap-3">
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-[10px] font-bold text-black tracking-wider">JENIS BIAYA</label>
-                            <input id="beban-input-kategori" type="text" list="beban-kategori-datalist" placeholder="mis. Listrik, Bensin, Gaji Harian..." class="w-full bg-darkBg border-2 border-borderDark rounded-lg px-3 py-2.5 text-xs text-black placeholder-black/50 outline-none focus:border-[#FFB144]">
-                            <datalist id="beban-kategori-datalist"></datalist>
-                        </div>
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-[10px] font-bold text-black tracking-wider">NOMINAL</label>
-                            <div class="relative">
-                                <span class="absolute inset-y-0 left-3 flex items-center text-black text-xs font-bold">Rp</span>
-                                <input id="beban-input-nominal" type="text" inputmode="numeric" placeholder="0" oninput="formatRupiahInputBeban(this)" class="w-full bg-darkBg border-2 border-borderDark rounded-lg pl-9 pr-3 py-2.5 text-xs text-black placeholder-black/50 outline-none focus:border-[#FFB144]">
+                        <div class="flex gap-3 items-stretch">
+                            <!-- KOLOM KIRI: FOTO KWITANSI/BON -->
+                            <div class="flex flex-col gap-1.5 w-[104px] flex-shrink-0">
+                                <label class="text-[9px] font-bold text-black tracking-wider leading-tight">FOTO KWITANSI/BON <span class="text-red-500">*wajib</span></label>
+                                <input type="file" id="beban-input-foto" accept="image/*" capture="environment" class="hidden" onchange="prosesFotoBeban(event)">
+                                <div id="beban-foto-placeholder" onclick="document.getElementById('beban-input-foto').click()" class="flex-1 w-full border-2 border-dashed border-borderDark rounded-lg flex flex-col items-center justify-center gap-1.5 cursor-pointer px-1 text-center">
+                                    <i class="fa-solid fa-camera text-black/40 text-lg"></i>
+                                    <span class="text-[8px] font-bold text-black/50 leading-tight">Ketuk untuk foto kwitansi/bon</span>
+                                </div>
+                                <div id="beban-foto-preview-wrapper" class="hidden relative flex-1">
+                                    <img id="beban-foto-preview" class="w-full h-full rounded-lg border-2 border-borderDark object-cover" src="">
+                                    <button type="button" onclick="hapusFotoBeban()" class="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg text-[10px]"><i class="fa-solid fa-xmark"></i></button>
+                                </div>
                             </div>
-                        </div>
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-[10px] font-bold text-black tracking-wider">TANGGAL</label>
-                            <input id="beban-input-tanggal" type="date" class="w-full bg-darkBg border-2 border-borderDark rounded-lg px-3 py-2.5 text-xs text-black outline-none focus:border-[#FFB144]">
-                        </div>
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-[10px] font-bold text-black tracking-wider">KETERANGAN (opsional)</label>
-                            <input id="beban-input-keterangan" type="text" placeholder="catatan tambahan..." class="w-full bg-darkBg border-2 border-borderDark rounded-lg px-3 py-2.5 text-xs text-black placeholder-black/50 outline-none focus:border-[#FFB144]">
-                        </div>
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-[10px] font-bold text-black tracking-wider">FOTO KWITANSI/BON <span class="text-red-500">*wajib</span></label>
-                            <input type="file" id="beban-input-foto" accept="image/*" capture="environment" class="hidden" onchange="prosesFotoBeban(event)">
-                            <div id="beban-foto-placeholder" onclick="document.getElementById('beban-input-foto').click()" class="w-full border-2 border-dashed border-borderDark rounded-lg py-6 flex flex-col items-center justify-center gap-1.5 cursor-pointer">
-                                <i class="fa-solid fa-camera text-black/40 text-xl"></i>
-                                <span class="text-[10px] font-bold text-black/50">Ketuk untuk foto kwitansi/bon</span>
-                            </div>
-                            <div id="beban-foto-preview-wrapper" class="hidden relative">
-                                <img id="beban-foto-preview" class="w-full rounded-lg border-2 border-borderDark object-cover max-h-[220px]" src="">
-                                <button type="button" onclick="hapusFotoBeban()" class="absolute top-2 right-2 w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg"><i class="fa-solid fa-xmark"></i></button>
+                            <!-- KOLOM KANAN: JENIS BIAYA / NOMINAL / TANGGAL / KETERANGAN -->
+                            <div class="flex-1 min-w-0 flex flex-col gap-2.5">
+                                <div class="flex flex-col gap-1">
+                                    <label class="text-[10px] font-bold text-black tracking-wider">JENIS BIAYA</label>
+                                    <input id="beban-input-kategori" type="text" list="beban-kategori-datalist" placeholder="mis. Listrik, Bensin..." class="w-full bg-darkBg border-2 border-borderDark rounded-lg px-3 py-2.5 text-xs text-black placeholder-black/50 outline-none focus:border-[#FFB144]">
+                                    <datalist id="beban-kategori-datalist"></datalist>
+                                </div>
+                                <div class="flex flex-col gap-1">
+                                    <label class="text-[10px] font-bold text-black tracking-wider">NOMINAL</label>
+                                    <div class="relative">
+                                        <span class="absolute inset-y-0 left-3 flex items-center text-black text-xs font-bold">Rp</span>
+                                        <input id="beban-input-nominal" type="text" inputmode="numeric" placeholder="0" oninput="formatRupiahInputBeban(this)" class="w-full bg-darkBg border-2 border-borderDark rounded-lg pl-9 pr-3 py-2.5 text-xs text-black placeholder-black/50 outline-none focus:border-[#FFB144]">
+                                    </div>
+                                </div>
+                                <div class="flex flex-col gap-1">
+                                    <label class="text-[10px] font-bold text-black tracking-wider">TANGGAL</label>
+                                    <input id="beban-input-tanggal" type="date" class="w-full bg-darkBg border-2 border-borderDark rounded-lg px-3 py-2.5 text-xs text-black outline-none focus:border-[#FFB144]">
+                                </div>
+                                <div class="flex flex-col gap-1">
+                                    <label class="text-[10px] font-bold text-black tracking-wider">KETERANGAN (opsional)</label>
+                                    <input id="beban-input-keterangan" type="text" placeholder="catatan tambahan..." class="w-full bg-darkBg border-2 border-borderDark rounded-lg px-3 py-2.5 text-xs text-black placeholder-black/50 outline-none focus:border-[#FFB144]">
+                                </div>
                             </div>
                         </div>
                         <button id="btn-simpan-beban-input" onclick="simpanBebanInput()" class="w-full brand-gradient-bg text-black font-black text-[13px] py-3.5 rounded-xl flex justify-center items-center gap-2 shadow-[0_4px_15px_rgba(255,140,0,0.35)]"><i class="fa-solid fa-floppy-disk"></i> SIMPAN BIAYA</button>
