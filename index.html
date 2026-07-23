@@ -4921,7 +4921,12 @@ function updateSSK(tab, rowId) {
 
         brandModelWrapper.classList.remove('hidden');
         variasiCard.classList.remove('hidden');
-        actionBar.style.display = 'flex';
+        // PERBAIKAN: hanya tampilkan action-bar-input kalau tab INPUT DATA memang
+        // sedang aktif. Tanpa cek ini, action-bar bisa "nongol" di tab lain (misal STOK)
+        // kalau setInputMode() dipanggil dari proses async (contoh: setInputMode('masuk')
+        // di simpanInputData() setelah await simpan ke Supabase) yang baru selesai
+        // SETELAH user sudah pindah tab.
+        actionBar.style.display = (_activeTab === 'input') ? 'flex' : 'none';
         bebanWrapper.classList.add('hidden'); bebanWrapper.classList.remove('flex');
 
         if (mode === 'masuk') {
@@ -5015,7 +5020,10 @@ function updateSSK(tab, rowId) {
     function _fmtTglLabelBeban(iso) { return new Date(iso + 'T00:00:00').toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }); }
     function _rangeMingguIniBeban() {
         const awal = _awalMingguIniBeban(new Date());
-        const akhir = new Date(awal); akhir.setDate(akhir.getDate() + 5); // Senin s/d Sabtu
+        // PERBAIKAN: disamakan dengan definisi "MINGGU INI" di filter tab LABA
+        // (Senin s/d MINGGU, 7 hari). Sebelumnya cuma sampai Sabtu (+5), jadi
+        // beban yang dicatat hari Minggu hilang dari daftar "RIWAYAT BIAYA (MINGGU INI)".
+        const akhir = new Date(awal); akhir.setDate(akhir.getDate() + 6); // Senin s/d Minggu
         return { awalISO: _fmtISOBeban(awal), akhirISO: _fmtISOBeban(akhir) };
     }
 
