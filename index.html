@@ -10,7 +10,6 @@
             html,body{background-color:#F6DBB6 !important;}
             .bg-darkBg{background-color:#F6DBB6 !important;}
             .bg-cardBg{background-color:#FFEFDB !important;}
-            .bg-headerBox{background-color:#FFEFDB !important;}
             .border-borderDark{border-color:#FFB144 !important;}
             .bg-\[\#F6DBB6\]{background-color:#F6DBB6 !important;}
             .bg-\[\#fdf6ec\]{background-color:#fdf6ec !important;}
@@ -926,7 +925,7 @@
                         </svg>
                     </div>
                     <div class="flex flex-col justify-center flex-grow min-w-0 z-10 relative">
-                        <h1 class="text-[15px] font-black text-[#000000] leading-none tracking-wide truncate">DASHBOARD STOK</h1>
+                        <h1 class="text-[26px] font-black text-[#000000] leading-none tracking-wide truncate">STOK</h1>
                         <h2 class="display-brand-name text-[9px] font-bold text-[#000000]/70 tracking-[0.15em] leading-none uppercase mt-1.5">RADJA PRODUCTION</h2>
                     </div>
                     <span id="app-version-badge" class="text-[#000000]/60 select-none flex flex-col items-end justify-center leading-none gap-0.5 flex-shrink-0" style="font-family:'Montserrat',sans-serif;" title="Versi Aplikasi"><span style="font-size:8px;font-weight:600;letter-spacing:0.04em;">v3.0.2</span><span style="font-size:7px;font-weight:400;letter-spacing:0.03em;opacity:0.8;">@2026</span></span>
@@ -2116,14 +2115,6 @@ END $$;</textarea>
                     document.getElementById('pin-login-error').textContent = '';
                 }, 550);
             }
-        }
-    }
-
-    function pinLoginHapus() {
-        if (_pinLoginVal.length > 0) {
-            _pinLoginVal = _pinLoginVal.slice(0, -1);
-            updatePinLoginDots();
-            pinHaptic(8);
         }
     }
 
@@ -3985,15 +3976,6 @@ function updateSSK(tab, rowId) {
             const chev = document.getElementById(chevronId);
             if (chev) chev.classList.add('rotated');
         }
-    }
-
-    // Akordeon independen (tidak saling menutup) — dipakai untuk STOK PER BRAND & TRANSAKSI VENDOR
-    function toggleStokAccordion(bodyId, chevronId, cardId) {
-        const body = document.getElementById(bodyId);
-        const chevron = document.getElementById(chevronId);
-        if (!body) return;
-        body.classList.toggle('collapsed');
-        if (chevron) chevron.classList.toggle('rotated');
     }
 
     // Klik card "VENDOR AKTIF" di ringkasan atas -> buka POPUP TRANSAKSI VENDOR terpisah
