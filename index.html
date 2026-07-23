@@ -3465,6 +3465,9 @@ function updateSSK(tab, rowId) {
     function _doSwitchTab(tabName) {
         const tabs = ['stok','input','transaksi','riwayat','laba','master'];
 
+        // Tutup toast peringatan dari tab sebelumnya supaya tidak "nyangkut" ke tab baru
+        hideToastNow();
+
         // Auto-clear form saat meninggalkan tab input atau transaksi
         if (_activeTab === 'input' && tabName !== 'input') {
             _clearInputForm();
@@ -9188,6 +9191,13 @@ function updateSSK(tab, rowId) {
         toast.style.transform = 'translateX(-50%) translateY(0)';
         clearTimeout(toast._timer);
         toast._timer = setTimeout(() => { toast.style.opacity = '0'; }, 2500);
+    }
+
+    function hideToastNow() {
+        const toast = document.getElementById('app-toast');
+        if (!toast) return;
+        clearTimeout(toast._timer);
+        toast.style.opacity = '0';
     }
 
     const _lastFocusedEl = { el: null };
