@@ -1553,14 +1553,24 @@ END $$;</textarea>
                     <div class="w-full h-[1.5px] bg-[#ffffff]/30 mb-1"></div>
                     <h2 class="display-brand-name text-[10px] font-bold text-[#000000] tracking-[0.15em] leading-none mt-0.5 uppercase">RADJA PRODUCTION</h2>
                 </div>
+                <button onclick="openMasterDrawer()" class="w-16 h-[72px] flex-shrink-0 flex items-center justify-center z-10 relative bg-black/5 border-l-2 border-black/10 active:scale-95 transition-transform">
+                    <i class="fa-solid fa-bars text-2xl text-[#000000]"></i>
+                </button>
             </div>
-            <div class="bg-darkBg p-1 rounded-xl flex border-2 border-borderDark gap-0.5 overflow-x-auto no-scrollbar">
-                <button onclick="switchMasterTab('vendor')" id="master-tab-vendor" class="whitespace-nowrap flex-1 py-2 text-[10px] font-bold rounded-lg bg-cardBg brand-text shadow-sm transition-all"><i class="fa-solid fa-truck-fast mr-1"></i>VENDOR</button>
-                <button onclick="switchMasterTab('brand')" id="master-tab-brand" class="whitespace-nowrap flex-1 py-2 text-[10px] font-bold rounded-lg text-black hover:text-black transition-all"><i class="fa-solid fa-tags mr-1"></i>BRAND</button>
-                <button onclick="switchMasterTab('model')" id="master-tab-model" class="whitespace-nowrap flex-1 py-2 text-[10px] font-bold rounded-lg text-black hover:text-black transition-all"><i class="fa-solid fa-shirt mr-1"></i>MODEL</button>
-                <button onclick="switchMasterTab('warna')" id="master-tab-warna" class="whitespace-nowrap flex-1 py-2 text-[10px] font-bold rounded-lg text-black hover:text-black transition-all"><i class="fa-solid fa-palette mr-1"></i>WARNA</button>
-                <button onclick="switchMasterTab('ukuran')" id="master-tab-ukuran" class="whitespace-nowrap flex-1 py-2 text-[10px] font-bold rounded-lg text-black hover:text-black transition-all"><i class="fa-solid fa-ruler mr-1"></i>UKURAN</button>
-                <button onclick="switchMasterTab('pengaturan')" id="master-tab-pengaturan" class="whitespace-nowrap flex-1 py-2 text-[10px] font-bold rounded-lg text-black hover:text-black transition-all"><i class="fa-solid fa-sliders mr-1"></i>PENGATURAN</button>
+
+            <!-- OVERLAY + SLIDE-IN DRAWER (menu Data Master, geser dari kanan ke kiri) -->
+            <div id="master-drawer-overlay" onclick="closeMasterDrawer()" class="hidden fixed inset-0 bg-black/60 z-40 backdrop-blur-[2px]"></div>
+            <div id="master-drawer" class="fixed top-0 right-0 h-full w-[78%] max-w-[280px] bg-darkBg border-l-2 border-borderDark z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col p-3 gap-1.5 shadow-2xl">
+                <div class="flex items-center justify-between mb-2 pb-2 border-b-2 border-borderDark flex-shrink-0">
+                    <span class="text-xs font-black text-black tracking-wide"><i class="fa-solid fa-database brand-text mr-1.5"></i>MENU MASTER</span>
+                    <button onclick="closeMasterDrawer()" class="w-8 h-8 rounded-lg bg-cardBg border-2 border-borderDark flex items-center justify-center active:scale-95 transition-transform"><i class="fa-solid fa-xmark text-black text-sm"></i></button>
+                </div>
+                <button onclick="switchMasterTab('vendor')" id="master-tab-vendor" class="w-full text-left py-3 px-3 text-xs font-bold rounded-lg bg-cardBg brand-text shadow-sm transition-all"><i class="fa-solid fa-truck-fast mr-2 w-4 inline-block text-center"></i>VENDOR</button>
+                <button onclick="switchMasterTab('brand')" id="master-tab-brand" class="w-full text-left py-3 px-3 text-xs font-bold rounded-lg text-black hover:text-black transition-all"><i class="fa-solid fa-tags mr-2 w-4 inline-block text-center"></i>BRAND</button>
+                <button onclick="switchMasterTab('model')" id="master-tab-model" class="w-full text-left py-3 px-3 text-xs font-bold rounded-lg text-black hover:text-black transition-all"><i class="fa-solid fa-shirt mr-2 w-4 inline-block text-center"></i>MODEL</button>
+                <button onclick="switchMasterTab('warna')" id="master-tab-warna" class="w-full text-left py-3 px-3 text-xs font-bold rounded-lg text-black hover:text-black transition-all"><i class="fa-solid fa-palette mr-2 w-4 inline-block text-center"></i>WARNA</button>
+                <button onclick="switchMasterTab('ukuran')" id="master-tab-ukuran" class="w-full text-left py-3 px-3 text-xs font-bold rounded-lg text-black hover:text-black transition-all"><i class="fa-solid fa-ruler mr-2 w-4 inline-block text-center"></i>UKURAN</button>
+                <button onclick="switchMasterTab('pengaturan')" id="master-tab-pengaturan" class="w-full text-left py-3 px-3 text-xs font-bold rounded-lg text-black hover:text-black transition-all"><i class="fa-solid fa-sliders mr-2 w-4 inline-block text-center"></i>PENGATURAN</button>
             </div>
 
             <!-- PANEL VENDOR -->
@@ -4735,11 +4745,11 @@ function updateSSK(tab, rowId) {
         panels.forEach(p => {
             document.getElementById('master-panel-' + p).classList.add('hidden');
             document.getElementById('master-panel-' + p).classList.remove('flex');
-            document.getElementById('master-tab-' + p).className = "whitespace-nowrap flex-1 py-2 text-[10px] font-bold rounded-lg text-black hover:text-black transition-all";
+            document.getElementById('master-tab-' + p).className = "w-full text-left py-3 px-3 text-xs font-bold rounded-lg text-black hover:text-black transition-all";
         });
         document.getElementById('master-panel-' + tab).classList.remove('hidden');
         document.getElementById('master-panel-' + tab).classList.add('flex');
-        document.getElementById('master-tab-' + tab).className = "whitespace-nowrap flex-1 py-2 text-[10px] font-bold rounded-lg bg-cardBg brand-text shadow-sm transition-all";
+        document.getElementById('master-tab-' + tab).className = "w-full text-left py-3 px-3 text-xs font-bold rounded-lg bg-cardBg brand-text shadow-sm transition-all";
         if (tab === 'model') renderBrandOptions();
         if (tab === 'pengaturan') {
             Object.entries(collapseGroups).forEach(([id, chev]) => {
@@ -4750,7 +4760,116 @@ function updateSSK(tab, rowId) {
             });
             muatStatusPIN();
         }
+        closeMasterDrawer();
     }
+
+    // ==== Drawer menu DATA MASTER: geser dari kanan ke kiri, dibuka via tombol hamburger ATAU swipe tangan ====
+    function _masterDrawerSnap(open) {
+        const drawer = document.getElementById('master-drawer');
+        const overlay = document.getElementById('master-drawer-overlay');
+        if (!drawer || !overlay) return;
+        if (open) overlay.classList.remove('hidden');
+        drawer.style.transition = 'transform 0.3s ease-in-out';
+        requestAnimationFrame(() => {
+            drawer.style.transform = open ? 'translateX(0)' : 'translateX(100%)';
+        });
+        const cleanup = () => {
+            drawer.removeEventListener('transitionend', cleanup);
+            drawer.style.transition = '';
+            drawer.style.transform = '';
+            if (open) {
+                drawer.classList.remove('translate-x-full');
+            } else {
+                drawer.classList.add('translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        };
+        drawer.addEventListener('transitionend', cleanup);
+    }
+    function openMasterDrawer() { _masterDrawerSnap(true); }
+    function closeMasterDrawer() { _masterDrawerSnap(false); }
+
+    // ==== Swipe tangan untuk buka/tutup drawer DATA MASTER ====
+    (function() {
+        const EDGE_ZONE = 24;      // lebar area di tepi kanan layar untuk mulai swipe-buka (px)
+        const MOVE_THRESHOLD = 8;  // pergerakan minimal sebelum dianggap "drag" nyata, bukan tap (px)
+        let touchStartX = null, touchStartY = null;
+        let mode = null;           // 'open-edge' | 'close-drawer' | null
+        let isDragging = false;
+        let drawerWidth = 0;
+
+        function isMasterTabActive() {
+            const tab = document.getElementById('tab-master');
+            return !!tab && !tab.classList.contains('hidden');
+        }
+
+        document.addEventListener('touchstart', function(e) {
+            if (!isMasterTabActive()) { mode = null; return; }
+            const drawer = document.getElementById('master-drawer');
+            if (!drawer) { mode = null; return; }
+            const touch = e.touches[0];
+            const drawerOpen = !drawer.classList.contains('translate-x-full');
+
+            if (drawerOpen && drawer.contains(e.target)) {
+                mode = 'close-drawer';
+            } else if (!drawerOpen && touch.clientX >= window.innerWidth - EDGE_ZONE) {
+                mode = 'open-edge';
+            } else {
+                mode = null;
+                return;
+            }
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+            isDragging = false;
+            drawerWidth = drawer.offsetWidth || 280;
+        }, { passive: true });
+
+        document.addEventListener('touchmove', function(e) {
+            if (!mode) return;
+            const touch = e.touches[0];
+            const deltaX = touch.clientX - touchStartX;
+            const deltaY = touch.clientY - touchStartY;
+
+            if (!isDragging) {
+                if (Math.abs(deltaX) < MOVE_THRESHOLD && Math.abs(deltaY) < MOVE_THRESHOLD) return;
+                if (Math.abs(deltaY) > Math.abs(deltaX)) { mode = null; return; } // ini scroll vertikal, bukan swipe drawer
+                isDragging = true;
+                const drawer = document.getElementById('master-drawer');
+                const overlay = document.getElementById('master-drawer-overlay');
+                if (drawer) drawer.style.transition = 'none';
+                if (overlay) overlay.classList.remove('hidden');
+            }
+
+            if (e.cancelable) e.preventDefault();
+            const drawer = document.getElementById('master-drawer');
+            if (!drawer) return;
+            let translatePx;
+            if (mode === 'open-edge') {
+                translatePx = Math.min(drawerWidth, Math.max(0, drawerWidth + deltaX));
+            } else {
+                translatePx = Math.min(drawerWidth, Math.max(0, deltaX));
+            }
+            drawer.style.transform = 'translateX(' + translatePx + 'px)';
+        }, { passive: false });
+
+        document.addEventListener('touchend', function(e) {
+            if (!mode) return;
+            const wasDragging = isDragging;
+            const touch = e.changedTouches[0];
+            const deltaX = touch.clientX - touchStartX;
+            const threshold = drawerWidth * 0.35;
+
+            if (wasDragging) {
+                if (mode === 'open-edge') {
+                    (-deltaX > threshold) ? openMasterDrawer() : closeMasterDrawer();
+                } else {
+                    (deltaX > threshold) ? closeMasterDrawer() : openMasterDrawer();
+                }
+            }
+            mode = null;
+            isDragging = false;
+        }, { passive: true });
+    })();
 
     // ==== Mekanisme terpusat untuk menutup dropdown saat tap di luar area ====
     // Pakai capture phase supaya tetap kedeteksi walau elemen lain memanggil
