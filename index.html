@@ -3091,6 +3091,54 @@ async function fetchBayarSebagianData() {
         }, 50);
     }
 
+    // ==================== DEBUG HELPER (sementara, aman dihapus kapan saja) ====================
+    // Cara pakai: buka console browser (F12 → Console), lalu ketik:
+    //   debugCekStok("SET DUSHI KULOT")
+    // Ini akan menampilkan SEMUA baris riwayat input & transaksi yang mengandung teks itu
+    // (huruf besar/kecil diabaikan), lengkap dengan brand/model/warna/ukuran APA ADANYA
+    // (tanpa trim/uppercase) supaya kelihatan kalau ada spasi ganda/beda kapital yang
+    // bikin kombinasi dianggap "berbeda" oleh sistem (sehingga transaksi tidak mengurangi
+    // stok input yang seharusnya sama).
+    window.debugCekStok = function(modelSubstr) {
+        const needle = (modelSubstr || '').toUpperCase();
+        console.log('%c=== RIWAYAT INPUT (masuk/retur) ===', 'color:#ff8c00;font-weight:bold;');
+        appData.riwayatInput.forEach(d => {
+            if (!(d.model || '').toUpperCase().includes(needle)) return;
+            d.items.forEach(item => {
+                console.log(
+                    `[INPUT #${d.id}] mode=${JSON.stringify(d.mode)} brand=${JSON.stringify(d.brand)} model=${JSON.stringify(d.model)} warna=${JSON.stringify(item.warna)} ukuran=${JSON.stringify(item.ukuran)} qty=${item.qty}`
+                );
+            });
+        });
+        console.log('%c=== RIWAYAT TRANSAKSI (keluar) ===', 'color:#ff8c00;font-weight:bold;');
+        appData.riwayatTransaksi.forEach(d => {
+            if (!(d.model || '').toUpperCase().includes(needle)) return;
+            d.items.forEach(item => {
+                console.log(
+                    `[TRX #${d.id}] brand=${JSON.stringify(d.brand)} model=${JSON.stringify(d.model)} warna=${JSON.stringify(item.warna)} ukuran=${JSON.stringify(item.ukuran)} qty=${item.qty}`
+                );
+            });
+        });
+        console.log('%c=== GROUPING KEY (trim+uppercase) — kalau ada 2+ key mirip tapi beda, itu penyebabnya ===', 'color:#ff8c00;font-weight:bold;');
+        const groups = {};
+        appData.riwayatInput.forEach(d => {
+            if (!(d.model || '').toUpperCase().includes(needle)) return;
+            d.items.forEach(item => {
+                const key = `${(d.model||'').trim().toUpperCase()}||${(item.warna||'').trim().toUpperCase()}||${(item.ukuran||'').trim().toUpperCase()}||brand:${(d.brand||'').trim().toUpperCase()}`;
+                groups[key] = (groups[key] || 0) + (d.mode === 'retur' ? -item.qty : item.qty);
+            });
+        });
+        appData.riwayatTransaksi.forEach(d => {
+            if (!(d.model || '').toUpperCase().includes(needle)) return;
+            d.items.forEach(item => {
+                const key = `${(d.model||'').trim().toUpperCase()}||${(item.warna||'').trim().toUpperCase()}||${(item.ukuran||'').trim().toUpperCase()}||brand:${(d.brand||'').trim().toUpperCase()}`;
+                groups[key] = (groups[key] || 0) - item.qty;
+            });
+        });
+        console.table(groups);
+        console.log('%cKalau brand di atas TIDAK ADA di daftar master brand kamu saat ini (misal brand pernah di-rename), baris itu akan DIABAIKAN TOTAL oleh hitungan stok per-brand — cek juga masterData.brand:', 'color:#ff8c00;font-weight:bold;', JSON.parse(JSON.stringify(masterData.brand)));
+    };
+
     // ==================== STOK DASHBOARD (FIXED CASE & SPACE INSENSITIVE) ====================
 
 // ==================== STOK DASHBOARD ====================
