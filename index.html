@@ -6639,11 +6639,11 @@ function updateSSK(tab, rowId) {
         return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
     }
 
-    // Minggu dimulai hari SENIN (konvensi Indonesia)
+    // Minggu (khusus filter LABA) dimulai hari SABTU s/d JUMAT — sesuai preferensi toko.
     function _awalMingguIni(ref) {
         const d = new Date(ref);
         const day = d.getDay(); // 0=minggu,1=senin,...,6=sabtu
-        const diff = (day === 0 ? -6 : 1 - day);
+        const diff = -((day + 1) % 7); // mundur ke hari Sabtu terdekat (atau 0 kalau sudah Sabtu)
         d.setDate(d.getDate() + diff);
         d.setHours(0,0,0,0);
         return d;
