@@ -1495,7 +1495,7 @@ END $$;</textarea>
                     <button onclick="cetakTerpilih()" id="btn-cetak-terpilih" class="flex-1 justify-center text-black font-black text-[13px] py-3.5 rounded-xl flex items-center gap-2 opacity-40 cursor-not-allowed active:scale-95 transition-transform" style="background:linear-gradient(90deg,#ff8c00,#ffb347)"><i class="fa-solid fa-truck-fast"></i> SURAT JALAN</button>
             </div>
 
-        <div style="height:90px;flex-shrink:0;"></div>
+        <div id="riwayat-bottom-spacer" style="height:90px;flex-shrink:0;"></div>
         </div>
 
         <!-- TAB LABA KOTOR -->
@@ -3066,6 +3066,7 @@ async function fetchBayarSebagianData() {
         // Default subtab riwayat = INPUT DATA (sticky-total-bar cuma dipakai di sub-tab TRANSAKSI)
         const totalBar = document.getElementById('sticky-total-bar');
         if (totalBar) { totalBar.classList.add('hidden'); totalBar.classList.remove('flex'); }
+        _updateRiwayatBottomSpacer();
         // Load saved logo
         const savedLogo = localStorage.getItem('app_logo');
         if (savedLogo) applyLogo(savedLogo);
@@ -3416,6 +3417,23 @@ function updateSSK(tab, rowId) {
                             </div>
                         </div>
                     </div>`).join('');
+            }
+        }
+
+        // FIX BUG: layar "Detail Brand" (stok per model/warna/ukuran) pakai snapshot
+        // _detailStokMap yang sebelumnya HANYA di-refresh saat openBrandDetail() atau
+        // simpanKoreksiStok(). Akibatnya kalau layar ini sedang terbuka, transaksi baru
+        // tidak terlihat menurunkan stok di sini (walau transaksi & dashboard utama
+        // sudah benar) sampai user keluar-masuk lagi ke Detail Brand. Refresh di sini
+        // supaya ikut ter-update setiap kali renderStokDashboard() dipanggil.
+        if (_detailBrandId != null) {
+            const detailViewEl = document.getElementById('stok-detail-view');
+            if (detailViewEl && !detailViewEl.classList.contains('hidden')) {
+                _detailStokMap = hitungStokBrand(_detailBrandId);
+                const totalPcs2 = Object.values(_detailStokMap).reduce((s, v) => s + Math.max(0, v), 0);
+                const totalEl = document.getElementById('detail-brand-total');
+                if (totalEl) totalEl.innerText = totalPcs2.toLocaleString('id-ID') + ' Pcs';
+                renderDetailItems(null);
             }
         }
     }
@@ -3923,6 +3941,18 @@ function updateSSK(tab, rowId) {
         switchRiwayatSubTab('input');
     }
 
+    // Spacer di bawah list tab Riwayat harus lebih tinggi saat #sticky-total-bar (BATAL/TAGIHAN/SURAT
+    // JALAN) sedang tampil, supaya item terakhir tidak ketutupan permanen oleh bar itu + nav bar
+    // (dulu spacer selalu 90px flat sehingga saat totalBar aktif, halaman kehabisan ruang scroll
+    // sebelum item terakhir sempat naik melewati kedua bar fixed tsb).
+    function _updateRiwayatBottomSpacer() {
+        const spacer = document.getElementById('riwayat-bottom-spacer');
+        const totalBar = document.getElementById('sticky-total-bar');
+        if (!spacer) return;
+        const barVisible = !!(totalBar && !totalBar.classList.contains('hidden'));
+        spacer.style.height = barVisible ? '170px' : '90px';
+    }
+
     // subTab: 'input' | 'transaksi' (alias masuk grup, default KREDIT) | 'kredit' | 'lunas' | 'pelunasan' | 'bayar-sebagian'
     // Struktur baru: KREDIT & LUNAS adalah mode eksklusif di dalam grup TRANSAKSI.
     // KREDIT -> daftar transaksi berstatus kredit. LUNAS -> punya 3 sub: LUNAS (list transaksi lunas) / PELUNASAN / BAYAR SEBAGIAN.
@@ -3963,10 +3993,11 @@ function updateSSK(tab, rowId) {
             btnInput.className = activeClass;
             if (filterTrxBar) filterTrxBar.classList.add('hidden');
             listInput.classList.remove('hidden'); listInput.classList.add('flex');
+            _updateRiwayatBottomSpacer();
             return;
         }
 
-        if (!isTransaksiGroup) return;
+        if (!isTransaksiGroup) { _updateRiwayatBottomSpacer(); return; }
 
         // Grup TRANSAKSI aktif (termasuk sub-tab LUNAS / PELUNASAN / BAYAR SEBAGIAN di bawah LUNAS)
         btnTransaksi.className = activeClass;
@@ -4003,6 +4034,7 @@ function updateSSK(tab, rowId) {
                 renderBayarSebagianView();
             }
         }
+        _updateRiwayatBottomSpacer();
     }
 
     // Tombol filter status KREDIT / LUNAS (baris di bawah INPUT DATA/TRANSAKSI)
