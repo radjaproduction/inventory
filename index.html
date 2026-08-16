@@ -7350,6 +7350,16 @@ function updateSSK(tab, rowId) {
             const lastSeenId = seenData[vendor] || 0;
             const newCount = trxList.filter(t => t.id > lastSeenId).length;
             const hasBayarSebagianTrx = appData.pelunasan.some(p => p.vendor === vendor && (p.transaksi_id === null || p.transaksi_id === undefined));
+            // Cek apakah vendor ini MASIH punya sisa hutang (bukan cuma pernah pakai Bayar Sebagian).
+            // Badge CICIL cuma relevan kalau masih ada tagihan berjalan, bukan riwayat lama yang sudah lunas.
+            let sisaHutangVendorCicil = 0;
+            if (hasBayarSebagianTrx) {
+                const totalCreditVendor = trxList.filter(t => t.status === 'credit').reduce((s, t) => s + t.items.reduce((si, i) => si + i.qty, 0) * t.harga, 0);
+                const sudahBayarPerTrxVendor = trxList.reduce((s, t) => s + appData.pelunasan.filter(p => Number(p.transaksi_id) === Number(t.id)).reduce((si, p) => si + p.jumlah, 0), 0);
+                const sudahBayarSebagianVendorCicil = appData.pelunasan.filter(p => p.vendor === vendor && (p.transaksi_id === null || p.transaksi_id === undefined)).reduce((s, p) => s + p.jumlah, 0);
+                sisaHutangVendorCicil = Math.max(0, totalCreditVendor - sudahBayarPerTrxVendor - sudahBayarSebagianVendorCicil);
+            }
+            const tampilkanBadgeCicil = hasBayarSebagianTrx && sisaHutangVendorCicil > 0;
             const badgeHtml = newCount > 0
                 ? `<div id="vg-badge-${vendorKey}" class="vendor-notif-badge">${newCount > 99 ? '99+' : newCount}</div>`
                 : `<div id="vg-badge-${vendorKey}"></div>`;
@@ -7362,7 +7372,7 @@ function updateSSK(tab, rowId) {
                         <div>
                             <div class="flex items-center gap-1.5">
                                 <div class="text-[16px] font-black text-black uppercase tracking-wide leading-none">${vendorLabel}</div>
-                                ${hasBayarSebagianTrx ? '<span style="background:rgba(220,38,38,0.85);border:1px solid rgba(220,38,38,0.9);" class="text-[10px] font-black text-black px-1.5 py-0.5 rounded-md tracking-wide flex items-center gap-0.5 whitespace-nowrap"><i class="fa-solid fa-hand-holding-dollar text-[9px]"></i> CICIL</span>' : ''}
+                                ${tampilkanBadgeCicil ? '<span style="background:rgba(220,38,38,0.85);border:1px solid rgba(220,38,38,0.9);" class="text-[10px] font-black text-black px-1.5 py-0.5 rounded-md tracking-wide flex items-center gap-0.5 whitespace-nowrap"><i class="fa-solid fa-hand-holding-dollar text-[9px]"></i> CICIL</span>' : ''}
                             </div>
                             <div class="text-[12px] text-black/60 font-bold mt-0.5">${trxCount} transaksi • Rp ${totalNominalVendor.toLocaleString('id-ID')}</div>
                         </div>
@@ -7559,10 +7569,14 @@ function updateSSK(tab, rowId) {
         if (countEl) countEl.textContent = count;
         const btnTagihan = document.getElementById('btn-tagihan-terpilih');
 
-        // Cek apakah vendor yang dipilih punya bayar sebagian
+        // Cek apakah vendor yang dipilih punya bayar sebagian DAN ada transaksi terpilih yang masih CREDIT
+        // (kalau semua yang dipilih sudah LUNAS, nominal sudah pasti/final, jadi TAGIHAN aman dicetak).
         let vendorHasBayarSebagian = false;
+        let adaTerpilihMasihCredit = false;
         if (count > 0) {
-            const activeVendor = appData.riwayatTransaksi.find(d => selectedTrxIds.has(d.id))?.vendor;
+            const selectedTrx = appData.riwayatTransaksi.filter(d => selectedTrxIds.has(d.id));
+            const activeVendor = selectedTrx[0]?.vendor;
+            adaTerpilihMasihCredit = selectedTrx.some(d => d.status !== 'lunas');
             if (activeVendor) {
                 vendorHasBayarSebagian = appData.pelunasan.some(
                     p => p.vendor === activeVendor && (p.transaksi_id === null || p.transaksi_id === undefined)
@@ -7580,8 +7594,9 @@ function updateSSK(tab, rowId) {
             }
         }
         if (btnTagihan) {
-            // TAGIHAN dinonaktifkan jika tidak ada yang dipilih ATAU vendor punya bayar sebagian
-            if (count > 0 && !vendorHasBayarSebagian) {
+            // TAGIHAN dinonaktifkan jika tidak ada yang dipilih, ATAU vendor punya bayar sebagian
+            // sementara ada transaksi terpilih yang belum lunas (nominal belum final/ambigu).
+            if (count > 0 && !(vendorHasBayarSebagian && adaTerpilihMasihCredit)) {
                 btnTagihan.classList.remove('opacity-40','cursor-not-allowed');
                 btnTagihan.classList.add('cursor-pointer');
             } else {
@@ -8444,7 +8459,7 @@ function updateSSK(tab, rowId) {
                         <div>
                             <div class="flex items-center gap-1.5">
                                 <div class="text-[16px] font-black text-black uppercase tracking-wide leading-none">${vendor}</div>
-                                ${hasBayarSebagian ? '<span style="background:rgba(220,38,38,0.85);border:1px solid rgba(220,38,38,0.9);" class="text-[10px] font-black text-black px-1.5 py-0.5 rounded-md tracking-wide flex items-center gap-0.5 whitespace-nowrap"><i class="fa-solid fa-hand-holding-dollar text-[9px]"></i> CICIL</span>' : ''}
+                                ${hasBayarSebagian && totalHutang > 0 ? '<span style="background:rgba(220,38,38,0.85);border:1px solid rgba(220,38,38,0.9);" class="text-[10px] font-black text-black px-1.5 py-0.5 rounded-md tracking-wide flex items-center gap-0.5 whitespace-nowrap"><i class="fa-solid fa-hand-holding-dollar text-[9px]"></i> CICIL</span>' : ''}
                             </div>
                             <div class="text-[12px] text-black/60 font-bold mt-0.5">${totalHutang > 0 ? (jumlahCredit > 0 ? jumlahCredit + ' belum lunas' : '') + ' • Hutang Rp ' + totalHutang.toLocaleString('id-ID') : (jumlahCredit > 0 ? '✓ Lunas (' + jumlahCredit + ' transaksi terkunci Bayar Sebagian)' : '✓ Semua lunas')}</div>
                         </div>
