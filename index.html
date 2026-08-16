@@ -8497,6 +8497,14 @@ function updateSSK(tab, rowId) {
                             </div>`).join('') : '<div class="text-[9px] text-black italic py-1">Belum ada pembayaran dalam 2 minggu terakhir.</div>'}
                             ${riwayatBayarSebagianVendor.length > riwayatBayarSebagianVendorTampil.length ? `<div class="text-[8px] text-black italic pt-1.5 flex items-center gap-1"><i class="fa-solid fa-clock-rotate-left"></i> Pembayaran lebih lama disembunyikan (>2 minggu). Aktifkan "Tampilkan Semua Riwayat" di Tab Master untuk melihatnya.</div>` : ''}
                         </div>
+                        ${totalHutang <= 0 && jumlahCredit > 0 ? `
+                        <div class="p-2.5 border-t-2 border-borderDark">
+                            <button onclick="event.stopPropagation();tandaiTransaksiLunasOtomatis('${vendorEncoded}')"
+                                class="w-full bg-green-500 hover:bg-green-400 text-black font-black text-[10px] py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors">
+                                <i class="fa-solid fa-check-double"></i> TANDAI ${jumlahCredit} TRANSAKSI INI LUNAS
+                            </button>
+                            <div class="text-[8px] text-black italic text-center mt-1.5">Hutang vendor sudah Rp 0. Transaksi di bawah masih berstatus CREDIT karena belum pernah ditandai lunas satu-satu.</div>
+                        </div>` : ''}
                     </div>` : ''}
                     ${cards}</div>
             </div>`;
@@ -8792,11 +8800,45 @@ function updateSSK(tab, rowId) {
         const formOverlay = document.getElementById('popup-bayar-sebagian-form');
         if (formOverlay) formOverlay.remove();
 
+        // Kalau pembayaran ini pas menutup SEMUA sisa hutang vendor (totalHutang jadi 0),
+        // otomatis tandai transaksi CREDIT lama sebagai LUNAS supaya tidak nyangkut terkunci.
+        const sisaSetelahBayar = totalHutang - bayar;
+        if (sisaSetelahBayar <= 0) {
+            const creditTrxVendor = appData.riwayatTransaksi.filter(t => t.vendor === vendor && t.status === 'credit');
+            for (const t of creditTrxVendor) {
+                const { error: errUpdate } = await sbClient.from('transaksi').update({ status: 'lunas' }).eq('id', t.id);
+                if (!errUpdate) t.status = 'lunas';
+            }
+        }
+
         renderPelunasanView();
         renderRiwayatTransaksi();
         showToast(`✅ Pembayaran sebagian Rp ${bayar.toLocaleString('id-ID')} berhasil dicatat!`);
 
         switchRiwayatSubTab('pelunasan');
+    }
+
+    // Untuk vendor Bayar Sebagian yang hutangnya sudah Rp 0 tapi masih ada transaksi lama
+    // berstatus 'credit' (terkunci, tidak pernah ditandai lunas satu-satu). Tombol ini
+    // menandai status transaksi tsb jadi 'lunas' TANPA mencatat pembayaran baru (karena
+    // pembayarannya sudah tercatat di level vendor lewat Bayar Sebagian).
+    async function tandaiTransaksiLunasOtomatis(vendorEncoded) {
+        const vendor = decodeURIComponent(vendorEncoded);
+        const creditTrx = appData.riwayatTransaksi.filter(t => t.vendor === vendor && t.status === 'credit');
+        if (creditTrx.length === 0) { showToast('Tidak ada transaksi yang perlu ditandai.'); return; }
+
+        showConfirm(`Tandai ${creditTrx.length} transaksi ${vendor} sebagai LUNAS?\nHutang vendor ini sudah Rp 0 (lunas via Bayar Sebagian), transaksi ini hanya perlu ditandai selesai.`, async function() {
+            let berhasil = 0;
+            for (const t of creditTrx) {
+                const { error } = await sbClient.from('transaksi').update({ status: 'lunas' }).eq('id', t.id);
+                if (error) continue;
+                t.status = 'lunas';
+                berhasil++;
+            }
+            renderPelunasanView();
+            renderRiwayatTransaksi();
+            showToast(`🎉 ${berhasil} transaksi ${vendor} ditandai LUNAS!`);
+        }, {title:'TANDAI LUNAS', type:'warning', icon:'✅', ok:'YA, TANDAI LUNAS'});
     }
 
     async function konfirmasiLunasSemua(vendorEncoded, totalHutang) {
