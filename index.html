@@ -637,6 +637,183 @@
             0%, 80%, 100% { transform: scale(0.4); opacity: 0.5; }
             40% { transform: scale(1); opacity: 1; }
         }
+
+        /* ============================================================================
+           REDESAIN WARNA TAB "INPUT DATA" & TAB "TRANSAKSI"
+           Tujuan: kedua tab ini punya identitas warna yang kontras & konsisten di
+           SELURUH elemen (bukan cuma header) supaya user tidak salah pencet:
+             - TAB INPUT DATA  = BIRU
+             - TAB TRANSAKSI   = UNGU
+           Tab lain (STOK/RIWAYAT/LABA/MASTER) tetap pakai warna brand oranye seperti
+           semula, tidak disentuh sama sekali.
+           ============================================================================ */
+        :root {
+            /* -- tema TAB INPUT DATA (merah) -- */
+            --input-accent: #c81e2c;
+            --input-gradient: linear-gradient(90deg, #e0293a 0%, #f26b6b 100%);
+            --input-bg: #FCE0DF;
+            --input-bg2: #FDEDEC;
+            --input-border: #F0918D;
+            --input-shadow: rgba(224,41,58,0.38);
+            --input-hover: #FDEEEE;
+            --input-section-bg: #FCE7E6;
+            --input-choice-active: rgba(224,41,58,0.16);
+            --input-row-bg: #FDEDEC;
+            --input-row-index-bg: rgba(224,41,58,0.14);
+            --input-row-index-border: rgba(224,41,58,0.35);
+            --input-pill-bg: #FCE0DF;
+
+            /* -- tema TAB TRANSAKSI (dark navy blue) -- */
+            --trx-accent: #0f2a5c;
+            --trx-gradient: linear-gradient(90deg, #0a1f45 0%, #1c3d7a 100%);
+            --trx-bg: #E4E9F5;
+            --trx-bg2: #EEF2FA;
+            --trx-border: #4B679E;
+            --trx-shadow: rgba(15,42,92,0.38);
+            --trx-hover: #E7ECF8;
+            --trx-section-bg: #E7ECF8;
+            --trx-choice-active: rgba(15,42,92,0.16);
+            --trx-row-bg: #EEF2FA;
+            --trx-row-index-bg: rgba(15,42,92,0.14);
+            --trx-row-index-border: rgba(15,42,92,0.35);
+            --trx-pill-bg: #E4E9F5;
+        }
+
+        /* ---------- TAB INPUT DATA: variabel brand lokal jadi BIRU ---------- */
+        #tab-input, #input-variasi-sheet, #action-bar-input {
+            --brand-main: var(--input-accent);
+            --brand-gradient: var(--input-gradient);
+        }
+        #tab-input.tab-content { background: var(--input-bg) !important; }
+        #tab-input .bg-darkBg,
+        #input-variasi-sheet .bg-darkBg,
+        #action-bar-input .bg-darkBg { background-color: var(--input-bg) !important; }
+        #tab-input .bg-cardBg,
+        #input-variasi-sheet .bg-cardBg { background-color: var(--input-bg2) !important; }
+        #tab-input .border-borderDark,
+        #input-variasi-sheet .border-borderDark,
+        #action-bar-input .border-borderDark { border-color: var(--input-border) !important; }
+        #tab-input .dashed-border-brand,
+        #input-variasi-sheet .dashed-border-brand { border-color: var(--input-accent) !important; }
+        #tab-input > div:first-child { box-shadow: 0 4px 16px var(--input-shadow) !important; }
+        #beban-form-wrapper > div:first-child { box-shadow: 0 2px 12px var(--input-shadow) !important; }
+
+        #input-brand-selector, #input-model-selector {
+            border-color: var(--input-border) !important;
+            box-shadow: 0 2px 12px var(--input-shadow) !important;
+        }
+        #input-brand-selector:hover, #input-model-selector:hover, #btn-tambah-variasi-input:hover { background-color: var(--input-hover) !important; }
+
+        #action-bar-input { background: rgba(220,234,254,0.95) !important; border-top-color: var(--input-border) !important; }
+        #action-bar-input button[onclick="clearInputData()"] { background: var(--input-gradient) !important; }
+        #btn-simpan-input, #btn-simpan-beban-input { box-shadow: 0 4px 15px var(--input-shadow) !important; }
+        #tab-input #beban-sumber-semua[style*="linear-gradient"] { background: var(--input-gradient) !important; }
+
+        #tab-input .input-variation-card { background: var(--input-row-bg) !important; border-color: var(--input-border) !important; }
+        #tab-input .input-variation-card.is-filled { background: linear-gradient(180deg, var(--input-choice-active), var(--input-row-bg) 72%) !important; }
+        #tab-input .input-row-index { background: var(--input-row-index-bg) !important; border-color: var(--input-row-index-border) !important; }
+        #tab-input .input-summary-pill { background: var(--input-pill-bg) !important; border-color: var(--input-border) !important; }
+        #input-variasi-sheet .input-sheet-section { background: var(--input-section-bg) !important; border-color: var(--input-border) !important; }
+        #input-variasi-sheet .input-choice-btn { background: var(--input-bg) !important; border-color: var(--input-border) !important; }
+        #input-variasi-sheet .input-choice-btn.active { background: var(--input-choice-active) !important; border-color: var(--input-accent) !important; }
+        #input-variasi-sheet .input-sheet-qty { background: var(--input-bg) !important; border-color: var(--input-border) !important; }
+        #input-variasi-sheet .input-sheet-actions { border-top-color: var(--input-border) !important; }
+        #input-variasi-sheet .qty-numpad-btn { border-color: var(--input-border) !important; background: var(--input-bg) !important; }
+        #input-variasi-sheet #input-sheet-added-wrap { background: var(--input-hover) !important; }
+
+        /* ---------- TAB TRANSAKSI: variabel brand lokal jadi UNGU ---------- */
+        #tab-transaksi, #trx-variasi-sheet, #action-bar-transaksi {
+            --brand-main: var(--trx-accent);
+            --brand-gradient: var(--trx-gradient);
+        }
+        #tab-transaksi.tab-content { background: var(--trx-bg) !important; }
+        #tab-transaksi .bg-darkBg,
+        #trx-variasi-sheet .bg-darkBg,
+        #action-bar-transaksi .bg-darkBg { background-color: var(--trx-bg) !important; }
+        #tab-transaksi .bg-cardBg,
+        #trx-variasi-sheet .bg-cardBg { background-color: var(--trx-bg2) !important; }
+        #tab-transaksi .border-borderDark,
+        #trx-variasi-sheet .border-borderDark,
+        #action-bar-transaksi .border-borderDark { border-color: var(--trx-border) !important; }
+        #tab-transaksi .dashed-border-brand,
+        #trx-variasi-sheet .dashed-border-brand { border-color: var(--trx-accent) !important; }
+        #tab-transaksi > div:first-child { box-shadow: 0 4px 16px var(--trx-shadow) !important; }
+
+        #trx-vendor-selector, #trx-brand-selector, #trx-model-selector {
+            border-color: var(--trx-border) !important;
+            box-shadow: 0 2px 12px var(--trx-shadow) !important;
+        }
+        #trx-vendor-selector:hover, #trx-brand-selector:hover, #trx-model-selector:hover, #btn-tambah-variasi-trx:hover { background-color: var(--trx-hover) !important; }
+
+        #action-bar-transaksi { background: rgba(243,227,255,0.95) !important; border-top-color: var(--trx-border) !important; }
+        #action-bar-transaksi button[onclick="clearTransaksi()"] { background: var(--trx-gradient) !important; }
+        #btn-simpan-transaksi { box-shadow: 0 4px 15px var(--trx-shadow) !important; }
+
+        #tab-transaksi .input-variation-card { background: var(--trx-row-bg) !important; border-color: var(--trx-border) !important; }
+        #tab-transaksi .input-variation-card.is-filled { background: linear-gradient(180deg, var(--trx-choice-active), var(--trx-row-bg) 72%) !important; }
+        #tab-transaksi .input-row-index { background: var(--trx-row-index-bg) !important; border-color: var(--trx-row-index-border) !important; }
+        #tab-transaksi .input-summary-pill { background: var(--trx-pill-bg) !important; border-color: var(--trx-border) !important; }
+        #trx-variasi-sheet .input-sheet-section { background: var(--trx-section-bg) !important; border-color: var(--trx-border) !important; }
+        #trx-variasi-sheet .input-choice-btn { background: var(--trx-bg) !important; border-color: var(--trx-border) !important; }
+        #trx-variasi-sheet .input-choice-btn.active { background: var(--trx-choice-active) !important; border-color: var(--trx-accent) !important; }
+        #trx-variasi-sheet .input-sheet-qty { background: var(--trx-bg) !important; border-color: var(--trx-border) !important; }
+        #trx-variasi-sheet .input-sheet-actions { border-top-color: var(--trx-border) !important; }
+        #trx-variasi-sheet .qty-numpad-btn { border-color: var(--trx-border) !important; background: var(--trx-bg) !important; }
+        #trx-variasi-sheet #trx-sheet-added-wrap { background: var(--trx-hover) !important; }
+
+        /* ---------- TAB INPUT DATA (merah): teks putih di atas elemen ber-background gelap ---------- */
+        #tab-input > div:first-child,
+        #tab-input > div:first-child *,
+        #tab-input .brand-gradient-bg,
+        #tab-input .brand-gradient-bg *,
+        #action-bar-input .brand-gradient-bg,
+        #action-bar-input .brand-gradient-bg *,
+        #action-bar-input button[onclick="clearInputData()"],
+        #action-bar-input button[onclick="clearInputData()"] *,
+        #input-variasi-sheet .brand-gradient-bg,
+        #input-variasi-sheet .brand-gradient-bg * {
+            color: #ffffff !important;
+        }
+        #tab-input .brand-gradient-bg svg path[fill] { fill: #ffffff !important; }
+        #tab-transaksi .brand-gradient-bg svg path[fill] { fill: #ffffff !important; }
+
+        /* ---------- TAB TRANSAKSI (navy): teks putih di atas elemen ber-background gelap ---------- */
+        #tab-transaksi > div:first-child,
+        #tab-transaksi > div:first-child *,
+        #tab-transaksi .brand-gradient-bg,
+        #tab-transaksi .brand-gradient-bg *,
+        #action-bar-transaksi .brand-gradient-bg,
+        #action-bar-transaksi .brand-gradient-bg *,
+        #action-bar-transaksi button[onclick="clearTransaksi()"],
+        #action-bar-transaksi button[onclick="clearTransaksi()"] *,
+        #trx-variasi-sheet .brand-gradient-bg,
+        #trx-variasi-sheet .brand-gradient-bg * {
+            color: #ffffff !important;
+        }
+
+        /* ---------- Popup dropdown brand/model/vendor ikut tema tab yang lagi aktif ---------- */
+        body[data-active-tab="input"] #generic-dropdown-popup { border-color: var(--input-border) !important; }
+        body[data-active-tab="input"] #generic-dropdown-popup > div:hover { background-color: var(--input-hover) !important; }
+        body[data-active-tab="transaksi"] #generic-dropdown-popup { border-color: var(--trx-border) !important; }
+        body[data-active-tab="transaksi"] #generic-dropdown-popup > div:hover { background-color: var(--trx-hover) !important; }
+
+        /* ---------- NAVBAR BAWAH: ikut ganti warna sesuai tab yang lagi aktif ---------- */
+        body[data-active-tab="input"] #bottom-navbar { background: var(--input-gradient) !important; border-top-color: var(--input-accent) !important; }
+        body[data-active-tab="input"] #bottom-navbar .icon-box { color: #ffffff !important; }
+        body[data-active-tab="input"] #bottom-navbar .nav-btn.active .icon-box { background-color: rgba(255,255,255,0.22) !important; border-color: rgba(255,255,255,0.4) !important; }
+        body[data-active-tab="input"] #bottom-navbar .nav-text { color: rgba(255,255,255,0.65) !important; }
+        body[data-active-tab="input"] #bottom-navbar .nav-btn.active .nav-text { color: #ffffff !important; }
+
+        body[data-active-tab="transaksi"] #bottom-navbar { background: var(--trx-gradient) !important; border-top-color: var(--trx-accent) !important; }
+        body[data-active-tab="transaksi"] #bottom-navbar .icon-box { color: #ffffff !important; }
+        body[data-active-tab="transaksi"] #bottom-navbar .nav-btn.active .icon-box { background-color: rgba(255,255,255,0.22) !important; border-color: rgba(255,255,255,0.4) !important; }
+        body[data-active-tab="transaksi"] #bottom-navbar .nav-text { color: rgba(255,255,255,0.65) !important; }
+        body[data-active-tab="transaksi"] #bottom-navbar .nav-btn.active .nav-text { color: #ffffff !important; }
+
+        /* ---------- Tombol EXIT: jadi hitam saat navbar tab aktif berwarna merah (Input Data) supaya tidak blend ---------- */
+        body[data-active-tab="input"] #bottom-navbar #nav-btn-exit i,
+        body[data-active-tab="input"] #bottom-navbar #nav-btn-exit span { color: #000000 !important; }
+        body[data-active-tab="input"] #bottom-navbar #nav-btn-exit > div:first-child { background-color: rgba(0,0,0,0.15) !important; border-color: rgba(0,0,0,0.3) !important; }
     </style>
 </head>
 <body class="w-full min-h-screen overflow-x-hidden bg-light">
@@ -1884,7 +2061,7 @@ END $$;</textarea>
         </div>
 
         <!-- BOTTOM NAV -->
-        <div class="fixed bottom-0 w-full brand-gradient-bg border-t-2 border-[#e07800] flex justify-around items-center pt-3 z-50" style="padding-bottom: max(16px, env(safe-area-inset-bottom))">
+        <div id="bottom-navbar" class="fixed bottom-0 w-full brand-gradient-bg border-t-2 border-[#e07800] flex justify-around items-center pt-3 z-50" style="padding-bottom: max(16px, env(safe-area-inset-bottom))">
             <div id="nav-btn-stok" onclick="switchTab('stok')" class="nav-btn active flex flex-col items-center gap-1 cursor-pointer">
                 <div class="icon-box text-[#000000] bg-black/20 border-2 border-black/20 w-10 h-8 rounded-lg flex items-center justify-center shadow-lg"><i class="fa-solid fa-boxes-stacked text-lg"></i></div>
                 <span class="nav-text text-[9px] font-black text-[#000000]">Stok</span>
@@ -1915,7 +2092,7 @@ END $$;</textarea>
                 <div class="icon-box text-[#000000]/60 w-10 h-8 rounded-lg flex items-center justify-center"><i class="fa-solid fa-database text-lg"></i></div>
                 <span class="nav-text text-[9px] text-[#000000]/60 font-normal">Master</span>
             </div>
-            <div onclick="exitApp()" class="flex flex-col items-center gap-1 cursor-pointer">
+            <div id="nav-btn-exit" onclick="exitApp()" class="flex flex-col items-center gap-1 cursor-pointer">
                 <div class="w-10 h-8 rounded-lg flex items-center justify-center transition-all bg-red-500/20 border-2 border-red-500/30"><i class="fa-solid fa-right-from-bracket text-red-500 text-lg"></i></div>
                 <span class="text-[9px] text-red-500/70 transition-all font-normal">Exit</span>
             </div>
@@ -4071,6 +4248,7 @@ function updateSSK(tab, rowId) {
             _labaNeedsReset = true;
         }
         _activeTab = tabName;
+        document.body.setAttribute('data-active-tab', tabName);
 
         closeBrandDetail();
         tabs.forEach(t => {
