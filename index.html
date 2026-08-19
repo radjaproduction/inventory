@@ -3250,10 +3250,13 @@ async function fetchBayarSebagianData() {
         }
     }
 
-    // Alarm suara diulang tiap 20 detik SELAMA masih ada pesanan yang belum dikonfirmasi
-    // (stage:0). Berhenti otomatis begitu admin klik "✅ Konfirmasi Pesanan" di app Pesanan
-    // (stage berubah jadi 1 → event UPDATE realtime → pesananMenungguCount turun ke 0).
-    const PESANAN_REPEAT_INTERVAL_MS = 20000;
+    // Alarm suara diulang tiap 5 detik SELAMA masih ada pesanan yang belum dikonfirmasi
+    // (stage:0). Berhenti otomatis begitu admin klik "✅ Konfirmasi Pesanan" di app Pesanan,
+    // atau tekan "Konfirmasi Semua" di popup Inventory (stage berubah jadi 1 → event UPDATE
+    // realtime → pesananMenungguCount turun ke 0). Kalau suara sebelumnya masih diucapkan
+    // saat jadwal berikutnya tiba, panggilan yang tumpang tindih otomatis dilewati (lihat
+    // guard _speakInProgress di _speakPesananAlarm), jadi aman dipercepat.
+    const PESANAN_REPEAT_INTERVAL_MS = 5000;
     let _pesananRepeatTimer = null;
     function _startPesananRepeatAlarm() {
         if (_pesananRepeatTimer) return; // sudah jalan, tidak perlu start ulang
