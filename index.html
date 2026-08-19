@@ -1897,7 +1897,7 @@ END $$;</textarea>
                 <div class="icon-box text-[#000000]/60 w-10 h-8 rounded-lg flex items-center justify-center"><i class="fa-solid fa-handshake text-lg"></i></div>
                 <span class="nav-text text-[9px] text-[#000000]/60 font-normal">Transaksi</span>
             </div>
-            <div id="nav-btn-riwayat" onclick="switchTab('riwayat')" class="nav-btn inactive flex flex-col items-center gap-1 cursor-pointer">
+            <div id="nav-btn-riwayat" onclick="onNavRiwayatClick()" class="nav-btn inactive flex flex-col items-center gap-1 cursor-pointer">
                 <div class="icon-box text-[#000000]/60 w-10 h-8 rounded-lg flex items-center justify-center relative">
                     <i class="fa-solid fa-clock-rotate-left text-lg"></i>
                     <!-- Badge jumlah pesanan menunggu dari app Pesanan — gabung ke tombol Riwayat
@@ -3287,14 +3287,70 @@ async function fetchBayarSebagianData() {
         // Nyalakan/matikan repeat alarm mengikuti ada-tidaknya pesanan yang masih menunggu.
         if (pesananMenungguCount > 0) _startPesananRepeatAlarm();
         else _stopPesananRepeatAlarm();
+        // Kalau popup konfirmasi lagi terbuka, ikut disegarkan — auto-tutup begitu count
+        // habis (misal sudah dikonfirmasi dari HP/app lain), atau angkanya ikut naik kalau
+        // ada pesanan baru masuk lagi selagi popup masih terbuka.
+        const popupEl = document.getElementById('popup-pesanan-konfirmasi');
+        if (popupEl && !popupEl.classList.contains('hidden')) {
+            if (pesananMenungguCount <= 0) tutupPopupPesananKonfirmasi();
+            else _renderPopupPesananKonfirmasi();
+        }
     }
 
-    // Dipanggil dari switchTab() setiap kali admin menekan tombol nav Riwayat — supaya cukup
-    // sekali tekan: pindah ke tab Riwayat SEKALIGUS diingatkan ada pesanan baru yang menunggu
-    // (menggantikan tombol lonceng terpisah yang sebelumnya perlu ditekan sendiri).
-    function onPesananBellClick() {
+    // Dipanggil dari tombol nav Riwayat (yang menyatu dengan bel/badge pesanan). Kalau masih
+    // ada pesanan menunggu, klik membuka popup konfirmasi massal dulu (bukan langsung pindah
+    // tab) — supaya admin bisa hentikan alarm dari sini juga, tanpa wajib buka app Pesanan.
+    // Kalau tidak ada yang menunggu, perilaku normal: pindah ke tab Riwayat seperti biasa.
+    function onNavRiwayatClick() {
         if (pesananMenungguCount > 0) {
-            showToast('🔔 ' + pesananMenungguCount + ' pesanan menunggu konfirmasi — buka app Pesanan untuk proses.');
+            bukaPopupPesananKonfirmasi();
+            return;
+        }
+        switchTab('riwayat');
+    }
+
+    function bukaPopupPesananKonfirmasi() {
+        _renderPopupPesananKonfirmasi();
+        const el = document.getElementById('popup-pesanan-konfirmasi');
+        if (el) { el.classList.remove('hidden'); el.classList.add('flex'); }
+    }
+
+    function tutupPopupPesananKonfirmasi() {
+        const el = document.getElementById('popup-pesanan-konfirmasi');
+        if (el) { el.classList.add('hidden'); el.classList.remove('flex'); }
+    }
+
+    function _renderPopupPesananKonfirmasi() {
+        const countEl = document.getElementById('popup-pesanan-count');
+        if (countEl) countEl.textContent = pesananMenungguCount;
+        const btn = document.getElementById('btn-konfirmasi-semua-pesanan');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-check-double"></i> KONFIRMASI SEMUA (' + pesananMenungguCount + ')';
+        }
+    }
+
+    // Konfirmasi massal: sekali tekan menandai SEMUA pesanan yang masih "Menunggu" (stage 0)
+    // jadi "Diterima" (stage 1) — persis efeknya sama dengan menekan ✅ Konfirmasi satu-satu
+    // di app Pesanan. Karena kedua app dengar tabel produksi_orders yang sama lewat Realtime,
+    // alarm/badge di app Pesanan ikut berhenti otomatis begitu ini berhasil.
+    async function konfirmasiSemuaPesananMasuk() {
+        if (!sbClient) { showToast('❌ Tidak ada koneksi ke server'); return; }
+        const jumlah = pesananMenungguCount;
+        if (jumlah <= 0) { tutupPopupPesananKonfirmasi(); return; }
+        const btn = document.getElementById('btn-konfirmasi-semua-pesanan');
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...'; }
+        try {
+            const { error } = await sbClient.from(PESANAN_TABLE).update({ stage: 1 }).eq('stage', 0);
+            if (error) throw error;
+            showToast('✅ ' + jumlah + ' pesanan berhasil dikonfirmasi');
+            pesananMenungguCount = 0;
+            _updatePesananBellBadge();
+            tutupPopupPesananKonfirmasi();
+        } catch (e) {
+            console.error('Gagal konfirmasi semua pesanan:', e);
+            showToast('❌ Gagal konfirmasi pesanan, coba lagi');
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check-double"></i> KONFIRMASI SEMUA (' + jumlah + ')'; }
         }
     }
 
@@ -4012,12 +4068,6 @@ function updateSSK(tab, rowId) {
             _labaNeedsReset = true;
         }
         _activeTab = tabName;
-
-        // Sekalian ingatkan admin kalau masih ada pesanan menunggu — gantinya tombol lonceng
-        // terpisah yang dulu ada, sekarang cukup tekan Riwayat sekali sudah dapat dua-duanya.
-        if (tabName === 'riwayat' && typeof onPesananBellClick === 'function') {
-            onPesananBellClick();
-        }
 
         closeBrandDetail();
         tabs.forEach(t => {
@@ -10883,6 +10933,31 @@ function updateSSK(tab, rowId) {
                 </div>
                 <button onclick="terapkanFilterTanggalDanTutup()" class="w-full py-3 text-[11px] font-black rounded-lg text-white transition-colors flex items-center justify-center gap-1.5" style="background:linear-gradient(90deg,#16a34a,#22c55e);">
                     <i class="fa-solid fa-check"></i> OK
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- POPUP KONFIRMASI MASSAL PESANAN MASUK (dari bel/badge tombol nav Riwayat) -->
+    <div id="popup-pesanan-konfirmasi" class="hidden fixed inset-0 z-[99998] items-center justify-center" style="background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);padding:16px;" onclick="if(event.target===this) tutupPopupPesananKonfirmasi()">
+        <div style="background:#ffffff;border-radius:20px;width:100%;max-width:380px;border:2px solid rgba(255,177,68,0.4);overflow:hidden;">
+            <div style="background:linear-gradient(90deg,#ff8c00,#ffb347);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:34px;height:34px;background:rgba(0,0,0,0.18);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;"><i class="fa-solid fa-bell"></i></div>
+                    <span style="font-family:Montserrat,sans-serif;font-weight:900;font-size:13px;color:#000;letter-spacing:0.5px;">PESANAN MASUK</span>
+                </div>
+                <button onclick="tutupPopupPesananKonfirmasi()" style="width:32px;height:32px;background:rgba(0,0,0,0.18);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#000;font-size:14px;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div style="padding:22px 20px;display:flex;flex-direction:column;gap:16px;align-items:center;text-align:center;">
+                <div style="font-size:13px;color:#000;line-height:1.6;">
+                    Ada <b id="popup-pesanan-count" style="color:#ff8c00;">0</b> pesanan yang belum dibuka/diproses.
+                    Tekan tombol di bawah untuk menandai semuanya sudah diterima dan menghentikan suara alarm.
+                </div>
+                <button id="btn-konfirmasi-semua-pesanan" onclick="konfirmasiSemuaPesananMasuk()" class="w-full py-3.5 text-[12px] font-black rounded-xl text-white transition-colors flex items-center justify-center gap-2" style="background:linear-gradient(90deg,#16a34a,#22c55e);">
+                    <i class="fa-solid fa-check-double"></i> KONFIRMASI SEMUA (0)
+                </button>
+                <button onclick="tutupPopupPesananKonfirmasi();switchTab('riwayat')" style="background:none;border:none;color:#666;font-size:11px;font-weight:700;text-decoration:underline;cursor:pointer;padding:2px;">
+                    Lihat detail di tab Riwayat
                 </button>
             </div>
         </div>
