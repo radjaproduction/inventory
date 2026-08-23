@@ -2623,18 +2623,7 @@ body.bg-light .rp-laba-owner-input::-webkit-list-button{ filter:invert(1) bright
 #tab-riwayat-beban .flex.items-center.gap-2.px-1 i{color:#2196f3!important;font-size:11px!important}
 #tab-riwayat-beban .flex.items-center.gap-2.px-1 span{font-size:10px!important;color:#f4f7fb!important}
 
-#beban-input-list{
-    max-height: 400px;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
-    -webkit-mask-image: none;
-    mask-image: none;
-    padding-right: 2px;
-}
-#beban-input-list.beban-list-no-fade{
-    -webkit-mask-image: none;
-    mask-image: none;
-}
+
 
 /* mask-image dipindah ke padding-bottom + pointer-events overlay agar tidak clip border kanan kartu */
 #riwayat-input-scroll-wrap,
@@ -8297,20 +8286,10 @@ function updateSSK(tab, rowId) {
     }
     window.changeRiwayatBebanPage = changeRiwayatBebanPage;
 
-    // Fade di batas bawah #beban-input-list otomatis hilang kalau isinya
-    // pendek (tidak ada yang perlu discroll) atau kalau sudah discroll
-    // sampai baris paling bawah.
-    let _bebanListFadeBound = false;
+    // Fade di batas bawah #riwayat-beban-scroll-wrap — selalu aktif,
+    // sama polanya dengan _updateRiwayatScrollFade di tab riwayat-input/retur.
     function _updateBebanListFade() {
-        const listEl = document.getElementById('beban-input-list');
-        if (!listEl) return;
-        const bisaScroll = listEl.scrollHeight > listEl.clientHeight + 2;
-        const sudahDiBawah = listEl.scrollTop + listEl.clientHeight >= listEl.scrollHeight - 2;
-        listEl.classList.toggle('beban-list-no-fade', !bisaScroll || sudahDiBawah);
-        if (!_bebanListFadeBound) {
-            listEl.addEventListener('scroll', _updateBebanListFade, { passive: true });
-            _bebanListFadeBound = true;
-        }
+        _updateRiwayatScrollFade('riwayat-beban-scroll-wrap');
     }
 
 
