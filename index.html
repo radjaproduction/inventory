@@ -2602,7 +2602,7 @@ body.bg-light .rp-laba-owner-input::-webkit-list-button{ filter:invert(1) bright
 }
 #tab-riwayat-beban>div.bg-cardBg.rounded-xl.border-2.border-borderDark .text-\[8px\]{font-size:7px!important}
 #tab-riwayat-beban>div.bg-cardBg.rounded-xl.border-2.border-borderDark .text-\[13px\]{font-size:12px!important;color:#fff!important;margin-top:2px}
-#tab-riwayat-beban>div.bg-cardBg.rounded-xl.border-2.border-borderDark .w-px{background:rgba(118,153,201,.25)!important;height:32px!important}
+#tab-riwayat-beban>div.bg-cardBg.rounded-xl.border-2.border-borderDark .w-px{background:rgba(118,153,201,.25)!important;align-self:stretch!important;height:auto!important}
 
 /* filter */
 #tab-riwayat-beban .flex.items-center.gap-1\.5 button{
@@ -3361,13 +3361,13 @@ END $$;</textarea>
                 <button onclick="loadRiwayatBebanList()" class="w-full mt-2 py-2 text-[9px] font-black rounded-lg text-white" style="background:linear-gradient(90deg,#16a34a,#22c55e);"><i class="fa-solid fa-rotate mr-1"></i> SUDAH DIJALANKAN, CEK LAGI</button>
             </div>
 
-            <div class="bg-cardBg rounded-xl border-2 border-borderDark px-3 py-2.5 flex items-center justify-between">
-                <div class="text-center flex-1">
+            <div class="bg-cardBg rounded-xl border-2 border-borderDark px-3 py-2.5 flex items-stretch justify-between">
+                <div class="text-center flex-1 flex flex-col items-center justify-center">
                     <div class="text-[8px] font-black text-blue-600 tracking-wider">TOTAL DARI ADMIN</div>
                     <div id="beban-total-admin" class="text-[13px] font-black text-black">Rp 0</div>
                 </div>
-                <div class="w-px h-8 bg-borderDark flex-shrink-0"></div>
-                <div class="text-center flex-1">
+                <div class="w-px self-stretch bg-borderDark flex-shrink-0"></div>
+                <div class="text-center flex-1 flex flex-col items-center justify-center">
                     <div class="text-[8px] font-black text-purple-600 tracking-wider">TOTAL DARI OWNER</div>
                     <div id="beban-total-owner" class="text-[13px] font-black text-black">Rp 0</div>
                 </div>
@@ -6482,6 +6482,9 @@ function updateSSK(tab, rowId) {
         if (tabName !== 'riwayat-retur') {
             _returNeedsReset = true;
         }
+        if (tabName !== 'riwayat-beban') {
+            _bebanNeedsReset = true;
+        }
         if (tabName !== 'laba') {
             _labaNeedsReset = true;
         }
@@ -6536,6 +6539,10 @@ function updateSSK(tab, rowId) {
                 if (typeof renderRiwayatInputTab === 'function') renderRiwayatInputTab();
             }
             if (tabName === 'riwayat-beban') {
+                if (_bebanNeedsReset) {
+                    _resetBebanDefaults();
+                    _bebanNeedsReset = false;
+                }
                 if (typeof loadRiwayatBebanList === 'function') loadRiwayatBebanList();
             }
             if (tabName === 'riwayat-retur') {
@@ -6587,6 +6594,16 @@ function updateSSK(tab, rowId) {
     // Transaksi, tapi defaultnya harus HARI INI, bukan ikut periode mingguan Transaksi.
     // Makanya perlu reset-on-entry sendiri, mirip pola _riwayatNeedsReset di atas.
     let _returNeedsReset = true;
+    let _bebanNeedsReset = false; // false supaya pertama buka tidak direset (periode berjalan sudah default)
+
+    // Reset filter tab Riwayat Beban ke periode minggu berjalan, sama seperti saat app pertama dibuka.
+    function _resetBebanDefaults() {
+        const { dari, sampai } = _hitungPeriodeDefault();
+        const elDari = document.getElementById('filter-dari-tanggal');
+        const elSampai = document.getElementById('filter-sampai-tanggal');
+        if (elDari) elDari.value = dari;
+        if (elSampai) elSampai.value = sampai;
+    }
 
     let _detailStokMap = {};
     let _detailBrandName = '';
