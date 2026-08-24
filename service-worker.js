@@ -2,6 +2,55 @@
 // SERVICE WORKER - RADJA PRODUCTION PWA
 // ============================================
 
+// ==================== PUSH NOTIFICATION (FCM) — jalan walau app tertutup total ====================
+// Digabung ke SW yang sudah ada ini (bukan file firebase-messaging-sw.js terpisah) supaya
+// tidak bentrok scope dengan SW utama yang sudah mengurus cache & update-versi di bawah.
+importScripts('https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.13.1/firebase-messaging-compat.js');
+
+firebase.initializeApp({
+    apiKey: "AIzaSyAlHs68T1Z2G7VFouBmdXN1P4RR5S0v4ps",
+    authDomain: "radja-production-push.firebaseapp.com",
+    projectId: "radja-production-push",
+    storageBucket: "radja-production-push.firebasestorage.app",
+    messagingSenderId: "954081329577",
+    appId: "1:954081329577:web:dc1f17f9a644f10f8804b8",
+    measurementId: "G-0XFKYH2497"
+});
+
+const _fcmMessaging = firebase.messaging();
+
+// Dipanggil otomatis oleh Firebase saat push masuk SEDANG app tertutup/di background.
+// (Kalau app sedang terbuka/foreground, yang jalan malah messaging.onMessage() di index.html.)
+_fcmMessaging.onBackgroundMessage((payload) => {
+    const title = (payload.notification && payload.notification.title) || '📦 Pesanan Baru Masuk';
+    const body = (payload.notification && payload.notification.body) || '';
+    self.registration.showNotification(title, {
+        body,
+        icon: BASE + '/icon-192.png',
+        badge: BASE + '/icon-192.png',
+        tag: 'pesanan-push',
+        vibrate: [300, 150, 300, 150, 300, 150, 500],
+        requireInteraction: true,
+        data: { url: BASE + '/index.html' },
+    });
+});
+
+// Klik notifikasi -> fokus tab app yang sudah ada, atau buka baru kalau belum ada.
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    const targetUrl = (event.notification.data && event.notification.data.url) || (BASE + '/index.html');
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+            for (const c of clientList) {
+                if (c.url.includes(BASE) && 'focus' in c) return c.focus();
+            }
+            if (clients.openWindow) return clients.openWindow(targetUrl);
+        })
+    );
+});
+// ==================== AKHIR TAMBAHAN PUSH NOTIFICATION ====================
+
 const CACHE_NAME = 'radja-production-v9';
 const STATIC_CACHE = 'radja-static-v9';
 const BASE = '/inventory';
