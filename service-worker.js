@@ -22,17 +22,22 @@ const _fcmMessaging = firebase.messaging();
 
 // Dipanggil otomatis oleh Firebase saat push masuk SEDANG app tertutup/di background.
 // (Kalau app sedang terbuka/foreground, yang jalan malah messaging.onMessage() di index.html.)
+// PENTING: payload dari server sekarang DATA-ONLY (lihat catatan di edge function
+// send-push-pesanan) — field-nya ada di payload.data, BUKAN payload.notification.
+// Ini yang mencegah notifikasi tampil dobel (sebelumnya FCM auto-display + showNotification
+// manual di sini jalan berbarengan untuk 1 pesan yang sama).
 _fcmMessaging.onBackgroundMessage((payload) => {
-    const title = (payload.notification && payload.notification.title) || '📦 Pesanan Baru Masuk';
-    const body = (payload.notification && payload.notification.body) || '';
+    const d = payload.data || {};
+    const title = d.title || '📦 Pesanan Baru Masuk';
+    const body = d.body || '';
     self.registration.showNotification(title, {
         body,
         icon: BASE + '/icon-192.png',
         badge: BASE + '/icon-192.png',
-        tag: 'pesanan-push',
+        tag: d.tag || 'pesanan-push',
         vibrate: [300, 150, 300, 150, 300, 150, 500],
         requireInteraction: true,
-        data: { url: BASE + '/index.html' },
+        data: { url: d.url || (BASE + '/index.html') },
     });
 });
 
