@@ -6139,7 +6139,7 @@ async function fetchBayarSebagianData() {
     }
 
     async function initUI() {
-        // Default filter = periode mingguan berjalan (bukan tampilkan semua data)
+        // Default filter = HARI INI (bukan tampilkan semua data)
         setFilterPeriodeDefault();
         tambahModelRow();
         tambahWarnaRow();
@@ -7393,7 +7393,7 @@ function updateSSK(tab, rowId) {
     // Sub-tab riwayat sekarang cuma 2 grup utama: 'input' & 'transaksi'.
     // 'pelunasan' dan 'bayar-sebagian' adalah sub-tab BERSARANG di dalam grup 'transaksi'.
     function _resetRiwayatDefaults() {
-        // Reset filter tanggal ke periode mingguan berjalan
+        // Reset filter tanggal ke HARI INI
         setFilterPeriodeDefault();
         // Reset filter status KREDIT/LUNAS: default ke KREDIT
         _filterTrxStatus = 'kredit';
@@ -10374,13 +10374,15 @@ function updateSSK(tab, rowId) {
     }
 
     // Set filter tanggal Tab Riwayat ke periode default (dipanggil sekali saat app dibuka).
+    // Default sekarang HARI INI (bukan periode mingguan) — jadi card KREDIT & LUNAS
+    // di Riwayat Transaksi langsung nunjukin transaksi hari ini saat tab dibuka.
     function setFilterPeriodeDefault() {
         const dariEl = document.getElementById('filter-dari-tanggal');
         const sampaiEl = document.getElementById('filter-sampai-tanggal');
         if (!dariEl || !sampaiEl) return;
-        const { dari, sampai } = _hitungPeriodeDefault();
-        dariEl.value = dari;
-        sampaiEl.value = sampai;
+        const today = _todayStr();
+        dariEl.value = today;
+        sampaiEl.value = today;
         updateFilterTanggalBadge();
     }
     window.setFilterPeriodeDefault = setFilterPeriodeDefault;
@@ -10458,12 +10460,12 @@ function updateSSK(tab, rowId) {
         tutupPopupFilterTanggal();
     }
 
-    // Tombol "RESET": kembalikan filter ke default, yaitu MINGGU BERJALAN
-    // (Minggu s/d Sabtu minggu ini), sama seperti saat aplikasi pertama dibuka.
+    // Tombol "RESET": kembalikan filter ke default, yaitu HARI INI,
+    // sama seperti saat aplikasi pertama dibuka.
     function resetFilterKeMingguBerjalan() {
-        const { dari, sampai } = _hitungPeriodeDefault();
-        document.getElementById('filter-dari-tanggal').value = dari;
-        document.getElementById('filter-sampai-tanggal').value = sampai;
+        const today = _todayStr();
+        document.getElementById('filter-dari-tanggal').value = today;
+        document.getElementById('filter-sampai-tanggal').value = today;
         applyFilterTanggal();
         tutupPopupFilterTanggal();
     }
