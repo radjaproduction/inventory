@@ -2,38 +2,65 @@
 // SERVICE WORKER - RADJA PRODUCTION PWA
 // ============================================
 
+const CACHE_NAME = 'radja-production-v10';
+const STATIC_CACHE = 'radja-static-v10';
+const BASE = '/inventory';
+
+const STATIC_ASSETS = [
+    BASE + '/manifest.json',
+    BASE + '/icon-192.png',
+    BASE + '/icon-512.png'
+];
+
 // ==================== PUSH NOTIFICATION (FCM) — jalan walau app tertutup total ====================
-// Digabung ke SW yang sudah ada ini (bukan file firebase-messaging-sw.js terpisah) supaya
-// tidak bentrok scope dengan SW utama yang sudah mengurus cache & update-versi di bawah.
-importScripts('https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.13.1/firebase-messaging-compat.js');
+// PENTING — PERUBAHAN BESAR dari versi sebelumnya:
+// Sebelumnya SW ini import firebase-messaging-compat.js dan pakai
+// `firebase.messaging().onBackgroundMessage(...)` buat nangkep push & nampilin notifikasi.
+// Itu sumber 2 bug yang dialami:
+//   1) SW versi "notification payload" -> notif keluar 2x. Ini karena kalau payload dari
+//      server masih ada field `notification` (bukan cuma `data`), Firebase SDK otomatis
+//      nampilin notifikasi sendiri di background TANPA manggil onBackgroundMessage — itu
+//      jalan BARENGAN sama showNotification() manual di kode kita -> dobel.
+//   2) SW versi "data-only" -> notif kadang tidak keluar SAMA SEKALI. Karena
+//      firebase-messaging-compat "mencegat" event push duluan lewat listener internalnya
+//      sendiri, lalu baru meneruskan ke onBackgroundMessage lewat rantai Promise tambahan.
+//      Di WebView/PWA iOS & sebagian Android, kalau showNotification() tidak dipanggil
+//      SECARA SINKRON & LANGSUNG di dalam event 'push' asli, browser bisa diam-diam
+//      membuang notifikasinya (dianggap "tidak show apa-apa" = melanggar aturan push API,
+//      jadi lebih baik dibuang daripada error).
+//
+// FIX: tidak pakai firebase-messaging-compat.js sama sekali di SW ini. Kita dengar event
+// 'push' bawaan browser langsung, dan panggil showNotification() satu kali, sinkron.
+// Token FCM tetap didapat dari index.html pakai Firebase SDK di sana (client-side) — itu
+// tidak butuh SW ini punya kode firebase juga, cukup service worker registration-nya saja.
+self.addEventListener('push', (event) => {
+    let d = {};
+    try {
+        d = event.data ? event.data.json() : {};
+    } catch (e) {
+        d = {};
+    }
+    // Server (edge function send-push-pesanan) DIHARUSKAN kirim data-only payload
+    // (field-nya ada di payload.data, bukan payload.notification), supaya browser TIDAK
+    // auto-display sendiri. Tapi tetap fallback baca .notification juga buat jaga-jaga
+    // kalau suatu saat payload-nya masih campuran.
+    const data = d.data || d.notification || d || {};
+    const title = data.title || '📦 Pesanan Baru Masuk';
+    const body = data.body || '';
+    const tag = data.tag || 'pesanan-push';
+    const url = data.url || (BASE + '/index.html');
 
-firebase.initializeApp({
-    apiKey: "AIzaSyAlHs68T1Z2G7VFouBmdXN1P4RR5S0v4ps",
-    authDomain: "radja-production-push.firebaseapp.com",
-    projectId: "radja-production-push",
-    storageBucket: "radja-production-push.firebasestorage.app",
-    messagingSenderId: "954081329577",
-    appId: "1:954081329577:web:dc1f17f9a644f10f8804b8",
-    measurementId: "G-0XFKYH2497"
-});
-
-const _fcmMessaging = firebase.messaging();
-
-// Dipanggil otomatis oleh Firebase saat push masuk SEDANG app tertutup/di background.
-// (Kalau app sedang terbuka/foreground, yang jalan malah messaging.onMessage() di index.html.)
-_fcmMessaging.onBackgroundMessage((payload) => {
-    const title = (payload.notification && payload.notification.title) || '📦 Pesanan Baru Masuk';
-    const body = (payload.notification && payload.notification.body) || '';
-    self.registration.showNotification(title, {
-        body,
-        icon: BASE + '/icon-192.png',
-        badge: BASE + '/icon-192.png',
-        tag: 'pesanan-push',
-        vibrate: [300, 150, 300, 150, 300, 150, 500],
-        requireInteraction: true,
-        data: { url: BASE + '/index.html' },
-    });
+    event.waitUntil(
+        self.registration.showNotification(title, {
+            body,
+            icon: BASE + '/icon-192.png',
+            badge: BASE + '/icon-192.png',
+            tag,
+            vibrate: [300, 150, 300, 150, 300, 150, 500],
+            requireInteraction: true,
+            data: { url },
+        })
+    );
 });
 
 // Klik notifikasi -> fokus tab app yang sudah ada, atau buka baru kalau belum ada.
@@ -51,19 +78,9 @@ self.addEventListener('notificationclick', (event) => {
 });
 // ==================== AKHIR TAMBAHAN PUSH NOTIFICATION ====================
 
-const CACHE_NAME = 'radja-production-v9';
-const STATIC_CACHE = 'radja-static-v9';
-const BASE = '/inventory';
-
-const STATIC_ASSETS = [
-    BASE + '/manifest.json',
-    BASE + '/icon-192.png',
-    BASE + '/icon-512.png'
-];
-
 // ===== INSTALL =====
 self.addEventListener('install', event => {
-    console.log('[SW] Installing v8.1.3...');
+    console.log('[SW] Installing v10...');
     event.waitUntil(
         caches.open(STATIC_CACHE).then(cache => {
             console.log('[SW] Caching static assets');
@@ -86,7 +103,7 @@ self.addEventListener('message', event => {
 
 // ===== ACTIVATE =====
 self.addEventListener('activate', event => {
-    console.log('[SW] Activating v8.1.3...');
+    console.log('[SW] Activating v10...');
     event.waitUntil(
         caches.keys().then(cacheNames => {
             return Promise.all(
