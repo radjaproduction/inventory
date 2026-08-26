@@ -475,7 +475,7 @@
             flex-direction: column;
         }
         .rp-variasi-list-v2 {
-            max-height: 260px;
+            max-height: 300px;
             overflow-y: scroll;
             -webkit-overflow-scrolling: touch;
             overscroll-behavior: contain;
@@ -840,40 +840,71 @@
             border-color: #7699C9;
             background: linear-gradient(180deg, rgba(255,140,0,0.11), #133a66 72%);
         }
-        /* ---------- INLINE VARIASI: WARNA (horizontal selector) / SIZE (dropdown) / QTY / SSK ---------- */
+        /* ---------- INLINE VARIASI (compact table): WARNA / SIZE / QTY / SSK ---------- */
+        /* Baris kini berupa "baris tabel" tipis (bukan kartu berdiri sendiri): tanpa
+           border/radius sendiri, dipisah border-bottom + zebra striping, label pindah
+           ke satu header kolom di atas list (lihat .rp-variasi-col-head). */
         .input-variation-card.inline {
             flex-direction: column;
             align-items: stretch;
-            gap: 6px;
+            gap: 0;
             min-height: 0;
+            border: none;
+            border-radius: 0;
+            padding: 5px 8px;
+            box-shadow: none;
         }
+        .input-variation-card.inline:last-child { border-bottom: none; }
+        .input-variation-card.inline:nth-child(even) { background: rgba(255,255,255,.025); }
+        .input-variation-card.inline.is-filled { background: linear-gradient(90deg, rgba(255,140,0,.10), transparent 45%); }
+        .input-variation-card.inline.is-filled:nth-child(even) { background: linear-gradient(90deg, rgba(255,140,0,.13), rgba(255,255,255,.025) 45%); }
         .input-row-content-inline {
             display: flex;
             flex-direction: column;
-            gap: 9px;
+            gap: 5px;
         }
-        .input-inline-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
-        .input-inline-label {
+        /* Grid kolom bersama, dipakai oleh header (.rp-variasi-col-head) dan tiap baris,
+           supaya kolomnya selalu sejajar: [#][WARNA][SIZE][QTY][SSK][hapus] */
+        .rp-variasi-row-grid {
+            display: grid;
+            grid-template-columns: 16px 1fr 56px 50px 50px 24px;
+            align-items: center;
+            gap: 5px;
+        }
+        .rp-variasi-row-num {
             font-size: 9px;
+            font-weight: 800;
+            color: rgba(118,153,201,.65);
+            text-align: center;
+        }
+        .rp-variasi-col-head {
+            padding: 5px 8px;
+            border-bottom: 1px solid rgba(118,153,201,.3);
+            flex-shrink: 0;
+        }
+        .input-inline-label {
+            font-size: 8px;
             font-weight: 900;
             letter-spacing: .06em;
             color: #7699C9;
+            text-align: center;
         }
+        .input-inline-label.rp-col-left { text-align: left; }
         .input-warna-trigger-compact {
             display: flex;
             align-items: center;
             justify-content: flex-start;
             gap: 6px;
             width: 100%;
-            height: 44px;
+            height: 36px;
             border-radius: 8px;
             border: 1px solid #7699C9;
             background: #06142B;
-            padding: 0 8px;
+            padding: 0 7px;
             overflow: hidden;
         }
         .input-warna-dot {
-            width: 21px; height: 21px;
+            width: 16px; height: 16px;
             border-radius: 50%;
             border: 2px solid rgba(255,255,255,.25);
             flex-shrink: 0;
@@ -882,7 +913,7 @@
         .input-warna-name {
             flex: 1;
             min-width: 0;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 900;
             color: #ffffff;
             -webkit-text-fill-color: #ffffff;
@@ -915,16 +946,16 @@
             align-items: center;
             justify-content: center;
             width: 100%;
-            height: 44px;
+            height: 36px;
             border-radius: 8px;
             border: 1px solid #7699C9;
             background: #06142B;
             color: #ffffff;
             -webkit-text-fill-color: #ffffff;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 900;
             text-align: center;
-            padding: 0 3px;
+            padding: 0 2px;
             outline: none;
         }
         .input-ukuran-scroll {
@@ -951,32 +982,22 @@
             border-color: #ff8c00;
             box-shadow: 0 0 0 2px rgba(255,140,0,.35);
         }
-        .input-inline-row2 {
-            display: grid;
-            grid-template-columns: 44px 1fr 1fr 1fr;
-            gap: 7px;
-        }
-        .input-inline-row2.small {
-            grid-template-columns: 150px 1fr 1fr 1fr 26px;
-            gap: 5px;
-        }
-        .input-inline-row2.small .input-inline-label { font-size: 8px; }
-        .input-inline-field.delete-col { align-items: center; }
         .input-inline-qty, .input-inline-ssk {
             width: 100%;
-            height: 44px;
+            height: 36px;
             border-radius: 8px;
             border: 1px solid #7699C9;
             background: #06142B;
             color: #ffffff;
             -webkit-text-fill-color: #ffffff;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 900;
             text-align: center;
             padding: 0 2px;
             outline: none;
         }
         .input-inline-ssk { color: rgba(234,241,251,.88); -webkit-text-fill-color: rgba(234,241,251,.88); }
+        .rp-variasi-row-grid .delete-col-btn { justify-self: center; }
         body.sheet-open-lock {
             overflow: hidden !important;
             position: fixed;
@@ -1185,12 +1206,18 @@
 
         #tab-input .input-variation-card { background: var(--input-row-bg) !important; border-color: var(--input-border) !important; }
         #tab-input .input-variation-card.is-filled { background: linear-gradient(180deg, var(--input-choice-active), var(--input-row-bg) 72%) !important; }
+        #tab-input .input-variation-card.inline { background: transparent !important; border: none !important; border-bottom: 1px solid var(--input-border) !important; }
+        #tab-input .input-variation-card.inline:last-child { border-bottom: none !important; }
+        #tab-input .input-variation-card.inline:nth-child(even) { background: rgba(255,255,255,.03) !important; }
+        #tab-input .input-variation-card.inline.is-filled { background: linear-gradient(90deg, var(--input-choice-active), transparent 55%) !important; }
+        #tab-input .input-variation-card.inline.is-filled:nth-child(even) { background: linear-gradient(90deg, var(--input-choice-active), rgba(255,255,255,.03) 55%) !important; }
         #tab-input .input-warna-trigger-compact,
         #tab-input .input-ukuran-trigger-compact,
         #tab-input .input-ukuran-pill,
         #tab-input .input-inline-qty,
         #tab-input .input-inline-ssk { background: var(--input-bg) !important; border-color: var(--input-border) !important; }
         #tab-input .input-inline-label { color: var(--input-accent) !important; }
+        #tab-input .rp-variasi-row-num { color: var(--input-accent) !important; opacity: .65; }
         #tab-input .input-warna-swatch.active,
         #tab-input .input-ukuran-pill.active { border-color: var(--input-accent) !important; box-shadow: 0 0 0 2px var(--input-choice-active) !important; }
         /* ---------- TAB INPUT DATA: teks putih di atas navy (konsep sama dengan TAB STOK) ---------- */
@@ -1374,6 +1401,11 @@
 
         #tab-transaksi .input-variation-card { background: var(--trx-row-bg) !important; border-color: var(--trx-border) !important; }
         #tab-transaksi .input-variation-card.is-filled { background: linear-gradient(180deg, var(--trx-choice-active), var(--trx-row-bg) 72%) !important; }
+        #tab-transaksi .input-variation-card.inline { background: transparent !important; border: none !important; border-bottom: 1px solid var(--trx-border) !important; }
+        #tab-transaksi .input-variation-card.inline:last-child { border-bottom: none !important; }
+        #tab-transaksi .input-variation-card.inline:nth-child(even) { background: rgba(255,255,255,.03) !important; }
+        #tab-transaksi .input-variation-card.inline.is-filled { background: linear-gradient(90deg, var(--trx-choice-active), transparent 55%) !important; }
+        #tab-transaksi .input-variation-card.inline.is-filled:nth-child(even) { background: linear-gradient(90deg, var(--trx-choice-active), rgba(255,255,255,.03) 55%) !important; }
         /* FIX kontras: kotak QTY/SSK & label-nya di TAB TRANSAKSI kadang render dengan
            background putih bawaan browser (autofill/number-input default), bikin teks
            putih tidak kebaca. Paksa tetap gelap + kontras, sama seperti TAB INPUT DATA. */
@@ -1383,6 +1415,7 @@
         #tab-transaksi .input-inline-qty,
         #tab-transaksi .input-inline-ssk { background: var(--trx-bg) !important; border-color: var(--trx-border) !important; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
         #tab-transaksi .input-inline-label { color: var(--trx-accent) !important; }
+        #tab-transaksi .rp-variasi-row-num { color: var(--trx-accent) !important; opacity: .65; }
         #tab-transaksi .input-warna-swatch.active,
         #tab-transaksi .input-ukuran-pill.active { border-color: var(--trx-accent) !important; box-shadow: 0 0 0 2px var(--trx-choice-active) !important; }
 
@@ -3268,7 +3301,15 @@ body.bg-light .rp-laba-owner-input::-webkit-list-button{ filter:invert(1) bright
                     </div>
                     <i class="fa-solid fa-up-right-and-down-left-from-center text-sm" style="color:var(--input-accent);"></i>
                 </div>
-                <div id="input-variasi-list" class="flex flex-col gap-2 p-3 rp-variasi-list-v2"></div>
+                <div class="rp-variasi-col-head rp-variasi-row-grid">
+                    <span class="input-inline-label">&nbsp;</span>
+                    <span class="input-inline-label rp-col-left">WARNA</span>
+                    <span class="input-inline-label">SIZE</span>
+                    <span class="input-inline-label">QTY</span>
+                    <span class="input-inline-label">SSK</span>
+                    <span class="input-inline-label">&nbsp;</span>
+                </div>
+                <div id="input-variasi-list" class="flex flex-col gap-0 p-0 rp-variasi-list-v2"></div>
                 <div class="p-3 flex-shrink-0">
                     <button id="btn-tambah-variasi-input" onclick="tambahVariasiInput()" class="rp-input-add-btn opacity-40 cursor-not-allowed pointer-events-none" disabled><i class="fa-solid fa-plus"></i> Tambah Variasi</button>
                 </div>
@@ -3383,7 +3424,15 @@ body.bg-light .rp-laba-owner-input::-webkit-list-button{ filter:invert(1) bright
                         <div class="rp-input-variasi-sub">Tap item untuk isi warna, ukuran, dan qty</div>
                     </div>
                 </div>
-                <div id="trx-variasi-list" class="flex flex-col gap-2 p-3 rp-variasi-list-v2"></div>
+                <div class="rp-variasi-col-head rp-variasi-row-grid">
+                    <span class="input-inline-label">&nbsp;</span>
+                    <span class="input-inline-label rp-col-left">WARNA</span>
+                    <span class="input-inline-label">SIZE</span>
+                    <span class="input-inline-label">QTY</span>
+                    <span class="input-inline-label">SSK</span>
+                    <span class="input-inline-label">&nbsp;</span>
+                </div>
+                <div id="trx-variasi-list" class="flex flex-col gap-0 p-0 rp-variasi-list-v2"></div>
                 <div class="p-3 flex-shrink-0"><button id="btn-tambah-variasi-trx" onclick="tambahVariasiTrx()" class="rp-input-add-btn opacity-40 cursor-not-allowed pointer-events-none" disabled><i class="fa-solid fa-plus"></i> Tambah Item</button></div>
             </div>
             </div>
@@ -6893,6 +6942,15 @@ function updateSSK(tab, rowId) {
         activeBtn.querySelector('.icon-box').className = "icon-box text-[#000000] bg-black/20 border-2 border-black/20 w-12 h-12 rounded-full flex items-center justify-center shadow-lg";
         activeBtn.querySelector('.nav-text').className = "nav-text text-[10px] font-black text-[#000000]";
 
+        // ===== RESET SCROLL SETIAP KALI BERPINDAH TAB =====
+        // Scroll halaman utama ke atas
+        window.scrollTo(0, 0);
+        // Reset scroll untuk semua scrollable container
+        const scrollContainers = document.querySelectorAll('[class*="overflow-y-auto"], [class*="overflow-y-scroll"]');
+        scrollContainers.forEach(container => {
+            container.scrollTop = 0;
+        });
+
         // Tampilkan/sembunyikan action bar sesuai tab aktif. Khusus tab 'input',
         // action-bar-input (tombol CLEAR/SIMPAN bulat) HANYA milik mode STOK
         // MASUK & RETUR -- mode BEBAN punya tombol SIMPAN sendiri di dalam form,
@@ -8367,6 +8425,24 @@ function updateSSK(tab, rowId) {
     let inputRowCount = 0;
 
     function setInputMode(mode) {
+        // FIX: Reset brand & model saat ganti mode, supaya pilihan di mode MASUK
+        // tidak ikut terbawa ke mode RETUR (dan sebaliknya). State & tampilan
+        // di-clear sebelum mode baru diterapkan.
+        if (inputState.mode !== mode) {
+            inputState.brandId = null;
+            inputState.brandNama = '';
+            inputState.modelId = null;
+            inputState.modelNama = '';
+            const brandDisp = document.getElementById('input-brand-display');
+            const modelDisp = document.getElementById('input-model-display');
+            const variasiList = document.getElementById('input-variasi-list');
+            if (brandDisp) brandDisp.textContent = 'Pilih brand';
+            if (modelDisp) modelDisp.textContent = 'Pilih model';
+            if (variasiList) variasiList.innerHTML = '';
+            inputRowCount = 0;
+            if (typeof _updateInputBrandModelLock === 'function') _updateInputBrandModelLock();
+            if (typeof updateInputVariasiState === 'function') updateInputVariasiState();
+        }
         inputState.mode = mode;
         // FIX: elemen-elemen ini kadang belum/tidak ada di DOM tergantung state
         // (mis. tab lain sedang re-render, atau timing async setelah simpan data).
@@ -9116,31 +9192,17 @@ function updateSSK(tab, rowId) {
 
         row.innerHTML = `
             <div id="input-row-content-${id}" class="input-row-content-inline${enabledNow ? '' : ' opacity-40 pointer-events-none select-none'}">
-                <div class="input-inline-row2 small">
-                    <div class="input-inline-field">
-                        <div class="input-inline-label">&nbsp;</div>
-                        <button type="button" class="input-warna-trigger-compact" onclick="toggleInputWarnaSelector(${id})">
-                            <span id="input-warna-dot-${id}" class="input-warna-dot" style="background:#888"></span>
-                            <span id="input-warna-name-${id}" class="input-warna-name">Pilih</span>
-                        </button>
-                    </div>
-                    <div class="input-inline-field">
-                        <div class="input-inline-label">SIZE</div>
-                        <button type="button" id="input-ukuran-trigger-${id}" class="input-ukuran-trigger-compact" onclick="toggleInputUkuranSelector(${id})">Pilih</button>
-                    </div>
-                    <div class="input-inline-field">
-                        <div class="input-inline-label">QTY</div>
-                        <input id="input-qty-${id}" type="text" inputmode="none" readonly value="0" class="input-inline-qty" style="text-transform:none;cursor:pointer;" onclick="openQtyCustomNumpad('input',${id})">
-                    </div>
-                    <div class="input-inline-field">
-                        <div class="input-inline-label">SSK</div>
-                        <input id="input-ssk-${id}" type="text" readonly class="input-inline-ssk" style="text-transform:none;" title="Sisa Stok (otomatis)">
-                    </div>
-                    <div class="input-inline-field delete-col">
-                        <div class="input-inline-label">&nbsp;</div>
-                        <div id="input-del-btn-${id}" ${delClick} class="${delClass}">
-                            <i class="fa-solid fa-xmark text-xs"></i>
-                        </div>
+                <div class="rp-variasi-row-grid">
+                    <div id="input-row-num-${id}" class="rp-variasi-row-num">${id}</div>
+                    <button type="button" class="input-warna-trigger-compact" onclick="toggleInputWarnaSelector(${id})">
+                        <span id="input-warna-dot-${id}" class="input-warna-dot" style="background:#888"></span>
+                        <span id="input-warna-name-${id}" class="input-warna-name">Pilih</span>
+                    </button>
+                    <button type="button" id="input-ukuran-trigger-${id}" class="input-ukuran-trigger-compact" onclick="toggleInputUkuranSelector(${id})">Pilih</button>
+                    <input id="input-qty-${id}" type="text" inputmode="none" readonly value="0" class="input-inline-qty" style="text-transform:none;cursor:pointer;" onclick="openQtyCustomNumpad('input',${id})">
+                    <input id="input-ssk-${id}" type="text" readonly class="input-inline-ssk" style="text-transform:none;" title="Sisa Stok (otomatis)">
+                    <div id="input-del-btn-${id}" ${delClick} class="${delClass} delete-col-btn">
+                        <i class="fa-solid fa-xmark text-xs"></i>
                     </div>
                 </div>
                 <div id="input-warna-options-${id}" class="input-warna-scroll hidden"></div>
@@ -9503,6 +9565,16 @@ function updateSSK(tab, rowId) {
                 const returKeterangan = document.getElementById('input-retur-keterangan');
                 if (returKeterangan) returKeterangan.value = '';
                 inputRowCount = 0;
+                
+                // ===== ENABLE KEMBALI SEMUA SELECTOR SETELAH CLEAR =====
+                // Reset opacity dan pointer-events agar selector BRAND/MODEL kembali aktif
+                ['input-brand-selector', 'input-model-selector'].forEach(selId => {
+                    const el = document.getElementById(selId);
+                    if (el) {
+                        el.classList.remove('opacity-40', 'pointer-events-none', 'cursor-not-allowed');
+                    }
+                });
+                
                 // FIX: sebelumnya selalu dipaksa balik ke setInputMode('masuk') apa pun
                 // mode yang barusan dipakai, jadi habis SIMPAN RETUR malah lompat ke
                 // tampilan "Input Data". Sekarang tetap di mode yang sama (savedMode)
@@ -9801,31 +9873,17 @@ function updateSSK(tab, rowId) {
 
 	        row.innerHTML = `
 	            <div id="trx-row-content-${id}" class="input-row-content-inline${enabledNow ? '' : ' opacity-40 pointer-events-none select-none'}">
-	                <div class="input-inline-row2 small">
-	                    <div class="input-inline-field">
-	                        <div class="input-inline-label">&nbsp;</div>
-	                        <button type="button" class="input-warna-trigger-compact" onclick="toggleTrxWarnaSelector(${id})">
-	                            <span id="trx-warna-dot-${id}" class="input-warna-dot" style="background:#888"></span>
-	                            <span id="trx-warna-name-${id}" class="input-warna-name">Pilih</span>
-	                        </button>
-	                    </div>
-	                    <div class="input-inline-field">
-	                        <div class="input-inline-label">SIZE</div>
-	                        <button type="button" id="trx-ukuran-trigger-${id}" class="input-ukuran-trigger-compact" onclick="toggleTrxUkuranSelector(${id})">Pilih</button>
-	                    </div>
-	                    <div class="input-inline-field">
-	                        <div class="input-inline-label">QTY</div>
-	                        <input id="trx-qty-${id}" type="text" inputmode="none" readonly value="0" class="input-inline-qty" style="text-transform:none;cursor:pointer;" onclick="openQtyCustomNumpad('trx',${id})">
-	                    </div>
-	                    <div class="input-inline-field">
-	                        <div class="input-inline-label">SSK</div>
-	                        <input id="trx-ssk-${id}" type="text" readonly class="input-inline-ssk" style="text-transform:none;" title="Sisa Stok (otomatis)">
-	                    </div>
-	                    <div class="input-inline-field delete-col">
-	                        <div class="input-inline-label">&nbsp;</div>
-	                        <div id="trx-del-btn-${id}" ${delClick} class="${delClass}">
-	                            <i class="fa-solid fa-xmark text-xs"></i>
-	                        </div>
+	                <div class="rp-variasi-row-grid">
+	                    <div id="trx-row-num-${id}" class="rp-variasi-row-num">${id}</div>
+	                    <button type="button" class="input-warna-trigger-compact" onclick="toggleTrxWarnaSelector(${id})">
+	                        <span id="trx-warna-dot-${id}" class="input-warna-dot" style="background:#888"></span>
+	                        <span id="trx-warna-name-${id}" class="input-warna-name">Pilih</span>
+	                    </button>
+	                    <button type="button" id="trx-ukuran-trigger-${id}" class="input-ukuran-trigger-compact" onclick="toggleTrxUkuranSelector(${id})">Pilih</button>
+	                    <input id="trx-qty-${id}" type="text" inputmode="none" readonly value="0" class="input-inline-qty" style="text-transform:none;cursor:pointer;" onclick="openQtyCustomNumpad('trx',${id})">
+	                    <input id="trx-ssk-${id}" type="text" readonly class="input-inline-ssk" style="text-transform:none;" title="Sisa Stok (otomatis)">
+	                    <div id="trx-del-btn-${id}" ${delClick} class="${delClass} delete-col-btn">
+	                        <i class="fa-solid fa-xmark text-xs"></i>
 	                    </div>
 	                </div>
 	                <div id="trx-warna-options-${id}" class="input-warna-scroll hidden"></div>
@@ -10276,13 +10334,19 @@ function updateSSK(tab, rowId) {
     }
 
     function clearInputData() {
-        setInputMode('masuk');
+        // FIX: simpan mode saat ini agar tombol (X) hanya clear form,
+        // tidak berpindah mode (misal dari RETUR kembali ke MASUK).
+        const currentMode = inputState.mode;
         document.getElementById('input-brand-display').textContent = 'Pilih brand';
         document.getElementById('input-model-display').textContent = 'Pilih model';
-        document.getElementById('input-retur-keterangan').value = '';
+        const keteranganEl = document.getElementById('input-retur-keterangan');
+        if (keteranganEl) keteranganEl.value = '';
         document.getElementById('input-variasi-list').innerHTML = '';
         inputRowCount = 0;
-        inputState = { mode: 'masuk', brandId: null, brandNama: '', modelId: null, modelNama: '' };
+        inputState = { mode: currentMode, brandId: null, brandNama: '', modelId: null, modelNama: '' };
+        // Panggil setInputMode dengan mode yang sama untuk refresh tampilan UI
+        // (tanpa reset brand/model karena sudah di-reset di atas)
+        setInputMode(currentMode);
         updateInputVariasiState();
         _updateInputBrandModelLock();
     }
@@ -11069,6 +11133,9 @@ function updateSSK(tab, rowId) {
                 <button onclick="bukaPilihItemRetur(${d.id})" class="w-7 h-7 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 border-2 border-yellow-500/30 flex items-center justify-center text-yellow-400 text-[10px] flex-shrink-0" title="Edit qty">
                     <i class="fa-solid fa-pen"></i>
                 </button>
+                <button onclick="hapusRiwayatRetur(${d.id})" class="w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 border-2 border-red-500/30 flex items-center justify-center text-red-500 text-[10px] flex-shrink-0" title="Hapus retur">
+                    <i class="fa-regular fa-trash-can"></i>
+                </button>
             </div>
             </div>`;
         }).join('') + _renderPaginationControls({
@@ -11081,6 +11148,32 @@ function updateSSK(tab, rowId) {
         _updateRiwayatScrollFade('riwayat-retur-scroll-wrap');
     }
     window.renderRiwayatReturTab = renderRiwayatReturTab;
+
+    // Hapus 1 record retur (riwayat_input mode='retur') beserta item-nya (cascade di DB).
+    // "Aman" di sini artinya: karena stok dihitung on-the-fly dari appData.riwayatInput
+    // (retur = pengurang qty), begitu record-nya hilang maka stok yang tadi dipotong
+    // otomatis kembali TANPA perlu logic tambahan buat "mengembalikan" angka stok manapun.
+    // Setelah delete sukses di DB, splice manual di state lokal + render ulang semua bagian
+    // yang bergantung ke grup 'riwayatInput' (sama seperti yang dilakukan _patchRiwayatInputGroup
+    // saat menerima event realtime DELETE dari device lain), supaya UI di device INI langsung
+    // update tanpa nunggu roundtrip realtime.
+    function hapusRiwayatRetur(id) {
+        const record = appData.riwayatInput.find(d => d.id === id && d.mode === 'retur');
+        if (!record) { showToast('❌ Data retur tidak ditemukan.'); return; }
+        const totalQty = record.items.reduce((s, i) => s + i.qty, 0);
+        showConfirm(`Hapus riwayat retur ini?\n\n${record.brand} — ${record.model}\n${totalQty} pcs • ${record.tanggal} ${record.jam}\n\nStok yang tadi dipotong retur ini akan kembali. Data yang sudah dihapus tidak bisa dikembalikan.`, async function() {
+            const { error } = await sbClient.from('riwayat_input').delete().eq('id', id);
+            if (error) { showToast('❌ Gagal hapus retur: ' + error.message); return; }
+            const idx = appData.riwayatInput.findIndex(d => d.id === id);
+            if (idx !== -1) appData.riwayatInput.splice(idx, 1);
+            showToast('✅ Retur dihapus, stok dikembalikan.');
+            renderStokDashboard();
+            if (typeof _renderRiwayatInputOri === 'function') _renderRiwayatInputOri();
+            if (typeof renderRiwayatInputTab === 'function') renderRiwayatInputTab();
+            renderRiwayatReturTab();
+        });
+    }
+    window.hapusRiwayatRetur = hapusRiwayatRetur;
 
     function bukaPilihItemRetur(riwayatId) {
         const record = appData.riwayatInput.find(d => d.id === riwayatId);
@@ -13393,6 +13486,7 @@ function updateSSK(tab, rowId) {
             pelList.classList.remove('hidden');
             pelList.classList.add('flex');
         }
+        setButtonLoading(btnEl, false);
         _pelIsSaving = false;
     }
 
