@@ -12516,28 +12516,31 @@ function updateSSK(tab, rowId) {
         const totalQtyHapus = itemsToHapus.reduce((s, i) => s + i.qty, 0);
 
         try {
+            for (const item of itemsToHapus) {
+                let error;
+                if (item.id) {
+                    ({ error } = await sbClient.from('transaksi_item').delete().eq('id', item.id));
+                } else {
+                    ({ error } = await sbClient.from('transaksi_item')
+                        .delete()
+                        .eq('transaksi_id', trxId)
+                        .eq('warna', item.warna)
+                        .eq('ukuran', item.ukuran));
+                }
+                if (error) throw error;
+            }
+
+            // Cleanup atomik di server (bukan andalkan hitungan lokal `hapusAll` yang bisa basi
+            // kalau ada sesi/tab lain yang barusan ubah transaksi yang sama) — hapus header
+            // transaksi HANYA kalau memang sudah 0 item & belum lunas.
+            const { error: cleanErr } = await sbClient.rpc('cleanup_transaksi_kosong', { p_trx_id: trxId });
+            if (cleanErr) throw cleanErr;
+
             if (hapusAll) {
-                const { error: itemErr } = await sbClient.from('transaksi_item').delete().eq('transaksi_id', trxId);
-                if (itemErr) throw itemErr;
-                const { error: trxErr } = await sbClient.from('transaksi').delete().eq('id', trxId);
-                if (trxErr) throw trxErr;
                 const idx = appData.riwayatTransaksi.findIndex(t => t.id === trxId);
                 if (idx !== -1) appData.riwayatTransaksi.splice(idx, 1);
                 showToast(`🗑️ Transaksi dihapus, ${totalQtyHapus} pcs kembali ke stok.`);
             } else {
-                for (const item of itemsToHapus) {
-                    let error;
-                    if (item.id) {
-                        ({ error } = await sbClient.from('transaksi_item').delete().eq('id', item.id));
-                    } else {
-                        ({ error } = await sbClient.from('transaksi_item')
-                            .delete()
-                            .eq('transaksi_id', trxId)
-                            .eq('warna', item.warna)
-                            .eq('ukuran', item.ukuran));
-                    }
-                    if (error) throw error;
-                }
                 trx.items = trx.items.filter((_, i) => !selectedIdxs.includes(i));
                 _invalidateStokItemCache();
                 showToast(`🗑️ ${selectedIdxs.length} item dihapus, ${totalQtyHapus} pcs kembali ke stok.`);
