@@ -5442,7 +5442,7 @@ async function fetchBayarSebagianData() {
         if (!sbClient) return [];
         const { data, error } = await sbClient
             .from(PESANAN_TABLE)
-            .select('order_code, items, note, stage, created_at, disiapkan_selesai')
+            .select('order_code, items, note, stage, created_at, disiapkan_selesai, priority_items')
             .in('stage', [0, 1])
             .order('created_at', { ascending: false });
         if (error) { console.warn('Gagal ambil daftar pesanan aktif:', error.message); return []; }
@@ -5468,22 +5468,171 @@ async function fetchBayarSebagianData() {
         }
         wrap.innerHTML = aktif.map(o => {
             const items = Array.isArray(o.items) ? o.items : [];
-            const itemsHtml = items.length
-                ? items.map(it => '<div style="font-size:11px;color:#333;padding:1px 0;">• ' + _formatItemPesanan(it) + '</div>').join('')
-                : '<div style="font-size:11px;color:#999;">(tidak ada rincian item)</div>';
             const isMenunggu = (o.stage || 0) === 0;
-            const noteHtml = o.note ? '<div style="font-size:10.5px;color:#a3123f;margin-top:4px;"><i class="fa-solid fa-note-sticky"></i> ' + _escPesanan(o.note) + '</div>' : '';
+            const borderColor = isMenunggu ? '#fca5a5' : '#fdba74';
+            const statusBg    = isMenunggu ? '#fee2e2' : '#ffedd5';
+            const statusColor = isMenunggu ? '#b91c1c' : '#c2410c';
+            const statusLabel = isMenunggu ? 'MENUNGGU' : 'DISIAPKAN';
+
+            // ── Helper: brand dari pid via masterData ──
+            function _brandDari(it) {
+                if (it.brand || it.brand_name || it.brandName) return it.brand || it.brand_name || it.brandName;
+                if (it.pid && masterData && Array.isArray(masterData.model)) {
+                    const mid = parseInt(String(it.pid).replace(/^m/i, ''));
+                    const row = masterData.model.find(m => m.id === mid);
+                    if (row && row.brandNama) return row.brandNama;
+                }
+                return '';
+            }
+
+            // ── Helper: nama model dari pid via masterData ──
+            function _namaDari(it) {
+                let n = it.name || it.nama || it.productName || it.model || '';
+                if (!n && it.pid && masterData && Array.isArray(masterData.model)) {
+                    const mid = parseInt(String(it.pid).replace(/^m/i, ''));
+                    const row = masterData.model.find(m => m.id === mid);
+                    if (row) n = row.nama || '';
+                }
+                return n || it.pid || '—';
+            }
+
+            // ── Parse priority_items: format "TRX-XXXXX__idx" → Set of Number index ──
+            const priRaw = Array.isArray(o.priority_items) ? o.priority_items : [];
+            const priIdxSet = new Set();
+            priRaw.forEach(key => {
+                if (typeof key === 'string' && key.includes('__')) {
+                    const idx = parseInt(key.split('__').pop(), 10);
+                    if (!isNaN(idx)) priIdxSet.add(idx);
+                }
+            });
+            const hasPriority = priIdxSet.size > 0;
+
+            // ── Catatan ──
+            const noteHtml = o.note
+                ? '<div style="display:flex;align-items:flex-start;gap:6px;margin-top:8px;padding:7px 10px;background:#fff8e1;border:1px solid #fde68a;border-radius:9px;">'
+                  + '<i class="fa-solid fa-note-sticky" style="color:#d97706;font-size:11px;margin-top:1px;flex-shrink:0;"></i>'
+                  + '<span style="font-size:11px;color:#92400e;font-weight:600;line-height:1.4;">' + _escPesanan(o.note) + '</span>'
+                  + '</div>'
+                : '';
+
+            // ── Prioritas: resolve item dari index ──
+            let priorityHtml = '';
+            if (hasPriority) {
+                const priRows = [];
+                priIdxSet.forEach(idx => {
+                    const it = items[idx];
+                    if (!it) return;
+                    const nama  = _escPesanan(_namaDari(it));
+                    const brand = _escPesanan(_brandDari(it));
+                    const size  = _escPesanan(it.size || it.ukuran || '—');
+                    const qty   = it.qty || 0;
+                    priRows.push(
+                        '<div style="display:grid;grid-template-columns:1fr auto auto;gap:4px 8px;align-items:center;padding:5px 8px;background:#fff;border-radius:8px;border:1px solid #fecaca;margin-bottom:3px;">'
+                        + '<div style="min-width:0;">'
+                        + (brand ? '<div style="font-size:8px;font-weight:900;color:#fff;background:#a3123f;border-radius:4px;padding:1px 5px;display:inline-block;margin-bottom:2px;letter-spacing:0.5px;">' + brand + '</div><br>' : '')
+                        + '<span style="font-size:11px;font-weight:700;color:#991b1b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;">' + nama + '</span>'
+                        + '</div>'
+                        + '<div style="font-size:10px;font-weight:600;color:#555;background:#fee2e2;border-radius:5px;padding:1px 7px;white-space:nowrap;">' + size + '</div>'
+                        + '<div style="font-size:11px;font-weight:900;color:#ef4444;white-space:nowrap;">×' + qty + '</div>'
+                        + '</div>'
+                    );
+                });
+                priorityHtml =
+                    '<div style="margin-top:6px;border-radius:10px;overflow:hidden;border:1.5px solid #ef4444;">'
+                    + '<div style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:linear-gradient(90deg,#ef4444,#dc2626);">'
+                    + '<i class="fa-solid fa-circle-exclamation" style="color:#fff;font-size:11px;"></i>'
+                    + '<span style="font-size:10px;font-weight:900;color:#fff;letter-spacing:0.8px;">PRIORITAS — ' + priIdxSet.size + ' item URGENT</span>'
+                    + '</div>'
+                    + '<div style="background:#fff5f5;padding:7px 8px;">'
+                    + priRows.join('')
+                    + '</div>'
+                    + '</div>';
+            }
+
+            // ── Item list dikelompokkan per brand ──
+            const brandMap = {};
+            items.forEach((it, idx) => {
+                const brand = _escPesanan(_brandDari(it));
+                if (!brandMap[brand]) brandMap[brand] = [];
+                brandMap[brand].push({ it, idx });
+            });
+
+            let itemsHtml = '';
+            if (items.length === 0) {
+                itemsHtml = '<div style="font-size:11px;color:#999;font-style:italic;">(tidak ada rincian item)</div>';
+            } else {
+                itemsHtml = Object.keys(brandMap).map(brand => {
+                    const brandLabel = brand
+                        ? '<div style="margin-bottom:5px;">'
+                          + '<span style="font-size:9px;font-weight:900;letter-spacing:0.8px;color:#fff;background:linear-gradient(90deg,#e6396b,#a3123f);border-radius:6px;padding:2px 8px;">'
+                          + brand + '</span></div>'
+                        : '';
+                    const rows = brandMap[brand].map(({ it, idx }) => {
+                        const model    = _escPesanan(_namaDari(it));
+                        const size     = _escPesanan(it.size || it.ukuran || '—');
+                        const qty      = it.qty || 0;
+                        const isPri    = priIdxSet.has(idx);
+                        const rowBg    = isPri ? '#fff5f5' : '#fff';
+                        const rowBorder= isPri ? '1px solid #fecaca' : '1px solid rgba(0,0,0,0.06)';
+                        const urgentBadge = isPri
+                            ? '<span style="font-size:8px;font-weight:900;color:#ef4444;background:#fee2e2;border-radius:4px;padding:1px 5px;margin-left:4px;vertical-align:middle;">URGENT</span>'
+                            : '';
+                        return '<div style="display:grid;grid-template-columns:1fr auto auto;gap:4px 10px;align-items:center;padding:5px 8px;background:' + rowBg + ';border-radius:8px;margin-bottom:4px;border:' + rowBorder + ';">'
+                            + '<div style="font-size:11px;font-weight:700;color:' + (isPri ? '#991b1b' : '#1a1a2e') + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'
+                            + model + urgentBadge + '</div>'
+                            + '<div style="font-size:10px;font-weight:600;color:#555;background:#f1f5f9;border-radius:5px;padding:1px 7px;white-space:nowrap;">' + size + '</div>'
+                            + '<div style="font-size:11px;font-weight:900;color:#ff8c00;white-space:nowrap;">×' + qty + '</div>'
+                            + '</div>';
+                    }).join('');
+                    return '<div style="margin-bottom:8px;">' + brandLabel + rows + '</div>';
+                }).join('');
+            }
+
+            // ── Header kolom tabel ──
+            const tabelHeader = items.length > 0
+                ? '<div style="display:grid;grid-template-columns:1fr auto auto;gap:4px 10px;padding:0 8px 4px;margin-bottom:2px;">'
+                  + '<span style="font-size:9px;font-weight:800;color:#999;letter-spacing:0.5px;">MODEL</span>'
+                  + '<span style="font-size:9px;font-weight:800;color:#999;letter-spacing:0.5px;">SIZE</span>'
+                  + '<span style="font-size:9px;font-weight:800;color:#999;letter-spacing:0.5px;">QTY</span>'
+                  + '</div>'
+                : '';
+
+            // ── Waktu ──
+            const waktu = o.created_at ? (() => {
+                try {
+                    const d = new Date(o.created_at);
+                    return d.toLocaleDateString('id-ID', { day:'2-digit', month:'short' })
+                         + ' ' + d.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
+                } catch(e) { return ''; }
+            })() : '';
+
+            // ── Tombol aksi ──
             const btnHtml = isMenunggu
-                ? '<button type="button" class="rp-rincian-pesanan-btn" data-action="konfirmasi" data-code="' + _escPesanan(o.order_code) + '" style="background:linear-gradient(90deg,#16a34a,#22c55e);color:#fff;border:none;border-radius:10px;padding:9px 14px;font-size:11px;font-weight:900;white-space:nowrap;cursor:pointer;"><i class="fa-solid fa-check"></i> Konfirmasi</button>'
-                : '<button type="button" class="rp-rincian-pesanan-btn" data-action="disiapkan" data-code="' + _escPesanan(o.order_code) + '" style="background:linear-gradient(90deg,#ff8c00,#ffb347);color:#fff;border:none;border-radius:10px;padding:9px 14px;font-size:11px;font-weight:900;white-space:nowrap;cursor:pointer;"><i class="fa-solid fa-box"></i> Disiapkan</button>';
-            return '<div style="background:#f7f8fa;border:1.5px solid ' + (isMenunggu ? '#fca5a5' : '#fdba74') + ';border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:6px;">'
+                ? '<button type="button" class="rp-rincian-pesanan-btn" data-action="konfirmasi" data-code="' + _escPesanan(o.order_code) + '" style="background:linear-gradient(90deg,#16a34a,#22c55e);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:11px;font-weight:900;white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="fa-solid fa-check"></i> Konfirmasi</button>'
+                : '<button type="button" class="rp-rincian-pesanan-btn" data-action="disiapkan" data-code="' + _escPesanan(o.order_code) + '" style="background:linear-gradient(90deg,#ff8c00,#ffb347);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:11px;font-weight:900;white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="fa-solid fa-box"></i> Disiapkan</button>';
+
+            return '<div style="background:#f7f8fa;border:1.5px solid ' + borderColor + ';border-radius:16px;overflow:hidden;">'
+                // ── HEADER: kode, waktu, status, catatan, prioritas ──
+                + '<div style="padding:10px 12px;background:' + (isMenunggu ? '#fff1f2' : '#fff7ed') + ';border-bottom:1px solid ' + borderColor + ';">'
                 + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">'
-                + '<span style="font-size:12px;font-weight:900;color:#111;">' + _escPesanan(o.order_code) + '</span>'
-                + '<span style="font-size:9px;font-weight:800;padding:2px 8px;border-radius:999px;background:' + (isMenunggu ? '#fee2e2;color:#b91c1c' : '#ffedd5;color:#c2410c') + ';">' + (isMenunggu ? 'MENUNGGU' : 'DISIAPKAN') + '</span>'
+                + '<div style="display:flex;flex-direction:column;gap:1px;">'
+                + '<span style="font-size:12px;font-weight:900;color:#111;letter-spacing:0.3px;">' + _escPesanan(o.order_code) + (hasPriority ? ' <span style="font-size:9px;font-weight:900;color:#ef4444;background:#fee2e2;border-radius:5px;padding:1px 6px;vertical-align:middle;">🔴 URGENT</span>' : '') + '</span>'
+                + (waktu ? '<span style="font-size:9px;color:#888;font-weight:600;">' + waktu + '</span>' : '')
                 + '</div>'
-                + '<div>' + itemsHtml + '</div>'
+                + '<span style="font-size:9px;font-weight:800;padding:3px 10px;border-radius:999px;background:' + statusBg + ';color:' + statusColor + ';letter-spacing:0.5px;">' + statusLabel + '</span>'
+                + '</div>'
                 + noteHtml
-                + '<div style="display:flex;justify-content:flex-end;margin-top:2px;">' + btnHtml + '</div>'
+                + priorityHtml
+                + '</div>'
+                // ── BODY: daftar item ──
+                + '<div style="padding:10px 12px;">'
+                + tabelHeader
+                + itemsHtml
+                + '</div>'
+                // ── FOOTER: tombol aksi ──
+                + '<div style="padding:8px 12px;display:flex;justify-content:flex-end;border-top:1px solid ' + borderColor + ';background:' + (isMenunggu ? '#fff1f2' : '#fff7ed') + ';">'
+                + btnHtml
+                + '</div>'
                 + '</div>';
         }).join('');
     }
