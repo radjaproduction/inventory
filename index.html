@@ -5677,13 +5677,12 @@ async function fetchBayarSebagianData() {
         }
     }
 
-    // Delegasi dipasang di document (bukan langsung di #rincian-pesanan-list), karena
-    // markup popup ini berada SETELAH tag <script> ini di HTML — elemennya belum ada di
-    // DOM saat baris ini dieksekusi. Klik pada tombol di dalam list tetap ke-bubble
-    // sampai document, jadi delegation di sini aman dipasang kapan saja.
+    // Delegasi dipasang di document — menangkap bubble dari tombol di dalam popup.
+    // PENTING: jangan stopPropagation di parent popup, atau click tidak akan sampai ke sini.
     document.addEventListener('click', (ev) => {
         const btn = ev.target.closest('.rp-rincian-pesanan-btn');
         if (!btn) return;
+        ev.stopPropagation(); // hentikan setelah tombol ini ditangkap
         _prosesRincianPesanan(btn.dataset.action, btn.dataset.code, btn);
     });
 
@@ -14833,8 +14832,8 @@ function updateSSK(tab, rowId) {
     <!-- POPUP RINCIAN PESANAN (dari FAB "Pesanan"): daftar tiap order + item + tombol
          Konfirmasi/Disiapkan per order, dipakai event delegation supaya aman dari note
          yang mengandung tanda kutip. -->
-    <div id="popup-rincian-pesanan" class="hidden fixed inset-0 z-[99998] items-center justify-center" style="background:rgba(0,0,0,0.75);backdrop-filter:blur(2px);padding:16px;" onclick="if(event.target===this) tutupPopupRincianPesanan()">
-        <div style="background:#ffffff;border-radius:20px;width:100%;max-width:420px;max-height:85vh;border:2px solid rgba(118,153,201,.4);overflow:hidden;display:flex;flex-direction:column;" onclick="event.stopPropagation()">
+    <div id="popup-rincian-pesanan" class="hidden fixed inset-0 z-[99998] items-center justify-center" style="background:rgba(0,0,0,0.75);backdrop-filter:blur(2px);padding:16px;" onmousedown="if(event.target===this) tutupPopupRincianPesanan()">
+        <div style="background:#ffffff;border-radius:20px;width:100%;max-width:420px;max-height:85vh;border:2px solid rgba(118,153,201,.4);overflow:hidden;display:flex;flex-direction:column;">
             <div style="background:linear-gradient(90deg,#e6396b,#a3123f);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-radius:18px 18px 0 0;">
                 <div style="display:flex;align-items:center;gap:10px;">
                     <div style="width:34px;height:34px;background:rgba(0,0,0,0.18);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;color:#fff;"><i class="fa-solid fa-box-open"></i></div>
