@@ -475,12 +475,10 @@
             flex-direction: column;
         }
         .rp-variasi-list-v2 {
-            max-height: calc(100dvh - 340px);
-            min-height: 80px;
-            overflow-y: scroll;
-            -webkit-overflow-scrolling: touch;
-            overscroll-behavior: contain;
-            touch-action: pan-y;
+            /* Tidak punya scroll sendiri — biarkan #tab-input-scroll-wrap
+               yang jadi satu-satunya scroll container. List tumbuh alami
+               mengikuti isi, scroll-wrap di luar yang menampungnya. */
+            overflow: visible;
         }
         .tab-content::after {
             content: '';
@@ -12637,6 +12635,15 @@ function updateSSK(tab, rowId) {
         const itemsToHapus = selectedIdxs.map(i => trx.items[i]);
         const totalQtyHapus = itemsToHapus.reduce((s, i) => s + i.qty, 0);
 
+        // ── Loading state: redup kartu yang dihapus + spinner toast ──
+        const cardEl = document.getElementById('card-rt-' + trxId);
+        if (cardEl) {
+            cardEl.style.opacity = '0.45';
+            cardEl.style.pointerEvents = 'none';
+            cardEl.style.transition = 'opacity 0.2s';
+        }
+        showToast('⏳ Menghapus data...');
+
         try {
             for (const item of itemsToHapus) {
                 let error;
@@ -12658,6 +12665,14 @@ function updateSSK(tab, rowId) {
             const { error: cleanErr } = await sbClient.rpc('cleanup_transaksi_kosong', { p_trx_id: trxId });
             if (cleanErr) throw cleanErr;
 
+            // Animasi hilang sebelum re-render
+            if (cardEl && hapusAll) {
+                cardEl.style.transition = 'opacity 0.25s, transform 0.25s';
+                cardEl.style.opacity = '0';
+                cardEl.style.transform = 'scaleY(0.85)';
+                await new Promise(r => setTimeout(r, 220));
+            }
+
             if (hapusAll) {
                 const idx = appData.riwayatTransaksi.findIndex(t => t.id === trxId);
                 if (idx !== -1) appData.riwayatTransaksi.splice(idx, 1);
@@ -12671,7 +12686,9 @@ function updateSSK(tab, rowId) {
             renderRiwayatTransaksi();
             renderStokDashboard();
         } catch(e) {
-            showToast('Gagal hapus: ' + (e.message || e));
+            // Restore kartu jika gagal
+            if (cardEl) { cardEl.style.opacity = ''; cardEl.style.pointerEvents = ''; }
+            showToast('❌ Gagal hapus: ' + (e.message || e));
         }
     }
 
