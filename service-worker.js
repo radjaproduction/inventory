@@ -2,8 +2,8 @@
 // SERVICE WORKER - RADJA PRODUCTION PWA
 // ============================================
 
-const CACHE_NAME = 'radja-production-v10.6';
-const STATIC_CACHE = 'radja-static-v10.6';
+const CACHE_NAME = 'radja-production-v10.7';
+const STATIC_CACHE = 'radja-static-v10.7';
 const BASE = '/inventory';
 
 const STATIC_ASSETS = [
@@ -80,7 +80,7 @@ self.addEventListener('notificationclick', (event) => {
 
 // ===== INSTALL =====
 self.addEventListener('install', event => {
-    console.log('[SW] Installing v10.6...');
+    console.log('[SW] Installing v10.7...');
     event.waitUntil(
         caches.open(STATIC_CACHE).then(cache => {
             console.log('[SW] Caching static assets');
@@ -103,7 +103,7 @@ self.addEventListener('message', event => {
 
 // ===== ACTIVATE =====
 self.addEventListener('activate', event => {
-    console.log('[SW] Activating v10.6...');
+    console.log('[SW] Activating v10.7...');
     event.waitUntil(
         caches.keys().then(cacheNames => {
             return Promise.all(
