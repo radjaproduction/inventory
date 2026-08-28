@@ -424,7 +424,11 @@
         }
         .collapse-chevron { transition: transform 0.3s ease; }
         .collapse-chevron.rotated { transform: rotate(180deg); }
-        .tab-content { animation: fadeIn 0.12s ease-out; overscroll-behavior: none; }
+        /* Jangan mem-fade seluruh tab saat perpindahan menu. Animasi ini
+           memulai tab dari opacity:0, sehingga pada WebView terlihat seperti
+           layar blank walaupun konten sudah tersedia. Animasi detail brand
+           tetap dipertahankan lewat .slide-in/.slide-out. */
+        .tab-content { animation: none !important; opacity: 1; transform: none; overscroll-behavior: none; }
         .tab-content.flex { min-height: 100vh; min-height: 100dvh; }
         /* Judul "VARIASI ITEM" + sub-teks di dalam kartu variasi juga dikunci diam,
            menempel tepat di bawah #tab-input-sticky-head (bukan di atas dia lagi,
