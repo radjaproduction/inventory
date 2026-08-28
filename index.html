@@ -1032,6 +1032,22 @@
             color: #fff;
             -webkit-text-fill-color: #fff;
         }
+        .rp-deferred-skeleton {
+            min-height: 46px;
+            margin: 8px;
+            border-radius: 10px;
+            background: linear-gradient(90deg, rgba(118,153,201,.12) 25%, rgba(118,153,201,.25) 37%, rgba(118,153,201,.12) 63%);
+            background-size: 400% 100%;
+            animation: rpSkeletonShimmer 1.25s ease-in-out infinite;
+        }
+        @keyframes rpSkeletonShimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+        .rp-value-loading {
+            color: transparent !important;
+            border-radius: 6px;
+            background: linear-gradient(90deg, rgba(118,153,201,.12) 25%, rgba(118,153,201,.25) 37%, rgba(118,153,201,.12) 63%);
+            background-size: 400% 100%;
+            animation: rpSkeletonShimmer 1.25s ease-in-out infinite;
+        }
         .input-ukuran-trigger-compact {
             display: flex;
             align-items: center;
@@ -5222,14 +5238,14 @@ async function fetchBayarSebagianData() {
     // Tiap grup: fungsi fetch (tarik ulang data grup ini SAJA) + fungsi render
     // (bagian UI mana saja yang perlu ikut di-refresh karena datanya berubah).
     const REALTIME_GROUP_HANDLERS = {
-        vendor:       { fetch: fetchVendorData,       render: () => { renderVendorList(); } },
-        brand:        { fetch: fetchBrandData,        render: () => { renderBrandList(); renderBrandOptions(); } },
-        model:        { fetch: fetchModelData,        render: () => { renderModelList(); if (typeof renderLabaKotor === 'function') renderLabaKotor(); } },
-        warna:        { fetch: fetchWarnaData,        render: () => { renderWarnaList(); } },
-        ukuran:       { fetch: fetchUkuranData,       render: () => { renderUkuranList(); } },
+        vendor:       { fetch: fetchVendorData,       render: () => { if (_activeTab === 'master') renderVendorList(); } },
+        brand:        { fetch: fetchBrandData,        render: () => { renderBrandOptions(); if (_activeTab === 'master') renderBrandList(); } },
+        model:        { fetch: fetchModelData,        render: () => { if (_activeTab === 'master') renderModelList(); if (_activeTab === 'laba' && _labaUiLoaded && typeof renderLabaKotor === 'function') renderLabaKotor(); } },
+        warna:        { fetch: fetchWarnaData,        render: () => { if (_activeTab === 'master') renderWarnaList(); } },
+        ukuran:       { fetch: fetchUkuranData,       render: () => { if (_activeTab === 'master') renderUkuranList(); } },
         pengaturan:   { fetch: fetchPengaturanData,   render: () => {} }, // tema/nama brand sudah langsung diterapkan di dalam fetch-nya
         riwayatInput: { fetch: fetchRiwayatInputData, render: () => { renderStokDashboard(); if (typeof _renderRiwayatInputOri === 'function') _renderRiwayatInputOri(); if (typeof renderRiwayatInputTab === 'function') renderRiwayatInputTab(); if (typeof renderRiwayatReturTab === 'function') renderRiwayatReturTab(); } },
-        transaksi:    { fetch: fetchTransaksiData,    render: () => { renderStokDashboard(); if (typeof _renderRiwayatTransaksiOri === 'function') _renderRiwayatTransaksiOri(); if (typeof _renderPelunasanViewOri === 'function') _renderPelunasanViewOri(); if (typeof renderLabaKotor === 'function') renderLabaKotor(); } },
+        transaksi:    { fetch: fetchTransaksiData,    render: () => { renderStokDashboard(); if (typeof _renderRiwayatTransaksiOri === 'function') _renderRiwayatTransaksiOri(); if (typeof _renderPelunasanViewOri === 'function') _renderPelunasanViewOri(); if (_activeTab === 'laba' && _labaUiLoaded && typeof renderLabaKotor === 'function') renderLabaKotor(); } },
         pelunasan:    { fetch: fetchPelunasanData,    render: () => { if (typeof _renderPelunasanViewOri === 'function') _renderPelunasanViewOri(); } },
     bayarSebagian:{ fetch: fetchBayarSebagianData,render: () => { if (typeof _renderBayarSebagianViewOri === 'function') _renderBayarSebagianViewOri(); } },
     bebanOperasional: { fetch: async () => { await loadBebanInputList(); _refreshRiwayatBebanIfOpen(true); }, render: () => {} },
@@ -6418,11 +6434,8 @@ async function fetchBayarSebagianData() {
         // pemanggil (masukApp) baru menutup layar loading SETELAH tab pertama
         // (Stok) dan data riwayat benar-benar sudah ter-render, bukan skeleton kosong.
 
-        // Batch 1: master data (cepat, sedikit data)
-        renderVendorList(); renderBrandList(); renderModelList();
-        renderWarnaList(); renderUkuranList(); renderBrandOptions();
-
-        // Batch 2: tab aktif (stok) — ditunda 1 frame agar UI paint dulu
+        // Batch 1: tab aktif (stok) — ditunda 1 frame agar UI paint dulu.
+        // UI TAB MASTER dan LABA dimuat saat pertama kali dibuka.
         await _nextFrame();
         renderStokDashboard();
 
@@ -6920,6 +6933,53 @@ function updateSSK(tab, rowId) {
     let _activeTab = 'stok';
     let _riwayatNeedsReset = true; // true = tab Riwayat perlu direset ke default (INPUT DATA + HARI INI) saat dibuka
     let _labaNeedsReset = true; // true = tab Laba perlu direset ke default (MINGGU INI) saat dibuka
+    let _masterUiLoaded = false;
+    let _masterUiLoading = false;
+    let _labaUiLoaded = false;
+    let _labaUiLoading = false;
+
+    function _showDeferredSkeleton(ids) {
+        ids.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = '<div class="rp-deferred-skeleton" aria-label="Memuat data"></div>';
+        });
+    }
+
+    function _loadMasterUiOnDemand() {
+        if (_masterUiLoaded || _masterUiLoading) return;
+        _masterUiLoading = true;
+        _showDeferredSkeleton(['vendor-list', 'brand-list', 'model-list', 'warna-list', 'ukuran-list']);
+        // Beri browser satu frame untuk menampilkan skeleton sebelum membangun daftar Master.
+        requestAnimationFrame(() => {
+            renderVendorList(); renderBrandList(); renderModelList();
+            renderWarnaList(); renderUkuranList(); renderBrandOptions();
+            _masterUiLoaded = true;
+            _masterUiLoading = false;
+        });
+    }
+
+    function _loadLabaUiOnDemand() {
+        if (_labaUiLoaded || _labaUiLoading) return;
+        _labaUiLoading = true;
+        _showDeferredSkeleton(['laba-breakdown-list']);
+        ['laba-total-laba', 'lr-omset', 'lr-laba-kotor', 'lr-beban', 'lr-payroll'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('rp-value-loading');
+        });
+        // Skeleton sempat dipaint terlebih dahulu; perhitungan + query payroll menyusul.
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            if (_labaNeedsReset) {
+                setLabaFilterMingguIni();
+                _labaNeedsReset = false;
+            } else if (typeof renderLabaKotor === 'function') renderLabaKotor();
+            ['laba-total-laba', 'lr-omset', 'lr-laba-kotor', 'lr-beban', 'lr-payroll'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.remove('rp-value-loading');
+            });
+            _labaUiLoaded = true;
+            _labaUiLoading = false;
+        }));
+    }
 
     function _clearInputForm() {
         setInputMode('masuk');
@@ -7221,17 +7281,15 @@ function updateSSK(tab, rowId) {
                 else if (activeSubTab === 'bayar-sebagian') { if (typeof _renderBayarSebagianViewOri === 'function') _renderBayarSebagianViewOri(); }
             }
             _updateBackBtnMode();
-            if (tabName === 'master') renderBrandOptions();
+            if (tabName === 'master') _loadMasterUiOnDemand();
             if (tabName === 'laba') {
                 renderStokDashboard();
                 if (typeof setLabaSubPanel === 'function') setLabaSubPanel('owner');
                 const tglOwnerBeban = document.getElementById('laba-owner-beban-tanggal');
                 if (tglOwnerBeban) tglOwnerBeban.value = new Date().toISOString().slice(0, 10);
                 if (typeof _updateSimpanBebanOwnerBtnState === 'function') _updateSimpanBebanOwnerBtnState();
-                if (_labaNeedsReset) {
-                    if (typeof setLabaFilterMingguIni === 'function') setLabaFilterMingguIni();
-                    _labaNeedsReset = false;
-                } else if (typeof renderLabaKotor === 'function') renderLabaKotor();
+                _loadLabaUiOnDemand();
+                if (_labaUiLoaded && typeof renderLabaKotor === 'function') renderLabaKotor();
             }
             if (tabName === 'setting') {
                 Object.entries(collapseGroups).forEach(([id, chev]) => {
