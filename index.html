@@ -5578,7 +5578,7 @@ async function fetchBayarSebagianData() {
                 ? '<button type="button" class="rp-rincian-pesanan-btn" data-action="konfirmasi" data-code="' + _escPesanan(o.order_code) + '" style="background:linear-gradient(90deg,#16a34a,#22c55e);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:11px;font-weight:900;white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="fa-solid fa-check"></i> Konfirmasi</button>'
                 : '<button type="button" class="rp-rincian-pesanan-btn" data-action="disiapkan" data-code="' + _escPesanan(o.order_code) + '" style="background:linear-gradient(90deg,#ff8c00,#ffb347);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:11px;font-weight:900;white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="fa-solid fa-box"></i> Disiapkan</button>';
 
-            return '<div style="background:#f7f8fa;border:1.5px solid ' + borderColor + ';border-radius:16px;overflow:hidden;">'
+            return '<div style="background:#f7f8fa;border:1.5px solid ' + borderColor + ';border-radius:16px;overflow:hidden;flex-shrink:0;">'
                 // ── HEADER: kode, waktu, status, catatan, prioritas ──
                 + '<div style="padding:10px 12px;background:' + (isMenunggu ? '#fff1f2' : '#fff7ed') + ';border-bottom:1px solid ' + borderColor + ';">'
                 + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">'
@@ -5605,14 +5605,7 @@ async function fetchBayarSebagianData() {
 
     async function bukaPopupRincianPesanan() {
         const el = document.getElementById('popup-rincian-pesanan');
-        if (!el) return;
-        el.style.display = 'flex';
-        // Tutup popup saat tap backdrop (pakai touchend agar aman di semua Android)
-        el._backdropHandler = el._backdropHandler || function(ev) {
-            if (ev.target === el) tutupPopupRincianPesanan();
-        };
-        el.removeEventListener('touchend', el._backdropHandler);
-        el.addEventListener('touchend', el._backdropHandler, { passive: true });
+        if (el) { el.classList.remove('hidden'); el.classList.add('flex'); }
         // Sembunyikan FAB agar tidak menutupi/memblokir tombol Konfirmasi/Disiapkan
         const fab = document.getElementById('fab-pesanan');
         if (fab) { fab.style.pointerEvents = 'none'; fab.style.visibility = 'hidden'; }
@@ -5624,7 +5617,7 @@ async function fetchBayarSebagianData() {
 
     function tutupPopupRincianPesanan() {
         const el = document.getElementById('popup-rincian-pesanan');
-        if (el) { el.style.display = 'none'; }
+        if (el) { el.classList.add('hidden'); el.classList.remove('flex'); }
         // Tampilkan kembali FAB
         const fab = document.getElementById('fab-pesanan');
         if (fab) { fab.style.pointerEvents = ''; fab.style.visibility = ''; }
@@ -14856,8 +14849,8 @@ function updateSSK(tab, rowId) {
     <!-- POPUP RINCIAN PESANAN (dari FAB "Pesanan"): daftar tiap order + item + tombol
          Konfirmasi/Disiapkan per order, dipakai event delegation supaya aman dari note
          yang mengandung tanda kutip. -->
-    <div id="popup-rincian-pesanan" class="hidden fixed inset-0 z-[99998]" style="background:rgba(0,0,0,0.75);backdrop-filter:blur(2px);padding:16px;display:none;align-items:center;justify-content:center;touch-action:none;">
-        <div style="background:#ffffff;border-radius:20px;width:100%;max-width:420px;height:85vh;max-height:85vh;border:2px solid rgba(118,153,201,.4);overflow:hidden;display:flex;flex-direction:column;position:relative;">
+    <div id="popup-rincian-pesanan" class="hidden fixed inset-0 z-[99998] items-center justify-center" style="background:rgba(0,0,0,0.75);backdrop-filter:blur(2px);padding:16px;" onmousedown="if(event.target===this) tutupPopupRincianPesanan()">
+        <div style="background:#ffffff;border-radius:20px;width:100%;max-width:420px;max-height:85vh;border:2px solid rgba(118,153,201,.4);overflow:hidden;display:flex;flex-direction:column;">
             <div style="background:linear-gradient(90deg,#e6396b,#a3123f);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-radius:18px 18px 0 0;">
                 <div style="display:flex;align-items:center;gap:10px;">
                     <div style="width:34px;height:34px;background:rgba(0,0,0,0.18);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;color:#fff;"><i class="fa-solid fa-box-open"></i></div>
@@ -14865,7 +14858,7 @@ function updateSSK(tab, rowId) {
                 </div>
                 <button onclick="tutupPopupRincianPesanan()" style="width:32px;height:32px;background:rgba(0,0,0,0.18);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:14px;"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <div id="rincian-pesanan-list" style="padding:14px;display:flex;flex-direction:column;gap:10px;overflow-y:scroll;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;flex:1;min-height:0;">
+            <div id="rincian-pesanan-list" style="padding:14px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;flex:1;">
                 <!-- Diisi oleh _renderRincianPesananList() -->
             </div>
         </div>
