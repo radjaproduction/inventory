@@ -5517,39 +5517,7 @@ async function fetchBayarSebagianData() {
                 : '';
 
             // ── Prioritas: resolve item dari index ──
-            let priorityHtml = '';
-            if (hasPriority) {
-                const priRows = [];
-                priIdxSet.forEach(idx => {
-                    const it = items[idx];
-                    if (!it) return;
-                    const nama  = _escPesanan(_namaDari(it));
-                    const brand = _escPesanan(_brandDari(it));
-                    const size  = _escPesanan(it.size || it.ukuran || '—');
-                    const qty   = it.qty || 0;
-                    priRows.push(
-                        '<div style="display:grid;grid-template-columns:1fr auto auto;gap:4px 8px;align-items:center;padding:5px 8px;background:#fff;border-radius:8px;border:1px solid #fecaca;margin-bottom:3px;">'
-                        + '<div style="min-width:0;">'
-                        + (brand ? '<div style="font-size:8px;font-weight:900;color:#fff;background:#a3123f;border-radius:4px;padding:1px 5px;display:inline-block;margin-bottom:2px;letter-spacing:0.5px;">' + brand + '</div><br>' : '')
-                        + '<span style="font-size:11px;font-weight:700;color:#991b1b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;">' + nama + '</span>'
-                        + '</div>'
-                        + '<div style="font-size:10px;font-weight:600;color:#555;background:#fee2e2;border-radius:5px;padding:1px 7px;white-space:nowrap;">' + size + '</div>'
-                        + '<div style="font-size:11px;font-weight:900;color:#ef4444;white-space:nowrap;">×' + qty + '</div>'
-                        + '</div>'
-                    );
-                });
-                priorityHtml =
-                    '<div style="margin-top:6px;border-radius:10px;overflow:hidden;border:1.5px solid #ef4444;">'
-                    + '<div style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:linear-gradient(90deg,#ef4444,#dc2626);">'
-                    + '<i class="fa-solid fa-circle-exclamation" style="color:#fff;font-size:11px;"></i>'
-                    + '<span style="font-size:10px;font-weight:900;color:#fff;letter-spacing:0.8px;">PRIORITAS — ' + priIdxSet.size + ' item URGENT</span>'
-                    + '</div>'
-                    + '<div style="background:#fff5f5;padding:7px 8px;">'
-                    + priRows.join('')
-                    + '</div>'
-                    + '</div>';
-            }
-
+            // priorityHtml dihapus — badge URGENT tampil langsung di samping nama item
             // ── Item list dikelompokkan per brand ──
             const brandMap = {};
             items.forEach((it, idx) => {
@@ -5576,7 +5544,7 @@ async function fetchBayarSebagianData() {
                         const rowBg    = isPri ? '#fff5f5' : '#fff';
                         const rowBorder= isPri ? '1px solid #fecaca' : '1px solid rgba(0,0,0,0.06)';
                         const urgentBadge = isPri
-                            ? '<span style="font-size:8px;font-weight:900;color:#ef4444;background:#fee2e2;border-radius:4px;padding:1px 5px;margin-left:4px;vertical-align:middle;">URGENT</span>'
+                            ? '<span style="font-size:8px;font-weight:900;color:#fff;background:#ef4444;border-radius:4px;padding:2px 5px;margin-left:5px;vertical-align:middle;letter-spacing:0.4px;">⚡ URGENT</span>'
                             : '';
                         return '<div style="display:grid;grid-template-columns:1fr auto auto;gap:4px 10px;align-items:center;padding:5px 8px;background:' + rowBg + ';border-radius:8px;margin-bottom:4px;border:' + rowBorder + ';">'
                             + '<div style="font-size:11px;font-weight:700;color:' + (isPri ? '#991b1b' : '#1a1a2e') + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'
@@ -5623,7 +5591,6 @@ async function fetchBayarSebagianData() {
                 + '<span style="font-size:9px;font-weight:800;padding:3px 10px;border-radius:999px;background:' + statusBg + ';color:' + statusColor + ';letter-spacing:0.5px;">' + statusLabel + '</span>'
                 + '</div>'
                 + noteHtml
-                + priorityHtml
                 + '</div>'
                 // ── BODY: daftar item ──
                 + '<div style="padding:10px 12px;">'
@@ -5641,6 +5608,9 @@ async function fetchBayarSebagianData() {
     async function bukaPopupRincianPesanan() {
         const el = document.getElementById('popup-rincian-pesanan');
         if (el) { el.classList.remove('hidden'); el.classList.add('flex'); }
+        // Sembunyikan FAB agar tidak menutupi/memblokir tombol Konfirmasi/Disiapkan
+        const fab = document.getElementById('fab-pesanan');
+        if (fab) { fab.style.pointerEvents = 'none'; fab.style.visibility = 'hidden'; }
         const wrap = document.getElementById('rincian-pesanan-list');
         if (wrap) wrap.innerHTML = '<div style="padding:30px 10px;text-align:center;color:#888;font-size:12px;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat pesanan...</div>';
         const orders = await _fetchAktifPesananOrders();
@@ -5650,6 +5620,9 @@ async function fetchBayarSebagianData() {
     function tutupPopupRincianPesanan() {
         const el = document.getElementById('popup-rincian-pesanan');
         if (el) { el.classList.add('hidden'); el.classList.remove('flex'); }
+        // Tampilkan kembali FAB
+        const fab = document.getElementById('fab-pesanan');
+        if (fab) { fab.style.pointerEvents = ''; fab.style.visibility = ''; }
     }
 
     // Event delegation pada wrapper list — aman dari note yang mengandung tanda kutip,
