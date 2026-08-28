@@ -950,6 +950,88 @@
             border-color: #ff8c00;
             box-shadow: 0 0 0 2px rgba(255,140,0,.35);
         }
+        /* Pilihan warna di TAB INPUT: tetap ringkas, tetapi nama warna ikut terbaca. */
+        #tab-input .input-warna-option {
+            min-width: 78px;
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 5px;
+            padding: 0 7px;
+            border-radius: 17px;
+            border: 2px solid rgba(255,255,255,.2);
+            background: rgba(255,255,255,.06);
+            color: #fff;
+            flex-shrink: 0;
+            overflow: hidden;
+            transition: border-color .12s ease, box-shadow .12s ease, transform .12s ease;
+        }
+        #tab-input .input-warna-option:active { transform: scale(.97); }
+        #tab-input .input-warna-option.active {
+            border-color: var(--input-accent);
+            box-shadow: 0 0 0 2px var(--input-choice-active);
+        }
+        #tab-input .input-warna-option-dot {
+            width: 17px;
+            height: 17px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,.35);
+            box-shadow: inset 0 0 0 1px rgba(0,0,0,.2);
+            flex: 0 0 17px;
+        }
+        #tab-input .input-warna-option-label {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 9px;
+            line-height: 1;
+            font-weight: 900;
+            color: #fff;
+            -webkit-text-fill-color: #fff;
+        }
+        /* TAB TRANSAKSI memakai bentuk yang sama, dengan aksen biru milik tab-nya. */
+        #tab-transaksi .input-warna-option {
+            min-width: 78px;
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 5px;
+            padding: 0 7px;
+            border-radius: 17px;
+            border: 2px solid rgba(255,255,255,.2);
+            background: rgba(255,255,255,.06);
+            color: #fff;
+            flex-shrink: 0;
+            overflow: hidden;
+            transition: border-color .12s ease, box-shadow .12s ease, transform .12s ease;
+        }
+        #tab-transaksi .input-warna-option:active { transform: scale(.97); }
+        #tab-transaksi .input-warna-option.active {
+            border-color: var(--trx-accent);
+            box-shadow: 0 0 0 2px var(--trx-choice-active);
+        }
+        #tab-transaksi .input-warna-option-dot {
+            width: 17px;
+            height: 17px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,.35);
+            box-shadow: inset 0 0 0 1px rgba(0,0,0,.2);
+            flex: 0 0 17px;
+        }
+        #tab-transaksi .input-warna-option-label {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 9px;
+            line-height: 1;
+            font-weight: 900;
+            color: #fff;
+            -webkit-text-fill-color: #fff;
+        }
         .input-ukuran-trigger-compact {
             display: flex;
             align-items: center;
@@ -9409,9 +9491,15 @@ function updateSSK(tab, rowId) {
         list.forEach(w => {
             const btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = 'input-warna-swatch' + (!_isInputPlaceholder(current) && current.toUpperCase() === w.nama.toUpperCase() ? ' active' : '');
-            btn.style.background = w.kode;
+            btn.className = 'input-warna-option' + (!_isInputPlaceholder(current) && current.toUpperCase() === w.nama.toUpperCase() ? ' active' : '');
             btn.title = w.nama;
+            const dot = document.createElement('span');
+            dot.className = 'input-warna-option-dot';
+            dot.style.background = w.kode || '#888';
+            const label = document.createElement('span');
+            label.className = 'input-warna-option-label';
+            label.textContent = w.nama;
+            btn.append(dot, label);
             btn.onclick = () => pilihInputWarna(id, w.nama, w.kode);
             wrap.appendChild(btn);
         });
@@ -10092,9 +10180,15 @@ function updateSSK(tab, rowId) {
 	        list.forEach(w => {
 	            const btn = document.createElement('button');
 	            btn.type = 'button';
-	            btn.className = 'input-warna-swatch' + (!_isInputPlaceholder(current) && current.toUpperCase() === w.nama.toUpperCase() ? ' active' : '');
-	            btn.style.background = w.kode;
+	            btn.className = 'input-warna-option' + (!_isInputPlaceholder(current) && current.toUpperCase() === w.nama.toUpperCase() ? ' active' : '');
 	            btn.title = w.nama;
+	            const dot = document.createElement('span');
+	            dot.className = 'input-warna-option-dot';
+	            dot.style.background = w.kode || '#888';
+	            const label = document.createElement('span');
+	            label.className = 'input-warna-option-label';
+	            label.textContent = w.nama;
+	            btn.append(dot, label);
 	            btn.onclick = () => pilihTrxWarna(id, w.nama, w.kode);
 	            wrap.appendChild(btn);
 	        });
