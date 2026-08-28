@@ -7188,7 +7188,15 @@ function updateSSK(tab, rowId) {
         _activeTab = tabName;
         document.body.setAttribute('data-active-tab', tabName);
 
-        closeBrandDetail();
+        // Saat navigasi lewat FAB HOME/BACK, siapkan dashboard stok sebelum tab
+        // lama disembunyikan. Sebelumnya dashboard baru dirender di dalam
+        // requestAnimationFrame + debounce 80ms sehingga layar sempat kosong.
+        // Render langsung hanya untuk perpindahan ke STOK; refresh realtime
+        // biasa tetap menggunakan wrapper debounce di bawah.
+        closeBrandDetail(tabName === 'stok');
+        if (tabName === 'stok' && typeof _renderStokDashboardOri === 'function') {
+            _renderStokDashboardOri();
+        }
         tabs.forEach(t => {
             document.getElementById('tab-' + t).classList.add('hidden');
             document.getElementById('tab-' + t).classList.remove('flex');
@@ -7247,7 +7255,10 @@ function updateSSK(tab, rowId) {
 
         // Defer render berat ke setelah tab tampil di layar
         requestAnimationFrame(() => {
-            if (tabName === 'stok') _renderStokDashboardOri();
+            // Dashboard stok sudah disiapkan sebelum tab lama disembunyikan,
+            // agar tidak ada frame kosong saat kembali lewat FAB HOME/BACK.
+            // Jangan render ulang di sini karena dapat menghidupkan kembali
+            // blank flash pada perangkat/webview yang lebih lambat.
             if (tabName === 'riwayat-input') {
                 if (typeof renderRiwayatInputTab === 'function') renderRiwayatInputTab();
             }
@@ -7650,12 +7661,22 @@ function updateSSK(tab, rowId) {
         _updateBackBtnMode();
     }
 
-    function closeBrandDetail() {
+    function closeBrandDetail(immediate = false) {
         const dashboard = document.getElementById('stok-dashboard-view');
         const detailView = document.getElementById('stok-detail-view');
         const navBackdrop = document.getElementById('stok-detail-nav-backdrop');
         if (navBackdrop) { navBackdrop.classList.add('hidden'); navBackdrop.style.display = 'none'; }
         if (!detailView.classList.contains('hidden')) {
+            if (immediate) {
+                // Navigasi FAB harus langsung menampilkan dashboard yang sudah
+                // disiapkan oleh _doSwitchTab; jangan menunggu animasi 250ms.
+                detailView.classList.add('hidden');
+                detailView.classList.remove('flex', 'slide-in', 'slide-out');
+                dashboard.classList.remove('hidden');
+                dashboard.classList.add('flex');
+                _updateBackBtnMode();
+                return;
+            }
             detailView.classList.remove('slide-in');
             detailView.classList.add('slide-out');
             setTimeout(() => {
