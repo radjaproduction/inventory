@@ -5778,6 +5778,25 @@ async function fetchBayarSebagianData() {
             }
             _updatePesananBellBadge();
             if (typeof _renderRiwayatTransaksiOri === 'function') _renderRiwayatTransaksiOri();
+
+            // BUG FIX: badge FAB "Pesanan" & daftar di popup "Rincian Pesanan" (termasuk yang
+            // dipicu tombol "Disiapkan") sebelumnya TIDAK ikut disegarkan di sini — cuma
+            // _updatePesananBellBadge() (badge LONCENG, cuma hitung stage=0) yang jalan.
+            // Padahal status "selesai disiapkan" (kolom disiapkan_selesai) itu status TERPISAH
+            // yang dipakai badge FAB & daftar popup. Akibatnya: HP yang menekan "Disiapkan"
+            // hilang duluan (update lokal langsung setelah klik), tapi di HP lain order itu
+            // TETAP tampak sampai popup ditutup-buka manual — realtime-nya sendiri tidak
+            // pernah menyentuh badge/daftar itu.
+            // Sengaja refresh di SETIAP event UPDATE tabel ini (bukan cuma kalau terdeteksi
+            // disiapkan_selesai berubah) — karena payload.old dari Supabase Realtime cuma
+            // menyertakan kolom lengkap kalau REPLICA IDENTITY tabel ini di-set FULL, yang
+            // tidak bisa dipastikan dari sisi app ini. Query-nya ringan (select stage 0/1 saja)
+            // jadi aman dipanggil tiap ada perubahan.
+            _refreshFabPesananBadge();
+            const popupEl = document.getElementById('popup-rincian-pesanan');
+            if (popupEl && !popupEl.classList.contains('hidden')) {
+                _fetchAktifPesananOrders().then(_renderRincianPesananList);
+            }
         } else if (payload.eventType === 'DELETE') {
             if ((oldRow.stage || 0) === 0) pesananMenungguCount = Math.max(0, pesananMenungguCount - 1);
             if (oldRow.order_code) _pesananMenungguCodes.delete(oldRow.order_code);
@@ -6257,6 +6276,29 @@ async function fetchBayarSebagianData() {
         setTimeout(() => _pendingOwnQtyWrites.delete(key), 5000);
     }
 
+    // BUG FIX: sama seperti gema qty di atas, tapi untuk HAPUS item/transaksi.
+    // Sebelumnya, hapus transaksi (_eksekusiHapusTrx) TIDAK punya suppression sama sekali
+    // untuk event DELETE. Akibatnya: begitu DELETE ke transaksi_item terkirim ke Supabase,
+    // Realtime memantulkan event DELETE itu balik ke tab kita sendiri, sering kali SEBELUM
+    // proses lokal (yang masih menunggu RPC cleanup_transaksi_kosong + animasi fade)
+    // selesai. Event echo itu memicu _patchTransaksiGroup() yang men-splice item dari
+    // trx.items tapi HEADER transaksi belum ikut terhapus (karena RPC cleanup belum
+    // selesai) -> renderRiwayatTransaksi() jalan duluan dan menampilkan kartu dengan
+    // "0 pcs" (stok kosong). Baru beberapa saat kemudian, giliran proses lokal
+    // (_eksekusiHapusTrx) selesai dan benar-benar menghapus kartu itu dari DOM.
+    // Fix: tandai id item & id transaksi yang SEDANG kita hapus sendiri, supaya event
+    // DELETE yang memantul balik untuk id itu diabaikan (bukan re-render duluan) dan
+    // tampilan hanya berubah SEKALI, saat proses lokal benar-benar selesai.
+    const _pendingOwnDeletes = new Set();
+    function _markOwnDelete(kind, id) {
+        if (!id) return;
+        const key = kind + ':' + id;
+        _pendingOwnDeletes.add(key);
+        // Timeout lebih panjang dari qty-write (8dtk) karena alur hapus transaksi lebih
+        // panjang: delete item -> RPC cleanup -> animasi fade (~220ms) -> render.
+        setTimeout(() => _pendingOwnDeletes.delete(key), 8000);
+    }
+
     function onRealtimeChange(payload) {
         const group = REALTIME_TABLE_GROUP[payload.table];
         if (group) _dirtyGroups.add(group);
@@ -6267,6 +6309,25 @@ async function fetchBayarSebagianData() {
             const key = payload.new.id + ':' + payload.new.qty;
             if (_pendingOwnQtyWrites.has(key)) {
                 _pendingOwnQtyWrites.delete(key);
+                payload._isOwnEcho = true;
+            }
+        }
+
+        // BUG FIX (lihat catatan _pendingOwnDeletes): gema DELETE transaksi_item / transaksi
+        // dari hapus yang kita lakukan sendiri, jangan sampai memicu render duluan sebelum
+        // proses lokal (_eksekusiHapusTrx) selesai — kalau tidak, kartu sempat kelihatan
+        // "0 pcs" dulu sebelum akhirnya hilang beberapa detik kemudian.
+        if (payload.table === 'transaksi_item' && payload.eventType === 'DELETE' && payload.old) {
+            const key = 'item:' + payload.old.id;
+            if (_pendingOwnDeletes.has(key)) {
+                _pendingOwnDeletes.delete(key);
+                payload._isOwnEcho = true;
+            }
+        }
+        if (payload.table === 'transaksi' && payload.eventType === 'DELETE' && payload.old) {
+            const key = 'trx:' + payload.old.id;
+            if (_pendingOwnDeletes.has(key)) {
+                _pendingOwnDeletes.delete(key);
                 payload._isOwnEcho = true;
             }
         }
@@ -11563,7 +11624,12 @@ function updateSSK(tab, rowId) {
         const brandKosong = !String(d.brand || '').trim();
         const modelKosong = !String(d.model || '').trim();
         const hargaKosong = (Number(d.harga) || 0) <= 0 && Array.isArray(d.items) && d.items.length > 0;
-        return vendorKosong || brandKosong || modelKosong || hargaKosong;
+        // Jaring pengaman: header transaksi tanpa item sama sekali (belum LUNAS) — biasanya
+        // sisa proses hapus yang terhenti di tengah jalan. Ikut ditandai korup supaya kalau
+        // sampai lolos dari fix hapusTrxRiwayat (mis. sesi lama yang belum di-refresh), tetap
+        // bisa dibersihkan lewat tombol "HAPUS DATA KORUP".
+        const itemsKosong = d.status !== 'lunas' && (!Array.isArray(d.items) || d.items.length === 0);
+        return vendorKosong || brandKosong || modelKosong || hargaKosong || itemsKosong;
     }
 
     function renderRiwayatTransaksi() {
@@ -12526,6 +12592,23 @@ function updateSSK(tab, rowId) {
         const trx = appData.riwayatTransaksi.find(t => t.id === trxId);
         if (!trx) return;
         if (trx.status === 'lunas') { showToast('Transaksi LUNAS tidak dapat dihapus.'); return; }
+
+        // BUG FIX: transaksi "yatim" — header masih ada tapi trx.items sudah 0 (biasanya sisa
+        // proses hapus sebelumnya yang terhenti di tengah jalan, mis. item sudah terhapus di
+        // server tapi RPC cleanup_transaksi_kosong gagal/tidak sempat menghapus headernya).
+        // Sebelumnya kasus ini jatuh ke alur "pilih item untuk dihapus" yang kosong melompong
+        // (tidak ada item = tidak ada yang bisa dicentang = tombol HAPUS macet total).
+        // Sekarang: langsung tawarkan hapus header-nya saja — tidak ada stok yang perlu
+        // dikembalikan karena memang sudah tidak ada item tersisa.
+        if (!trx.items || trx.items.length === 0) {
+            showConfirm(
+                `HAPUS TRANSAKSI KOSONG?\n${trx.brand || '-'} / ${trx.model || '-'}\n\nTransaksi ini sudah tidak punya item (0 pcs) — kemungkinan sisa proses hapus sebelumnya yang belum tuntas. Tidak ada stok yang perlu dikembalikan.`,
+                () => _hapusHeaderTrxLangsung(trxId),
+                { title: 'HAPUS TRANSAKSI KOSONG', type: 'danger', icon: '🗑️', ok: 'YA, HAPUS' }
+            );
+            return;
+        }
+
         if (trx.items.length === 1) {
             const item = trx.items[0];
             showConfirm(
@@ -12610,6 +12693,40 @@ function updateSSK(tab, rowId) {
         }, 30);
     }
 
+    // Hapus header transaksi yang sudah tidak punya item (0 pcs) secara langsung — TIDAK
+    // lewat RPC cleanup_transaksi_kosong (RPC itu justru yang gagal/tidak tuntas saat kasus
+    // ini pertama kali terjadi), supaya proses ini tidak bergantung lagi pada RPC yang sama.
+    async function _hapusHeaderTrxLangsung(trxId) {
+        const cardEl = document.getElementById('card-rt-' + trxId);
+        if (cardEl) {
+            cardEl.style.opacity = '0.45';
+            cardEl.style.pointerEvents = 'none';
+            cardEl.style.transition = 'opacity 0.2s';
+        }
+        showToast('⏳ Menghapus data...');
+        _markOwnDelete('trx', trxId);
+        try {
+            const { error } = await sbClient.from('transaksi').delete().eq('id', trxId);
+            if (error) throw error;
+
+            if (cardEl) {
+                cardEl.style.transition = 'opacity 0.25s, transform 0.25s';
+                cardEl.style.opacity = '0';
+                cardEl.style.transform = 'scaleY(0.85)';
+                await new Promise(r => setTimeout(r, 220));
+            }
+
+            const idx = appData.riwayatTransaksi.findIndex(t => t.id === trxId);
+            if (idx !== -1) appData.riwayatTransaksi.splice(idx, 1);
+            renderRiwayatTransaksi();
+            renderStokDashboard();
+            showToast('🗑️ Transaksi kosong berhasil dihapus.');
+        } catch(e) {
+            if (cardEl) { cardEl.style.opacity = ''; cardEl.style.pointerEvents = ''; }
+            showToast('❌ Gagal hapus: ' + (e.message || e));
+        }
+    }
+
     window._updateHapusTrxBtn = function() {
         const checkboxes = document.querySelectorAll('[id^="hapus-chk-"]');
         const checkedEls = Array.from(checkboxes).filter(c => c.checked);
@@ -12643,6 +12760,12 @@ function updateSSK(tab, rowId) {
             cardEl.style.transition = 'opacity 0.2s';
         }
         showToast('⏳ Menghapus data...');
+
+        // Tandai dulu SEBELUM request dikirim — supaya begitu Supabase Realtime memantulkan
+        // event DELETE untuk id-id ini balik ke tab kita sendiri, event itu dikenali sebagai
+        // gema tulisan sendiri dan tidak memicu render duluan (lihat _markOwnDelete).
+        itemsToHapus.forEach(item => { if (item.id) _markOwnDelete('item', item.id); });
+        if (hapusAll) _markOwnDelete('trx', trxId);
 
         try {
             for (const item of itemsToHapus) {
