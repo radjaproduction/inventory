@@ -2557,13 +2557,6 @@ body.bg-light .rp-laba-owner-input::-webkit-list-button{ filter:invert(1) bright
 
 /* Tab laba dengan action bar owner: pakai extended pad juga */
 #tab-laba-scroll-wrap { padding-bottom: var(--scroll-pad-bottom-ext); }
-#riwayat-input-scroll-wrap.riwayat-scroll-no-fade,
-#riwayat-retur-scroll-wrap.riwayat-scroll-no-fade,
-#riwayat-trx-scroll-wrap.riwayat-scroll-no-fade{
-    -webkit-mask-image: none;
-    mask-image: none;
-}
-
 /* history rows */
 #beban-input-list{gap:6px!important}
 #beban-input-list>div.bg-cardBg{
@@ -4140,7 +4133,6 @@ END $$;</textarea>
                          #fab-pesanan-badge di tab Stok) — elemen ini dibiarkan tersembunyi
                          permanen (lihat _updatePesananBellBadge di script) supaya id lama yang
                          mungkin masih dirujuk di tempat lain tidak error, tanpa tampil di sini lagi. -->
-                    <div id="pesanan-bell-badge" class="vendor-notif-badge hidden" style="position:absolute; top:-6px; right:-6px;">0</div>
                 </div>
                 <span class="nav-text text-[10px] text-[#000000]/60 font-normal">Riwayat</span>
             </div>
@@ -4171,7 +4163,7 @@ END $$;</textarea>
         </button>
 
         <!-- Bel notifikasi pesanan masuk sudah digabung ke badge tombol nav Riwayat di bawah,
-             lihat #pesanan-bell-badge di dalam #nav-btn-riwayat. -->
+             notifikasi pesanan ditampilkan pada FAB "Pesanan" di tab Stok. -->
 
     </div><!-- end #main-app -->
 
@@ -4929,10 +4921,10 @@ GRANT EXECUTE ON FUNCTION public.fix_id_sequences() TO anon, authenticated;`;
 
             setLoadingText('MEMUAT RIWAYAT TRANSAKSI...', 45);
             const [riDataRaw, riItemsData, trxDataRaw, trxItemsData] = await withTimeout(Promise.all([
-                fetchAllRows('riwayat_input', '*'),
-                fetchAllRows('riwayat_input_item', '*'),
-                fetchAllRows('transaksi', '*'),
-                fetchAllRows('transaksi_item', '*'),
+                fetchAllRows('riwayat_input', 'id,mode,brand,model,keterangan,tanggal,jam'),
+                fetchAllRows('riwayat_input_item', 'id,riwayat_input_id,warna,ukuran,qty'),
+                fetchAllRows('transaksi', 'id,vendor,brand,model,harga,harga_modal,status,tanggal,jam,order_code'),
+                fetchAllRows('transaksi_item', 'id,transaksi_id,warna,ukuran,qty,ssk'),
             ]), TIMEOUT_MS, 'Muat riwayat');
             // Urutan tampil: terbaru dulu
             const ri = { data: [...riDataRaw].sort((a, b) => b.id - a.id) };
@@ -4983,7 +4975,7 @@ GRANT EXECUTE ON FUNCTION public.fix_id_sequences() TO anon, authenticated;`;
         try {
             setLoadingText('MEMUAT DATA PELUNASAN...', 65);
             const pelDB = await withTimeout(
-                sbClient.from('pelunasan').select('*').order('id', { ascending: false }),
+                sbClient.from('pelunasan').select('id,transaksi_id,vendor,jumlah,keterangan,tanggal,jam').order('id', { ascending: false }),
                 15000, 'Muat pelunasan'
             );
             appData.pelunasan = (pelDB.data || []).map(p => ({
@@ -5044,8 +5036,8 @@ GRANT EXECUTE ON FUNCTION public.fix_id_sequences() TO anon, authenticated;`;
     }
     async function fetchRiwayatInputData() {
         const [riData, riItemsData] = await Promise.all([
-            fetchAllRows('riwayat_input', '*'),
-            fetchAllRows('riwayat_input_item', '*'),
+            fetchAllRows('riwayat_input', 'id,mode,brand,model,keterangan,tanggal,jam'),
+            fetchAllRows('riwayat_input_item', 'id,riwayat_input_id,warna,ukuran,qty'),
         ]);
         const riItemsMap = {};
         riItemsData.forEach(i => {
@@ -5066,8 +5058,8 @@ GRANT EXECUTE ON FUNCTION public.fix_id_sequences() TO anon, authenticated;`;
     }
     async function fetchTransaksiData() {
         const [trxData, trxItemsData] = await Promise.all([
-            fetchAllRows('transaksi', '*'),
-            fetchAllRows('transaksi_item', '*'),
+            fetchAllRows('transaksi', 'id,vendor,brand,model,harga,harga_modal,status,tanggal,jam,order_code'),
+            fetchAllRows('transaksi_item', 'id,transaksi_id,warna,ukuran,qty,ssk'),
         ]);
         const trxItemsMap = {};
         trxItemsData.forEach(i => {
@@ -5103,7 +5095,7 @@ GRANT EXECUTE ON FUNCTION public.fix_id_sequences() TO anon, authenticated;`;
     }
 
     async function fetchPelunasanData() {
-        const pelData = await fetchAllRows('pelunasan', '*');
+        const pelData = await fetchAllRows('pelunasan', 'id,transaksi_id,vendor,jumlah,keterangan,tanggal,jam');
         appData.pelunasan = pelData.sort((a, b) => b.id - a.id).map(p => ({
             id: p.id, transaksi_id: p.transaksi_id, vendor: p.vendor,
             jumlah: p.jumlah || 0, keterangan: p.keterangan || '',
@@ -5113,7 +5105,7 @@ GRANT EXECUTE ON FUNCTION public.fix_id_sequences() TO anon, authenticated;`;
 
 async function fetchBayarSebagianData() {
     try {
-        const bsData = await fetchAllRows('bayar_sebagian', '*');
+        const bsData = await fetchAllRows('bayar_sebagian', 'id,vendor,jumlah_bayar,total_tagihan,sisa,keterangan,tanggal,jam');
         appData.bayarSebagian = bsData.sort((a, b) => b.id - a.id).map(bs => ({
             id: bs.id,
             vendor: bs.vendor,
@@ -5315,10 +5307,9 @@ async function fetchBayarSebagianData() {
         }
     }
 
-    // Alarm suara diulang tiap 5 detik SELAMA masih ada pesanan yang belum dikonfirmasi
-    // (stage:0). Berhenti otomatis begitu admin klik "✅ Konfirmasi Pesanan" di app Pesanan,
-    // atau tekan "Konfirmasi Semua" di popup Inventory (stage berubah jadi 1 → event UPDATE
-    // realtime → pesananMenungguCount turun ke 0). Kalau suara sebelumnya masih diucapkan
+    // Alarm suara diulang tiap 5 detik SELAMA masih ada pesanan yang belum dikonfirmasi.
+    // Berhenti otomatis begitu status pesanan berubah menjadi stage 1 lewat Realtime.
+    // Kalau suara sebelumnya masih diucapkan
     // saat jadwal berikutnya tiba, panggilan yang tumpang tindih otomatis dilewati (lihat
     // guard _speakInProgress di _speakPesananAlarm), jadi aman dipercepat.
     const PESANAN_REPEAT_INTERVAL_MS = 5000;
@@ -5342,22 +5333,12 @@ async function fetchBayarSebagianData() {
         // Badge lonceng di tombol Riwayat SENGAJA tidak dipakai lagi — notifikasi pesanan
         // baru (badge angka + ring animasi) sekarang HANYA muncul di tombol FAB "Pesanan"
         // (lihat _refreshFabPesananBadge()), supaya Riwayat kembali jadi tombol netral.
-        const oldBadge = document.getElementById('pesanan-bell-badge');
-        if (oldBadge) oldBadge.classList.add('hidden');
         // Ring animation & badge sekarang ditempel ke tombol FAB "Pesanan" (bukan Riwayat lagi)
         // — lihat _refreshFabPesananBadge() di bawah, supaya notifikasi pesanan baru nyantol
         // di tombol yang memang dipakai buat proses pesanan, bukan di Riwayat.
         // Nyalakan/matikan repeat alarm mengikuti ada-tidaknya pesanan yang masih menunggu.
         if (pesananMenungguCount > 0) _startPesananRepeatAlarm();
         else _stopPesananRepeatAlarm();
-        // Kalau popup konfirmasi lagi terbuka, ikut disegarkan — auto-tutup begitu count
-        // habis (misal sudah dikonfirmasi dari HP/app lain), atau angkanya ikut naik kalau
-        // ada pesanan baru masuk lagi selagi popup masih terbuka.
-        const popupEl = document.getElementById('popup-pesanan-konfirmasi');
-        if (popupEl && !popupEl.classList.contains('hidden')) {
-            if (pesananMenungguCount <= 0) tutupPopupPesananKonfirmasi();
-            else _renderPopupPesananKonfirmasi();
-        }
         // FAB "Pesanan" (badge jumlah aktif = menunggu + disiapkan yang belum ditandai
         // selesai lokal) punya sumber data sendiri (fetch, bukan cuma count), jadi
         // di-refresh lewat fungsi terpisah — lihat _refreshFabPesananBadge().
@@ -5370,61 +5351,12 @@ async function fetchBayarSebagianData() {
         switchTab('riwayat');
     }
 
-    function bukaPopupPesananKonfirmasi() {
-        _renderPopupPesananKonfirmasi();
-        const el = document.getElementById('popup-pesanan-konfirmasi');
-        if (el) { el.classList.remove('hidden'); el.classList.add('flex'); }
-    }
-
-    function tutupPopupPesananKonfirmasi() {
-        const el = document.getElementById('popup-pesanan-konfirmasi');
-        if (el) { el.classList.add('hidden'); el.classList.remove('flex'); }
-    }
-
-    function _renderPopupPesananKonfirmasi() {
-        const countEl = document.getElementById('popup-pesanan-count');
-        if (countEl) countEl.textContent = pesananMenungguCount;
-        const btn = document.getElementById('btn-konfirmasi-semua-pesanan');
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-check-double"></i> KONFIRMASI SEMUA (' + pesananMenungguCount + ')';
-        }
-    }
-
-    // Konfirmasi massal: sekali tekan menandai SEMUA pesanan yang masih "Menunggu" (stage 0)
-    // jadi "Diterima" (stage 1) — persis efeknya sama dengan menekan ✅ Konfirmasi satu-satu
-    // di app Pesanan. Karena kedua app dengar tabel produksi_orders yang sama lewat Realtime,
-    // alarm/badge di app Pesanan ikut berhenti otomatis begitu ini berhasil.
-    async function konfirmasiSemuaPesananMasuk() {
-        if (!sbClient) { showToast('❌ Tidak ada koneksi ke server'); return; }
-        const jumlah = pesananMenungguCount;
-        if (jumlah <= 0) { tutupPopupPesananKonfirmasi(); return; }
-        const btn = document.getElementById('btn-konfirmasi-semua-pesanan');
-        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...'; }
-        try {
-            const { error } = await sbClient.from(PESANAN_TABLE).update({ stage: 1 }).eq('stage', 0);
-            if (error) throw error;
-            showToast('✅ ' + jumlah + ' pesanan berhasil dikonfirmasi');
-            pesananMenungguCount = 0;
-            _pesananMenungguCodes.clear();
-            _updatePesananBellBadge();
-            if (typeof _renderRiwayatTransaksiOri === 'function') _renderRiwayatTransaksiOri();
-            tutupPopupPesananKonfirmasi();
-        } catch (e) {
-            console.error('Gagal konfirmasi semua pesanan:', e);
-            showToast('❌ Gagal konfirmasi pesanan, coba lagi');
-            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check-double"></i> KONFIRMASI SEMUA (' + jumlah + ')'; }
-        }
-    }
-
     // ================================================================
     // POPUP RINCIAN PESANAN (FAB "Pesanan"): daftar per-order dengan detail item,
-    // beda dari popup-pesanan-konfirmasi yang cuma konfirmasi massal tanpa detail.
     // Alur per order: Menunggu (stage 0) --Konfirmasi--> stage diubah jadi 1 di DB
-    // (ini yang mematikan alarm & badge lonceng, sama seperti Konfirmasi Semua) -->
-    // "📦 Disiapkan" --klik lagi--> ditandai selesai HANYA secara lokal (localStorage
-    // di HP ini), tanpa perlu kolom stage ke-3 di DB, supaya tidak mengubah skema yang
-    // sudah dipakai app Pesanan (STAGES di sana cuma kenal 2 elemen: 0 dan 1).
+    // (ini yang mematikan alarm dan badge pesanan) -->
+    // "📦 Disiapkan" --klik lagi--> ditandai selesai di database tanpa mengubah
+    // stage pesanan, supaya tidak mengubah skema yang sudah dipakai app Pesanan.
     // ================================================================
 
     function _escPesanan(str) {
@@ -5456,15 +5388,6 @@ async function fetchBayarSebagianData() {
             .order('created_at', { ascending: false });
         if (error) { console.warn('Gagal ambil daftar pesanan aktif:', error.message); return []; }
         return data || [];
-    }
-
-    function _formatItemPesanan(it) {
-        const nama = it.name || it.nama || it.productName || it.pid || 'Item';
-        const warna = it.color || it.warna || '';
-        const ukuran = it.size || it.ukuran || '';
-        const qty = it.qty || 0;
-        const rincian = [warna, ukuran].filter(Boolean).join(', ');
-        return _escPesanan(nama) + (rincian ? ' — ' + _escPesanan(rincian) : '') + ' x' + qty;
     }
 
     function _renderRincianPesananList(orders) {
@@ -5981,6 +5904,10 @@ async function fetchBayarSebagianData() {
     async function _pesananPollFallback() {
         if (!sbClient || document.visibilityState !== 'visible') return;
         await _resyncPesananState();
+        // Saat Realtime sehat, perubahan data sudah ditangani oleh channel Realtime.
+        // Polling tetap dipakai sebagai jaring pengaman ketika koneksi Realtime putus;
+        // jangan mengunduh seluruh riwayat setiap 20 detik pada kondisi normal.
+        if (_realtimeIsConnected) return;
         // Sekalian refresh grup data lain (Riwayat Transaksi, dst) — jaring pengaman yang sama
         // untuk kasus event realtime transaksi/transaksi_item yang mungkin ikut kelewat.
         // PENTING: render HANYA dijalankan kalau data grup itu memang benar-benar berubah
@@ -8862,7 +8789,7 @@ function updateSSK(tab, rowId) {
     async function loadBebanInputList() {
         const { awalISO, akhirISO } = _rangeMingguIniBeban();
         try {
-            const { data, error } = await sbClient.from('beban_operasional').select('*').gte('tanggal', awalISO).lte('tanggal', akhirISO).order('tanggal', { ascending: false }).order('id', { ascending: false });
+            const { data, error } = await sbClient.from('beban_operasional').select('id,kategori,nominal,tanggal,keterangan,sumber,foto').gte('tanggal', awalISO).lte('tanggal', akhirISO).order('tanggal', { ascending: false }).order('id', { ascending: false });
             if (error) throw error;
             _cacheBebanInput = data || [];
         } catch (e) {
@@ -8929,7 +8856,7 @@ function updateSSK(tab, rowId) {
         const snapshotSebelum = JSON.stringify(_cacheRiwayatBeban);
 
         try {
-            let q = sbClient.from('beban_operasional').select('*');
+            let q = sbClient.from('beban_operasional').select('id,kategori,nominal,tanggal,keterangan,sumber,foto');
             if (dariVal) q = q.gte('tanggal', dariVal);
             if (sampaiVal) q = q.lte('tanggal', sampaiVal);
             const { data, error } = await q.order('tanggal', { ascending: false }).order('id', { ascending: false });
@@ -11029,7 +10956,7 @@ function updateSSK(tab, rowId) {
         // ---- Beban Operasional (sumber: project Inventory yang sama, tabel beban_operasional) ----
         const bebanPromise = (async () => {
             try {
-                const rows = await fetchAllRows('beban_operasional', '*');
+                const rows = await fetchAllRows('beban_operasional', 'id,nominal,tanggal');
                 return rows.filter(r => inRange((r.tanggal || '').slice(0, 10))).reduce((s, r) => s + (r.nominal || 0), 0);
             } catch (e) {
                 console.warn('Gagal muat beban_operasional utk Laba Rugi:', e.message);
@@ -11245,33 +11172,18 @@ function updateSSK(tab, rowId) {
     }
     window.riOnlyGoToPage = riOnlyGoToPage;
 
-    // Fade di batas bawah #riwayat-input-scroll-wrap / #riwayat-retur-scroll-wrap
-    // SELALU aktif, tidak pernah dimatikan -- tombol home/menu yang melayang selalu
-    // menempati zona 100px paling bawah itu, baik listnya pendek (tidak perlu
-    // discroll) maupun sudah discroll sampai baris paling bawah, jadi kartu yang
-    // kebetulan berakhir di situ tetap perlu memudar supaya tombolnya tetap jelas
-    // kebaca. .riwayat-scroll-no-fade tidak dipakai lagi tapi CSS-nya dibiarkan
-    // ada untuk jaga-jaga kalau ada kode lain yang masih mereferensikannya.
-    function _updateRiwayatScrollFade(wrapId) {
-        const wrapEl = document.getElementById(wrapId);
-        if (!wrapEl) return;
-        wrapEl.classList.remove('riwayat-scroll-no-fade');
-    }
-
     function renderRiwayatInputTab() {
         const list = document.getElementById('riwayat-input-only-list');
         if (!list) return;
         const masukDataFull = appData.riwayatInput.filter(d => d.mode !== 'retur');
         if (masukDataFull.length === 0) {
             list.innerHTML = '<div class="text-center text-white/60 text-[11px] py-8 flex flex-col items-center gap-2"><i class="fa-solid fa-inbox text-2xl opacity-40"></i>Belum ada data input.</div>';
-            _updateRiwayatScrollFade('riwayat-input-scroll-wrap');
             return;
         }
         const { dari, sampai } = getFilterRange();
         const filtered = masukDataFull.filter(d => tanggalDalamRange(d.tanggal, dari, sampai));
         if (filtered.length === 0) {
             list.innerHTML = '<div class="text-center text-white/60 text-xs mt-10"><i class="fa-solid fa-calendar-xmark text-3xl mb-2 opacity-50"></i><br>Tidak ada data di rentang tanggal ini.</div>';
-            _updateRiwayatScrollFade('riwayat-input-scroll-wrap');
             return;
         }
         const totalPages = Math.max(1, Math.ceil(filtered.length / RI_ONLY_PAGE_SIZE));
@@ -11304,7 +11216,6 @@ function updateSSK(tab, rowId) {
             itemLabel: 'data',
             onPageChangeFn: 'riOnlyGoToPage'
         });
-        _updateRiwayatScrollFade('riwayat-input-scroll-wrap');
     }
     window.renderRiwayatInputTab = renderRiwayatInputTab;
 
@@ -11329,14 +11240,12 @@ function updateSSK(tab, rowId) {
         const returDataFull = appData.riwayatInput.filter(d => d.mode === 'retur');
         if (returDataFull.length === 0) {
             list.innerHTML = '<div class="text-center text-white/60 text-[11px] py-8 flex flex-col items-center gap-2"><i class="fa-solid fa-inbox text-2xl opacity-40"></i>Belum ada data retur.</div>';
-            _updateRiwayatScrollFade('riwayat-retur-scroll-wrap');
             return;
         }
         const { dari, sampai } = getFilterRange();
         const filtered = returDataFull.filter(d => tanggalDalamRange(d.tanggal, dari, sampai));
         if (filtered.length === 0) {
             list.innerHTML = '<div class="text-center text-white/60 text-xs mt-10"><i class="fa-solid fa-calendar-xmark text-3xl mb-2 opacity-50"></i><br>Tidak ada data di rentang tanggal ini.</div>';
-            _updateRiwayatScrollFade('riwayat-retur-scroll-wrap');
             return;
         }
         const totalPages = Math.max(1, Math.ceil(filtered.length / RR_ONLY_PAGE_SIZE));
@@ -11372,7 +11281,6 @@ function updateSSK(tab, rowId) {
             itemLabel: 'data',
             onPageChangeFn: 'rrOnlyGoToPage'
         });
-        _updateRiwayatScrollFade('riwayat-retur-scroll-wrap');
     }
     window.renderRiwayatReturTab = renderRiwayatReturTab;
 
@@ -11779,6 +11687,21 @@ function updateSSK(tab, rowId) {
         // JSON.parse yang sama diulang berkali-kali per render), ikut nyumbang ke
         // delay yang terasa tiap buka tab ini.
         const _seenVendorData = JSON.parse(localStorage.getItem('trx_seen_vendor') || '{}');
+        // Indeks pembayaran sekali per render. Tanpa ini, setiap transaksi melakukan
+        // filter penuh ke appData.pelunasan saat menghitung sisa tagihan vendor.
+        const _paidByTrxId = new Map();
+        const _partialByVendor = new Map();
+        const _partialVendors = new Set();
+        appData.pelunasan.forEach(p => {
+            const isPartial = p.transaksi_id === null || p.transaksi_id === undefined;
+            if (isPartial) {
+                _partialVendors.add(p.vendor);
+                _partialByVendor.set(p.vendor, (_partialByVendor.get(p.vendor) || 0) + (Number(p.jumlah) || 0));
+                return;
+            }
+            const trxId = Number(p.transaksi_id);
+            if (Number.isFinite(trxId)) _paidByTrxId.set(trxId, (_paidByTrxId.get(trxId) || 0) + (Number(p.jumlah) || 0));
+        });
         list.innerHTML = bannerHiddenOld + bannerKorup + pageVendors.map(vendor => {
             const vendorLabel = String(vendor || '').trim() ? vendor : 'VENDOR TIDAK DIKETAHUI';
             const vendorKey = (vendorLabel || 'vendor_tidak_diketahui').replace(/\s+/g,'_');
@@ -11787,14 +11710,14 @@ function updateSSK(tab, rowId) {
             const totalNominalVendor = trxList.reduce((s, d) => s + d.items.reduce((si, i) => si + i.qty, 0) * d.harga, 0);
             const lastSeenId = _seenVendorData[vendor] || 0;
             const newCount = trxList.filter(t => t.id > lastSeenId).length;
-            const hasBayarSebagianTrx = appData.pelunasan.some(p => p.vendor === vendor && (p.transaksi_id === null || p.transaksi_id === undefined));
+            const hasBayarSebagianTrx = _partialVendors.has(vendor);
             // Cek apakah vendor ini MASIH punya sisa hutang (bukan cuma pernah pakai Bayar Sebagian).
             // Badge CICIL cuma relevan kalau masih ada tagihan berjalan, bukan riwayat lama yang sudah lunas.
             let sisaHutangVendorCicil = 0;
             if (hasBayarSebagianTrx) {
                 const totalCreditVendor = trxList.filter(t => t.status === 'credit').reduce((s, t) => s + t.items.reduce((si, i) => si + i.qty, 0) * t.harga, 0);
-                const sudahBayarPerTrxVendor = trxList.reduce((s, t) => s + appData.pelunasan.filter(p => Number(p.transaksi_id) === Number(t.id)).reduce((si, p) => si + p.jumlah, 0), 0);
-                const sudahBayarSebagianVendorCicil = appData.pelunasan.filter(p => p.vendor === vendor && (p.transaksi_id === null || p.transaksi_id === undefined)).reduce((s, p) => s + p.jumlah, 0);
+                const sudahBayarPerTrxVendor = trxList.reduce((s, t) => s + (_paidByTrxId.get(Number(t.id)) || 0), 0);
+                const sudahBayarSebagianVendorCicil = _partialByVendor.get(vendor) || 0;
                 sisaHutangVendorCicil = Math.max(0, totalCreditVendor - sudahBayarPerTrxVendor - sudahBayarSebagianVendorCicil);
             }
             const tampilkanBadgeCicil = hasBayarSebagianTrx && sisaHutangVendorCicil > 0;
@@ -11844,7 +11767,7 @@ function updateSSK(tab, rowId) {
                 if (bodyEl) {
                     const trxList = vendorGroups[vendor] || [];
                     const vendorLabel = String(vendor || '').trim() ? vendor : 'VENDOR TIDAK DIKETAHUI';
-                    const hasBayarSebagianTrx = appData.pelunasan.some(p => p.vendor === vendor && (p.transaksi_id === null || p.transaksi_id === undefined));
+                    const hasBayarSebagianTrx = _partialVendors.has(vendor);
                     const cards = trxList.map((d, idx) => {
                         try {
                             const items = Array.isArray(d.items) ? d.items : [];
@@ -11947,6 +11870,17 @@ function updateSSK(tab, rowId) {
         const chevron = document.getElementById(uid + '-chevron');
         if (!body) return;
         const opening = body.classList.contains('hidden');
+        // Accordion transaksi dibuat satu-per-satu: saat membuka detail baru,
+        // tutup detail lain yang masih terbuka agar layar tetap ringkas.
+        if (opening) {
+            document.querySelectorAll('#riwayat-transaksi-list .rp-card-body:not(.hidden)').forEach(otherBody => {
+                if (otherBody === body) return;
+                otherBody.classList.add('hidden');
+                const otherUid = otherBody.id.replace(/-body$/, '');
+                const otherChevron = document.getElementById(otherUid + '-chevron');
+                if (otherChevron) otherChevron.style.transform = 'rotate(0deg)';
+            });
+        }
         body.classList.toggle('hidden');
         if (chevron) chevron.style.transform = opening ? 'rotate(180deg)' : 'rotate(0deg)';
     }
@@ -15004,31 +14938,6 @@ function updateSSK(tab, rowId) {
                 </div>
                 <button onclick="terapkanFilterTanggalDanTutup()" class="w-full py-3 text-[11px] font-black rounded-lg text-white transition-colors flex items-center justify-center gap-1.5" style="background:linear-gradient(90deg,#16a34a,#22c55e);">
                     <i class="fa-solid fa-check"></i> OK
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- POPUP KONFIRMASI MASSAL PESANAN MASUK (dari bel/badge tombol nav Riwayat) -->
-    <div id="popup-pesanan-konfirmasi" class="hidden fixed inset-0 z-[99998] items-center justify-center" style="background:rgba(0,0,0,0.75);backdrop-filter:blur(2px);padding:16px;" onclick="if(event.target===this) tutupPopupPesananKonfirmasi()">
-        <div style="background:#ffffff;border-radius:20px;width:100%;max-width:380px;border:2px solid rgba(118,153,201,0.4);overflow:hidden;">
-            <div style="background:linear-gradient(90deg,#ff8c00,#ffb347);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <div style="width:34px;height:34px;background:rgba(0,0,0,0.18);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;"><i class="fa-solid fa-bell"></i></div>
-                    <span style="font-family:Montserrat,sans-serif;font-weight:900;font-size:13px;color:#000;letter-spacing:0.5px;">PESANAN MASUK</span>
-                </div>
-                <button onclick="tutupPopupPesananKonfirmasi()" style="width:32px;height:32px;background:rgba(0,0,0,0.18);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#000;font-size:14px;"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div style="padding:22px 20px;display:flex;flex-direction:column;gap:16px;align-items:center;text-align:center;">
-                <div style="font-size:13px;color:#000;line-height:1.6;">
-                    Ada <b id="popup-pesanan-count" style="color:#ff8c00;">0</b> pesanan yang belum dibuka/diproses.
-                    Tekan tombol di bawah untuk menandai semuanya sudah diterima dan menghentikan suara alarm.
-                </div>
-                <button id="btn-konfirmasi-semua-pesanan" onclick="konfirmasiSemuaPesananMasuk()" class="w-full py-3.5 text-[12px] font-black rounded-xl text-white transition-colors flex items-center justify-center gap-2" style="background:linear-gradient(90deg,#16a34a,#22c55e);">
-                    <i class="fa-solid fa-check-double"></i> KONFIRMASI SEMUA (0)
-                </button>
-                <button onclick="tutupPopupPesananKonfirmasi();switchTab('riwayat')" style="background:none;border:none;color:#666;font-size:11px;font-weight:700;text-decoration:underline;cursor:pointer;padding:2px;">
-                    Lihat detail di tab Riwayat
                 </button>
             </div>
         </div>
