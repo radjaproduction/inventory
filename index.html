@@ -5953,7 +5953,9 @@ async function fetchBayarSebagianData() {
         if (!sbClient) return;
         const _menungguCodesBefore = JSON.stringify(Array.from(_pesananMenungguCodes).sort());
         try {
-            const { data, error } = await sbClient.from(PESANAN_TABLE).select('id, order_code, items, note, stage').eq('stage', 0);
+            // Polling hanya perlu status dan kode pesanan. Kolom items bisa berupa JSON besar
+            // dan tidak perlu diunduh setiap 20 detik.
+            const { data, error } = await sbClient.from(PESANAN_TABLE).select('id, order_code, stage').eq('stage', 0);
             if (!error && data) {
                 const baru = data.filter(o => o.id != null && !_pesananProcessedIds.has(o.id));
                 pesananMenungguCount = data.length;
@@ -8904,9 +8906,16 @@ function updateSSK(tab, rowId) {
         el.classList.add('hidden'); el.classList.remove('flex');
     }
 
-    function lihatFotoBebanInput(id) {
+    async function lihatFotoBebanInput(id) {
         const r = _cacheRiwayatBeban.find(x => x.id === id) || _cacheBebanInput.find(x => x.id === id);
-        if (r) tampilkanFotoBebanLightbox(r.foto);
+        if (!r) return;
+        // Foto Base64 diambil hanya ketika pengguna benar-benar membukanya.
+        if (!r.foto) {
+            const { data, error } = await sbClient.from('beban_operasional').select('foto').eq('id', id).maybeSingle();
+            if (error) { showToast('Gagal mengambil foto: ' + error.message); return; }
+            r.foto = data?.foto || null;
+        }
+        tampilkanFotoBebanLightbox(r.foto);
     }
 
     function _awalMingguIniBeban(ref) {
@@ -8954,7 +8963,8 @@ function updateSSK(tab, rowId) {
     async function loadBebanInputList() {
         const { awalISO, akhirISO } = _rangeMingguIniBeban();
         try {
-            const { data, error } = await sbClient.from('beban_operasional').select('id,kategori,nominal,tanggal,keterangan,sumber,foto').gte('tanggal', awalISO).lte('tanggal', akhirISO).order('tanggal', { ascending: false }).order('id', { ascending: false });
+            // Jangan ikut mengunduh Base64 foto pada setiap refresh daftar.
+            const { data, error } = await sbClient.from('beban_operasional').select('id,kategori,nominal,tanggal,keterangan,sumber').gte('tanggal', awalISO).lte('tanggal', akhirISO).order('tanggal', { ascending: false }).order('id', { ascending: false });
             if (error) throw error;
             _cacheBebanInput = data || [];
         } catch (e) {
@@ -9021,7 +9031,8 @@ function updateSSK(tab, rowId) {
         const snapshotSebelum = JSON.stringify(_cacheRiwayatBeban);
 
         try {
-            let q = sbClient.from('beban_operasional').select('id,kategori,nominal,tanggal,keterangan,sumber,foto');
+            // Foto Base64 sangat besar; daftar cukup mengambil metadata.
+            let q = sbClient.from('beban_operasional').select('id,kategori,nominal,tanggal,keterangan,sumber');
             if (dariVal) q = q.gte('tanggal', dariVal);
             if (sampaiVal) q = q.lte('tanggal', sampaiVal);
             const { data, error } = await q.order('tanggal', { ascending: false }).order('id', { ascending: false });
@@ -9079,7 +9090,7 @@ function updateSSK(tab, rowId) {
                     <div class="text-[9px] text-white/60 font-bold mt-0.5">${escapeHtmlBeban(r.tanggal)}${r.keterangan ? ' • ' + escapeHtmlBeban(r.keterangan) : ''}</div>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
-                    ${r.foto ? `<button onclick="lihatFotoBebanInput(${r.id})" class="w-7 h-7 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 flex items-center justify-center text-blue-600 text-[10px] flex-shrink-0"><i class="fa-solid fa-image"></i></button>` : '<div class="w-7 h-7 flex-shrink-0"></div>'}
+                    ${r.sumber !== 'OWNER' ? `<button onclick="lihatFotoBebanInput(${r.id})" class="w-7 h-7 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 flex items-center justify-center text-blue-600 text-[10px] flex-shrink-0"><i class="fa-solid fa-image"></i></button>` : '<div class="w-7 h-7 flex-shrink-0"></div>'}
                     <span class="text-[8px] font-black px-1.5 py-0.5 rounded border-2 flex-shrink-0 w-[54px] inline-flex items-center justify-center ${r.sumber === 'OWNER' ? 'bg-green-500/15 text-green-600 border-green-500/40' : 'bg-blue-500/15 text-blue-600 border-blue-500/40'}">${escapeHtmlBeban(r.sumber || 'ADMIN')}</span>
                     <span class="text-[11px] font-black text-red-500 text-right whitespace-nowrap min-w-[88px] flex-shrink-0">Rp ${(r.nominal || 0).toLocaleString('id-ID')}</span>
                     <button onclick="hapusBebanInput(${r.id})" class="w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 flex items-center justify-center text-red-600 text-[10px] flex-shrink-0"><i class="fa-solid fa-trash"></i></button>
