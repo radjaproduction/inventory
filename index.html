@@ -4420,6 +4420,36 @@ END $$;</textarea>
 
     let sbClient = null;
 
+    // ==================== TOTAL DASHBOARD VIA SQL AGGREGATE (SERVER-SIDE) ====================
+    // Total Masuk/Retur/Keluar untuk KPI di tab Stok sekarang dihitung LANGSUNG di database
+    // lewat fungsi SQL rp_get_dashboard_totals() (SUM di server), bukan dengan menjumlahkan
+    // semua baris riwayat_input_item/transaksi_item satu-satu di browser. Ini menjaga KPI
+    // tetap cepat dihitung walau jumlah transaksi terus bertambah banyak (SUM di Postgres
+    // jauh lebih murah daripada loop di JS atas ribuan baris yang sudah ditarik ke client).
+    //
+    // Kalau fungsi SQL ini belum dibuat di project Supabase (lihat migrasi_total_dashboard.sql),
+    // RPC-nya akan gagal dan otomatis fallback DIAM-DIAM ke perhitungan lokal seperti
+    // sebelumnya (lihat renderStokDashboard()) — jadi aman dipasang duluan sebelum SQL-nya
+    // sempat dijalankan di Supabase.
+    let _dashboardTotalsServer = null; // { masuk, retur, keluar } | null kalau belum ada/gagal
+    async function fetchDashboardTotalsServer() {
+        try {
+            const { data, error } = await sbClient.rpc('rp_get_dashboard_totals');
+            if (error) throw error;
+            const row = Array.isArray(data) ? data[0] : data;
+            if (row) {
+                _dashboardTotalsServer = {
+                    masuk: Number(row.total_masuk) || 0,
+                    retur: Number(row.total_retur) || 0,
+                    keluar: Number(row.total_keluar) || 0,
+                };
+            }
+        } catch (e) {
+            _dashboardTotalsServer = null;
+            console.warn('[Dashboard] rp_get_dashboard_totals belum tersedia, pakai hitung lokal:', e.message);
+        }
+    }
+
     // ==================== FETCH TANPA LIMIT (ANTI TERPOTONG) ====================
     // Supabase/PostgREST membatasi hasil query max 1000 baris per request secara default.
     // Kalau tabel (misal riwayat_input_item) sudah punya >1000 baris, select('*') biasa
@@ -5022,11 +5052,15 @@ GRANT EXECUTE ON FUNCTION public.fix_id_sequences() TO anon, authenticated;`;
             if (pMain && pSec) changeTheme(pMain.value, pSec.value);
 
             setLoadingText('MEMUAT RIWAYAT TRANSAKSI...', 45);
+            // fetchDashboardTotalsServer() ditembak paralel di sini (bukan di-await sendirian)
+            // supaya kalau lambat/gagal tidak menunda loading screen — hasilnya cuma dipakai
+            // sebagai "percepatan" KPI, bukan satu-satunya sumber data (ada fallback lokal).
             const [riDataRaw, riItemsData, trxDataRaw, trxItemsData] = await withTimeout(Promise.all([
                 fetchAllRows('riwayat_input', 'id,mode,brand,model,keterangan,tanggal,jam'),
                 fetchAllRows('riwayat_input_item', 'id,riwayat_input_id,warna,ukuran,qty'),
                 fetchAllRows('transaksi', 'id,vendor,brand,model,harga,harga_modal,status,tanggal,jam,order_code'),
                 fetchAllRows('transaksi_item', 'id,transaksi_id,warna,ukuran,qty,ssk'),
+                fetchDashboardTotalsServer(),
             ]), TIMEOUT_MS, 'Muat riwayat');
             // Urutan tampil: terbaru dulu
             const ri = { data: [...riDataRaw].sort((a, b) => b.id - a.id) };
@@ -5157,6 +5191,7 @@ GRANT EXECUTE ON FUNCTION public.fix_id_sequences() TO anon, authenticated;`;
         // sendiri juga menulis ke tabel ini, tapi setelah sekali jalan jumlah retur sudah
         // turun ke ~100 sehingga panggilan berikutnya langsung berhenti di pengecekan awal.
         if (typeof cekDanArsipkanReturLama === 'function') setTimeout(() => cekDanArsipkanReturLama(), 500);
+        fetchDashboardTotalsServer(); // tidak di-await: KPI update begitu selesai, tidak menunda fetch di atas
     }
     async function fetchTransaksiData() {
         const [trxData, trxItemsData] = await Promise.all([
@@ -5175,6 +5210,7 @@ GRANT EXECUTE ON FUNCTION public.fix_id_sequences() TO anon, authenticated;`;
             tanggal: t.tanggal, jam: t.jam,
             items: trxItemsMap[t.id] || []
         }));
+        fetchDashboardTotalsServer(); // tidak di-await: KPI update begitu selesai, tidak menunda fetch di atas
     }
     // Sinkron status pembayaran ke app Pesanan: dipanggil setiap kali satu atau lebih
     // transaksi ditandai LUNAS. Kalau transaksi itu tercatat berasal dari sebuah pesanan
@@ -6812,14 +6848,25 @@ function updateSSK(tab, rowId) {
 
     function renderStokDashboard() {
         let totalMasuk = 0, totalRetur = 0, totalKeluar = 0;
-        appData.riwayatInput.forEach(d => {
-            const qty = d.items.reduce((s, i) => s + i.qty, 0);
-            if (d.mode === 'retur') totalRetur += qty; else totalMasuk += qty;
-        });
-        appData.riwayatTransaksi.forEach(d => {
-            const qty = d.items.reduce((s, i) => s + i.qty, 0);
-            totalKeluar += qty;
-        });
+        if (_dashboardTotalsServer) {
+            // Sumber cepat: hasil SUM yang sudah dihitung di database (lihat
+            // fetchDashboardTotalsServer() & rp_get_dashboard_totals di Supabase).
+            // Tidak perlu loop lagi atas seluruh riwayatInput/riwayatTransaksi di sini.
+            totalMasuk  = _dashboardTotalsServer.masuk;
+            totalRetur  = _dashboardTotalsServer.retur;
+            totalKeluar = _dashboardTotalsServer.keluar;
+        } else {
+            // Fallback: fungsi SQL belum dibuat di Supabase atau RPC sempat gagal.
+            // Tetap hitung dari data lokal seperti sebelumnya supaya dashboard tidak blank.
+            appData.riwayatInput.forEach(d => {
+                const qty = d.items.reduce((s, i) => s + i.qty, 0);
+                if (d.mode === 'retur') totalRetur += qty; else totalMasuk += qty;
+            });
+            appData.riwayatTransaksi.forEach(d => {
+                const qty = d.items.reduce((s, i) => s + i.qty, 0);
+                totalKeluar += qty;
+            });
+        }
         const stokAktif = totalMasuk - totalRetur - totalKeluar;
         const uniqueModels = new Set();
         appData.riwayatInput.forEach(d => { if (d.model) uniqueModels.add(String(d.model).trim().toUpperCase()); });
