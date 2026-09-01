@@ -11189,13 +11189,25 @@ function updateSSK(tab, rowId) {
         };
 
         // ---- Beban Operasional (sumber: project Inventory yang sama, tabel beban_operasional) ----
+        // PERF: dulu tarik SEMUA baris beban_operasional ke browser lalu filter+jumlah di JS,
+        // sekarang SUM dihitung langsung di database lewat rp_get_beban_total() (lihat
+        // migrasi_total_dashboard.sql) — jauh lebih ringan kalau baris beban sudah banyak.
+        // Kalau fungsi SQL-nya belum dibuat di Supabase, RPC gagal dan otomatis fallback
+        // diam-diam ke cara lama (full fetch + filter lokal) supaya fitur tetap jalan.
         const bebanPromise = (async () => {
             try {
-                const rows = await fetchAllRows('beban_operasional', 'id,nominal,tanggal');
-                return rows.filter(r => inRange((r.tanggal || '').slice(0, 10))).reduce((s, r) => s + (r.nominal || 0), 0);
+                const { data, error } = await sbClient.rpc('rp_get_beban_total', { p_dari: dariISO, p_sampai: sampaiISO });
+                if (error) throw error;
+                return Number(data) || 0;
             } catch (e) {
-                console.warn('Gagal muat beban_operasional utk Laba Rugi:', e.message);
-                return 0;
+                console.warn('[Laba Rugi] rp_get_beban_total belum tersedia, fallback ke hitung lokal:', e.message);
+                try {
+                    const rows = await fetchAllRows('beban_operasional', 'id,nominal,tanggal');
+                    return rows.filter(r => inRange((r.tanggal || '').slice(0, 10))).reduce((s, r) => s + (r.nominal || 0), 0);
+                } catch (e2) {
+                    console.warn('Gagal muat beban_operasional utk Laba Rugi:', e2.message);
+                    return 0;
+                }
             }
         })();
 
@@ -13080,12 +13092,29 @@ function updateSSK(tab, rowId) {
         // PERBAIKAN: Ambil rentang tanggal dari filter
         const { dari, sampai } = getFilterRange();
 
+        // PERF: bangun lookup SEKALI di sini (O(pelunasan.length)), dipakai berulang di bawah
+        // (baik untuk filter "gabungan" maupun breakdown per vendor) — menggantikan pola lama
+        // yang men-.filter() SELURUH appData.pelunasan berkali-kali di dalam loop transaksi/
+        // vendor (O(transaksi x pelunasan)), yang makin berat seiring histori pelunasan
+        // bertambah banyak. Hasil angkanya identik, cuma caranya dihitung yang berbeda.
+        const pelunasanByTrxId = new Map();      // transaksiId (number) -> total jumlah pelunasan per-transaksi
+        const pelunasanVendorLevel = new Map();  // vendor -> array pelunasan level vendor (transaksi_id null/undefined)
+        appData.pelunasan.forEach(p => {
+            if (p.transaksi_id === null || p.transaksi_id === undefined) {
+                if (!pelunasanVendorLevel.has(p.vendor)) pelunasanVendorLevel.set(p.vendor, []);
+                pelunasanVendorLevel.get(p.vendor).push(p);
+            } else {
+                const key = Number(p.transaksi_id);
+                pelunasanByTrxId.set(key, (pelunasanByTrxId.get(key) || 0) + p.jumlah);
+            }
+        });
+
         const gabungan = appData.riwayatTransaksi.filter(t => {
             if (t.status === 'lunas') return false;
             const totalQty = t.items.reduce((s, i) => s + i.qty, 0);
             const totalNominal = totalQty * t.harga;
             if (!tanggalDalamRange(t.tanggal, dari, sampai)) return false;
-            const totalBayar = appData.pelunasan.filter(p => Number(p.transaksi_id) === Number(t.id)).reduce((s, p) => s + p.jumlah, 0);
+            const totalBayar = pelunasanByTrxId.get(Number(t.id)) || 0;
             return totalBayar < totalNominal;
         });
 
@@ -13123,14 +13152,12 @@ function updateSSK(tab, rowId) {
                 const totalQty = t.items.reduce((s, i) => s + i.qty, 0);
                 return sum + (totalQty * t.harga);
             }, 0);
-            // Hitung sudah bayar: per-transaksi + bayar sebagian level vendor (transaksi_id null)
-            const sudahBayarPerTrx = trxList.reduce((sum, t) => {
-                return sum + appData.pelunasan.filter(p => Number(p.transaksi_id) === Number(t.id)).reduce((s, p) => s + p.jumlah, 0);
-            }, 0); // Transaksi sudah difilter tanggal, jadi pembayaran per-transaksi tidak perlu difilter lagi.
-            const sudahBayarSebagianVendor = appData.pelunasan.filter(p => p.vendor === vendor && (p.transaksi_id === null || p.transaksi_id === undefined)).reduce((s, p) => s + p.jumlah, 0);
+            // Hitung sudah bayar: per-transaksi (lookup O(1) dari Map) + bayar sebagian level vendor
+            const sudahBayarPerTrx = trxList.reduce((sum, t) => sum + (pelunasanByTrxId.get(Number(t.id)) || 0), 0);
+            const riwayatBayarSebagianVendor = pelunasanVendorLevel.get(vendor) || [];
+            const sudahBayarSebagianVendor = riwayatBayarSebagianVendor.reduce((s, p) => s + p.jumlah, 0);
             const totalHutang = Math.max(0, totalNominalVendor - sudahBayarPerTrx - sudahBayarSebagianVendor);
-            // Riwayat bayar sebagian vendor level untuk ditampilkan
-            const riwayatBayarSebagianVendor = appData.pelunasan.filter(p => p.vendor === vendor && (p.transaksi_id === null || p.transaksi_id === undefined));
+            // Riwayat bayar sebagian vendor level untuk ditampilkan (sudah didapat dari Map di atas)
             const riwayatBayarSebagianVendorTampil = riwayatBayarSebagianVendor.filter(isPelunasanDalamLimit);
 
             // Cek apakah vendor ini punya bayar sebagian (readonly mode)
