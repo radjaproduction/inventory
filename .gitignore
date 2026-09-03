@@ -4,3 +4,16 @@
 .Spotlight-V100
 .Trashes
 Thumbs.db
+
+# Dependencies and package-manager cache
+node_modules/
+npm-cache/
+
+# Test output
+test-results/
+playwright-report/
+
+# Local environment files
+.env
+.env.*
+!.env.example
