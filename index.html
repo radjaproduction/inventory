@@ -90,7 +90,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Radja Production - App</title>
 
-    <link rel="manifest" href="/inventory/manifest.json">
+    <link rel="manifest" href="./manifest.json">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -98,10 +98,463 @@
     <!-- Cegah browser Android/Chrome memunculkan toolbar pencarian -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
-    <link rel="apple-touch-icon" href="/inventory/icon-192.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="/inventory/icon-192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="/inventory/icon-512.png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
 
+    <!-- Inline module: js/data/supabase-repository.js -->
+    <script>
+        /* Radja Production - data access layer (vanilla JS, transitional)
+         *
+         * This module intentionally has no DOM or application-state dependency. The current
+         * UI still owns the mapping into masterData/appData; that mapping will move out in a
+         * later phase. Keeping the database calls here gives us one seam for query changes.
+         */
+        (function (global) {
+            'use strict';
+
+            function create(client) {
+                if (!client) throw new Error('Supabase client belum tersedia.');
+
+                const writes = {
+                    insert: (table, payload, single) => {
+                        let query = client.from(table).insert(payload).select();
+                        return single ? query.single() : query;
+                    },
+                    insertRaw: (table, payload) =>
+                        client.from(table).insert(payload),
+                    update: (table, values, column, value) =>
+                        client.from(table).update(values).eq(column, value),
+                    remove: (table, column, value) =>
+                        client.from(table).delete().eq(column, value),
+                    upsert: (table, payload, options) =>
+                        client.from(table).upsert(payload, options || {}),
+                    updateWhere: (table, values, filters) => {
+                        let query = client.from(table).update(values);
+                        (filters || []).forEach(filter => {
+                            query = filter.op === 'in'
+                                ? query.in(filter.column, filter.value)
+                                : filter.op === 'neq'
+                                    ? query.neq(filter.column, filter.value)
+                                    : query.eq(filter.column, filter.value);
+                        });
+                        return query;
+                    },
+                    removeWhere: (table, filters) => {
+                        let query = client.from(table).delete();
+                        (filters || []).forEach(filter => {
+                            query = filter.op === 'in'
+                                ? query.in(filter.column, filter.value)
+                                : filter.op === 'neq'
+                                    ? query.neq(filter.column, filter.value)
+                                    : query.eq(filter.column, filter.value);
+                        });
+                        return query;
+                    },
+                };
+
+                async function list(table, select, options) {
+                    const opts = options || {};
+                    const pageSize = opts.pageSize || 1000;
+                    const orderBy = opts.orderBy || 'id';
+                    const ascending = opts.ascending !== false;
+                    const thenOrderBy = opts.thenOrderBy || null;
+                    const thenAscending = opts.thenAscending !== false;
+                    let offset = 0;
+                    const rows = [];
+
+                    while (true) {
+                        let query = client
+                            .from(table)
+                            .select(select || '*')
+                        if (opts.gte) query = query.gte(opts.gte.column, opts.gte.value);
+                        if (opts.lte) query = query.lte(opts.lte.column, opts.lte.value);
+                        let ordered = query.order(orderBy, { ascending });
+                        if (thenOrderBy) ordered = ordered.order(thenOrderBy, { ascending: thenAscending });
+                        const result = await ordered.range(offset, offset + pageSize - 1);
+
+                        if (result.error) throw result.error;
+                        const page = result.data || [];
+                        rows.push(...page);
+                        if (page.length < pageSize) break;
+                        offset += pageSize;
+                    }
+
+                    return rows;
+                }
+
+                async function one(table, select, filters) {
+                    let query = client.from(table).select(select || '*');
+                    (filters || []).forEach(filter => {
+                        query = filter.op === 'in'
+                            ? query.in(filter.column, filter.value)
+                            : query.eq(filter.column, filter.value);
+                    });
+                    const result = await query.maybeSingle();
+                    if (result.error) throw result.error;
+                    return result.data || null;
+                }
+
+                async function probe(table, select) {
+                    const result = await client.from(table).select(select || '*').limit(1);
+                    if (result.error) throw result.error;
+                    return result.data || [];
+                }
+
+                async function rpc(functionName, params) {
+                    const result = await client.rpc(functionName, params || {});
+                    if (result.error) throw result.error;
+                    return result.data;
+                }
+
+                return {
+                    writes,
+                    rows: (table, select, options) => list(table, select, options),
+                    one,
+                    probe,
+                    rpc,
+                    master: {
+                        vendor: () => list('vendor', '*'),
+                        brand: () => list('brand', '*'),
+                        model: () => list('model', '*, brand:brand_id(nama)'),
+                        warna: () => list('warna', '*'),
+                        ukuran: () => list('ukuran', '*'),
+                        pengaturan: () => list('pengaturan', '*', { orderBy: 'key' }),
+                    },
+                    inventory: {
+                        headers: () => list('riwayat_input', 'id,mode,brand,model,keterangan,tanggal,jam'),
+                        items: () => list('riwayat_input_item', 'id,riwayat_input_id,warna,ukuran,qty'),
+                    },
+                    transactions: {
+                        headers: () => list('transaksi', 'id,vendor,brand,model,harga,harga_modal,status,tanggal,jam,order_code'),
+                        items: () => list('transaksi_item', 'id,transaksi_id,warna,ukuran,qty,ssk'),
+                    },
+                    payments: {
+                        settlements: () => list('pelunasan', 'id,transaksi_id,vendor,jumlah,keterangan,tanggal,jam', { ascending: false }),
+                        partial: () => list('bayar_sebagian', 'id,vendor,jumlah_bayar,total_tagihan,sisa,keterangan,tanggal,jam', { ascending: false }),
+                    },
+                    expenses: {
+                        list: (select, range) => list('beban_operasional', select || 'id,kategori,nominal,tanggal,keterangan,sumber', {
+                            gte: range && range.from ? { column: 'tanggal', value: range.from } : null,
+                            lte: range && range.to ? { column: 'tanggal', value: range.to } : null,
+                            orderBy: 'tanggal',
+                            ascending: false,
+                            thenOrderBy: 'id',
+                            thenAscending: false
+                        }),
+                    },
+                };
+            }
+
+            global.RPDataRepository = { create };
+        })(window);
+    </script>
+    <!-- Inline module: js/data/data-mappers.js -->
+    <script>
+        /* Radja Production - database row -> application state mappers */
+        (function (global) {
+            'use strict';
+
+            function mapMasterData(target, rows) {
+                target.vendor = (rows.vendor || []).map(x => ({
+                    id: x.id, nama: x.nama, telp: x.telp || ''
+                }));
+                target.brand = (rows.brand || []).map(x => ({
+                    id: x.id, nama: x.nama
+                }));
+                target.model = (rows.model || []).map(x => ({
+                    id: x.id,
+                    brandId: x.brand_id,
+                    brandNama: x.brand?.nama || x.brand_nama || '',
+                    nama: x.nama,
+                    harga: x.harga || 0,
+                    hargaModal: x.harga_modal || 0
+                }));
+                target.warna = (rows.warna || []).map(x => ({
+                    id: x.id, nama: x.nama, kode: x.kode
+                }));
+                target.ukuran = (rows.ukuran || []).map(x => ({
+                    id: x.id, nama: x.nama
+                }));
+                return target;
+            }
+
+            function mapInputHistory(headers, items) {
+                const itemsByHeader = groupBy(items, 'riwayat_input_id');
+                return [...(headers || [])]
+                    .sort((a, b) => b.id - a.id)
+                    .map(row => ({
+                        id: row.id,
+                        mode: row.mode,
+                        brand: row.brand,
+                        model: row.model,
+                        keterangan: row.keterangan || '',
+                        tanggal: row.tanggal,
+                        jam: row.jam,
+                        items: (itemsByHeader[row.id] || []).map(item => ({
+                            id: item.id,
+                            warna: item.warna,
+                            ukuran: item.ukuran,
+                            qty: item.qty
+                        }))
+                    }));
+            }
+
+            function mapTransactions(headers, items) {
+                const itemsByHeader = groupBy(items, 'transaksi_id');
+                return [...(headers || [])]
+                    .sort((a, b) => b.id - a.id)
+                    .map(row => ({
+                        id: row.id,
+                        vendor: row.vendor,
+                        brand: row.brand,
+                        model: row.model,
+                        harga: row.harga || 0,
+                        hargaModal: row.harga_modal || 0,
+                        status: row.status,
+                        orderCode: row.order_code || null,
+                        tanggal: row.tanggal,
+                        jam: row.jam,
+                        items: (itemsByHeader[row.id] || []).map(item => ({
+                            id: item.id,
+                            warna: item.warna,
+                            ukuran: item.ukuran,
+                            qty: item.qty,
+                            ssk: item.ssk
+                        }))
+                    }));
+            }
+
+            function mapSettlements(rows) {
+                return [...(rows || [])].sort((a, b) => b.id - a.id).map(row => ({
+                    id: row.id,
+                    transaksi_id: row.transaksi_id,
+                    vendor: row.vendor,
+                    jumlah: row.jumlah || 0,
+                    keterangan: row.keterangan || '',
+                    tanggal: row.tanggal,
+                    jam: row.jam
+                }));
+            }
+
+            function mapPartialPayments(rows) {
+                return [...(rows || [])].sort((a, b) => b.id - a.id).map(row => ({
+                    id: row.id,
+                    vendor: row.vendor,
+                    jumlah_bayar: row.jumlah_bayar || 0,
+                    total_tagihan: row.total_tagihan || 0,
+                    sisa: row.sisa || 0,
+                    keterangan: row.keterangan || '',
+                    tanggal: row.tanggal,
+                    jam: row.jam
+                }));
+            }
+
+            function groupBy(rows, key) {
+                return (rows || []).reduce((groups, row) => {
+                    const group = groups[row[key]] || (groups[row[key]] = []);
+                    group.push(row);
+                    return groups;
+                }, {});
+            }
+
+            global.RPDataMappers = {
+                mapMasterData,
+                mapInputHistory,
+                mapTransactions,
+                mapSettlements,
+                mapPartialPayments
+            };
+        })(window);
+    </script>
+    <!-- Inline module: js/domain/stock-calculator.js -->
+    <script>
+        /* Radja Production - stock domain
+         *
+         * Pure calculations only. The caller supplies a snapshot shaped like:
+         * { masterData: { brand: [] }, appData: { riwayatInput: [], riwayatTransaksi: [] } }
+         * No DOM, Supabase, localStorage, or global application state is used here.
+         */
+        (function (global) {
+            'use strict';
+
+            function normalize(value) {
+                return String(value == null ? '' : value).trim().toUpperCase();
+            }
+
+            function create(snapshot) {
+                const masterData = snapshot.masterData || {};
+                const appData = snapshot.appData || {};
+                const brands = masterData.brand || [];
+                const inputs = appData.riwayatInput || [];
+                const transactions = appData.riwayatTransaksi || [];
+                const brandNameToId = new Map(
+                    brands.map(brand => [normalize(brand.nama), brand.id])
+                );
+
+                function brandMatches(record, brandName, brandId) {
+                    if (!brandName && !brandId) return true;
+                    const recordBrand = normalize(record.brand);
+                    if (brandId) return brandNameToId.get(recordBrand) == brandId;
+                    const requestedId = brandNameToId.get(brandName);
+                    return requestedId == null
+                        ? recordBrand === brandName
+                        : brandNameToId.get(recordBrand) == requestedId;
+                }
+
+                function variantKey(model, warna, ukuran) {
+                    return normalize(model) + '||' + normalize(warna) + '||' + normalize(ukuran);
+                }
+
+                function applyRecords(map, records, brandName, brandId, sign) {
+                    records.forEach(record => {
+                        if (!brandMatches(record, brandName, brandId)) return;
+                        (record.items || []).forEach(item => {
+                            const key = variantKey(record.model, item.warna, item.ukuran);
+                            map[key] = (map[key] || 0) + sign(item, record);
+                        });
+                    });
+                }
+
+                function item(modelName, warnaName, ukuranName, brandName, brandId) {
+                    const key = variantKey(modelName, warnaName, ukuranName);
+                    const result = {};
+                    applyRecords(result, inputs, normalize(brandName), brandId, (row, record) =>
+                        record.mode === 'retur' ? -Number(row.qty || 0) : Number(row.qty || 0)
+                    );
+                    applyRecords(result, transactions, normalize(brandName), brandId, row =>
+                        -Number(row.qty || 0)
+                    );
+                    return result[key] || 0;
+                }
+
+                function brand(brandId) {
+                    const result = {};
+                    applyRecords(result, inputs, '', brandId, (row, record) =>
+                        record.mode === 'retur' ? -Number(row.qty || 0) : Number(row.qty || 0)
+                    );
+                    applyRecords(result, transactions, '', brandId, row =>
+                        -Number(row.qty || 0)
+                    );
+                    return result;
+                }
+
+                function allBrands() {
+                    const stockByBrand = new Map();
+                    const modelsByBrand = new Map();
+
+                    function addRecord(record, amount, countModel) {
+                        const brandId = brandNameToId.get(normalize(record.brand));
+                        if (brandId == null) return;
+                        if (!stockByBrand.has(brandId)) stockByBrand.set(brandId, {});
+                        if (countModel) {
+                            if (!modelsByBrand.has(brandId)) modelsByBrand.set(brandId, new Set());
+                            if (record.model) modelsByBrand.get(brandId).add(normalize(record.model));
+                        }
+
+                        const map = stockByBrand.get(brandId);
+                        (record.items || []).forEach(row => {
+                            const key = variantKey(record.model, row.warna, row.ukuran);
+                            map[key] = (map[key] || 0) + amount(row, record);
+                        });
+                    }
+
+                    inputs.forEach(record => addRecord(record, (row, record) =>
+                        record.mode === 'retur' ? -Number(row.qty || 0) : Number(row.qty || 0)
+                    , true));
+                    transactions.forEach(record => addRecord(record, row =>
+                        -Number(row.qty || 0)
+                    , false));
+
+                    return brands.map(currentBrand => {
+                        const stock = stockByBrand.get(currentBrand.id) || {};
+                        return {
+                            ...currentBrand,
+                            total: Object.values(stock).reduce((sum, value) => sum + value, 0),
+                            modelCount: (modelsByBrand.get(currentBrand.id) || new Set()).size,
+                        };
+                    });
+                }
+
+                return { item, brand, allBrands };
+            }
+
+            global.RPStockCalculator = { create };
+        })(window);
+    </script>
+    <!-- Inline module: js/core/performance-monitor.js -->
+    <script>
+        /* Radja Production - lightweight performance instrumentation */
+        (function (global) {
+            'use strict';
+
+            const marks = new Map();
+            const measures = [];
+
+            function start(name) {
+                marks.set(name, performance.now());
+            }
+
+            function end(name, metadata) {
+                const startedAt = marks.get(name);
+                if (startedAt == null) return null;
+                const entry = {
+                    name,
+                    durationMs: Math.round((performance.now() - startedAt) * 100) / 100,
+                    ...(metadata || {})
+                };
+                measures.push(entry);
+                marks.delete(name);
+                return entry;
+            }
+
+            function report() {
+                return measures.map(entry => ({ ...entry }));
+            }
+
+            function log(entry) {
+                if (!entry) return;
+                console.info('[RP PERF]', entry.name, entry.durationMs + 'ms', entry);
+            }
+
+            global.RPPerformance = { start, end, report, log };
+        })(window);
+    </script>
+    <!-- Inline module: js/integrations/external-repository.js -->
+    <script>
+        /* Radja Production - repositories for external integrations */
+        (function (global) {
+            'use strict';
+
+            function create(client, tables) {
+                if (!client) throw new Error('Supabase client belum tersedia.');
+                const pesananTable = tables?.pesanan || 'produksi_orders';
+
+                return {
+                    pesanan: {
+                        setPaymentStatus: (orderCode, status) =>
+                            client.from(pesananTable).update({ status_bayar: status }).eq('order_code', orderCode),
+                        confirm: (orderCode) =>
+                            client.from(pesananTable).update({ stage: 1 }).eq('order_code', orderCode).select('id'),
+                        markPrepared: (orderCode) =>
+                            client.from(pesananTable).update({ disiapkan_selesai: true }).eq('order_code', orderCode),
+                        listWaiting: () =>
+                            client.from(pesananTable).select('id, order_code').eq('stage', 0),
+                        listWaitingWithStage: () =>
+                            client.from(pesananTable).select('id, order_code, stage').eq('stage', 0),
+                        updateItems: (orderCode, items) =>
+                            client.from(pesananTable).update({ items }).eq('order_code', orderCode),
+                    },
+                    fcm: {
+                        upsertToken: (payload) =>
+                            client.from('fcm_tokens').upsert(payload, { onConflict: 'token' }),
+                    },
+                };
+            }
+
+            global.RPExternalRepository = { create };
+        })(window);
+    </script>
     <script>
         // ==================== NOTIFIKASI UPDATE VERSI APLIKASI ====================
         // Cara kerja: browser otomatis cek ulang service-worker.js tiap kali app dibuka/foreground.
@@ -133,7 +586,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/inventory/service-worker.js')
+                navigator.serviceWorker.register('./service-worker.js')
                     .then(reg => {
                         console.log('✅ SW registered:', reg.scope);
                         _swRegistrationGlobal = reg;
@@ -200,7 +653,7 @@
     <!-- Firebase (untuk Push Notification pesanan, seperti WhatsApp — tetap masuk walau app ditutup) -->
     <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-messaging-compat.js"></script>
-    
+
     <script>
         tailwind.config = {
             theme: {
@@ -595,7 +1048,7 @@
             overflow: hidden;
         }
         /* Riwayat Transaksi sekarang punya tinggi yang sama dengan tab Riwayat lain (100dvh)
-           untuk konsistensi safe scrolling area. Tombol Batal/Tagihan/Surat Jalan di 
+           untuk konsistensi safe scrolling area. Tombol Batal/Tagihan/Surat Jalan di
            #sticky-total-bar sudah fixed positioned jadi tidak mempengaruhi tab height. */
         #tab-riwayat.tab-content.flex {
             height: 100vh;
@@ -1758,7 +2211,7 @@ body[data-active-tab] #bottom-navbar{background:transparent!important;border-top
 /* =========================================================
    FIX: layar awal tab STOK (header, logo, 3 kartu KPI, judul
    "STOK PER BRAND") masih bisa digeser/di-scroll ke atas.
-   Penyebabnya: 
+   Penyebabnya:
    1) .rp-stock-dashboard dipaksa min-height:100vh (lihat aturan
       lama di atas), jadi tingginya SELALU >= layar penuh, padahal
       dia harus mengikuti tinggi #tab-stok (flex:1) supaya pas.
@@ -3801,33 +4254,33 @@ END $$;</textarea>
                 </div>
                 <div class="rp-laba-panel-head-title-redesign">RINCIAN LABA RUGI</div>
               </div>
-              
+
               <div class="rp-laba-items-grid">
                 <!-- OMSET PENJUALAN -->
                 <div class="rp-laba-item-card rp-laba-item-accent">
                   <div class="rp-laba-item-label">Omset Penjualan</div>
                   <div class="rp-laba-item-value" id="lr-omset">Rp 0</div>
                 </div>
-                
+
                 <!-- LABA KOTOR -->
                 <div class="rp-laba-item-card rp-laba-item-positive">
                   <div class="rp-laba-item-label">Laba Kotor</div>
                   <div class="rp-laba-item-value" id="lr-laba-kotor">Rp 0</div>
                 </div>
-                
+
                 <!-- BEBAN OPERASIONAL -->
                 <div class="rp-laba-item-card rp-laba-item-negative">
                   <div class="rp-laba-item-label">Beban Operasional</div>
                   <div class="rp-laba-item-value" id="lr-beban">- Rp 0</div>
                 </div>
-                
+
                 <!-- PAYROLL -->
                 <div class="rp-laba-item-card rp-laba-item-negative">
                   <div class="rp-laba-item-label">Payroll</div>
                   <div class="rp-laba-item-value" id="lr-payroll">- Rp 0</div>
                   <div class="rp-laba-item-sub" id="lr-payroll-status">Dari Aplikasi Payroll</div>
                 </div>
-                
+
                 <!-- LABA BERSIH (FULL WIDTH) -->
                 <div class="rp-laba-item-card rp-laba-item-full">
                   <div class="rp-laba-item-label">Laba Bersih</div>
@@ -4427,20 +4880,17 @@ END $$;</textarea>
     try { sbPay = window.supabase.createClient(PAY_URL, PAY_KEY); } catch (e) { console.warn('⚠️ sbPay init gagal:', e); }
 
     async function fetchAllRowsFrom(client, table, selectStr = '*') {
-        const PAGE = 1000;
-        let from = 0;
-        let all = [];
-        while (true) {
-            const { data, error } = await client.from(table).select(selectStr).order('id', { ascending: true }).range(from, from + PAGE - 1);
-            if (error) { console.warn('fetchAllRowsFrom gagal:', table, error.message); break; }
-            all = all.concat(data || []);
-            if (!data || data.length < PAGE) break;
-            from += PAGE;
+        try {
+            return await RPDataRepository.create(client).rows(table, selectStr);
+        } catch (e) {
+            console.warn('fetchAllRowsFrom gagal:', table, e.message);
+            return [];
         }
-        return all;
     }
 
     let sbClient = null;
+    let dataRepository = null;
+    let externalRepository = null;
 
     // ==================== TOTAL DASHBOARD VIA SQL AGGREGATE (SERVER-SIDE) ====================
     // Total Masuk/Retur/Keluar untuk KPI di tab Stok sekarang dihitung LANGSUNG di database
@@ -4456,8 +4906,7 @@ END $$;</textarea>
     let _dashboardTotalsServer = null; // { masuk, retur, keluar } | null kalau belum ada/gagal
     async function fetchDashboardTotalsServer() {
         try {
-            const { data, error } = await sbClient.rpc('rp_get_dashboard_totals');
-            if (error) throw error;
+            const data = await dataRepository.rpc('rp_get_dashboard_totals');
             const row = Array.isArray(data) ? data[0] : data;
             if (row) {
                 _dashboardTotalsServer = {
@@ -4472,6 +4921,56 @@ END $$;</textarea>
         }
     }
 
+    // ==================== SERVER-SIDE STOCK CACHE (TAHAP 2) ====================
+    // Cache hasil RPC rp_get_stock_by_variant() — Map<"BRAND||MODEL||WARNA||UKURAN", stok>
+    // null = belum dimuat atau RPC gagal (fallback ke loop lokal otomatis)
+    let _stockVariantServer = null;
+
+    async function fetchStockVariantServer() {
+        try {
+            const data = await dataRepository.rpc('rp_get_stock_by_variant');
+            const map = new Map();
+            (data || []).forEach(row => {
+                const key = [row.brand, row.model, row.warna, row.ukuran]
+                    .map(v => String(v ?? '').trim().toUpperCase())
+                    .join('||');
+                map.set(key, (map.get(key) || 0) + Number(row.stok_bersih));
+            });
+            _stockVariantServer = map;
+            if (typeof _invalidateStokItemCache === 'function') _invalidateStokItemCache();
+            console.log('[Stock] rp_get_stock_by_variant loaded:', map.size, 'variants');
+        } catch (e) {
+            _stockVariantServer = null;
+            console.warn('[Stock] rp_get_stock_by_variant belum tersedia, pakai hitung lokal:', e.message);
+        }
+    }
+
+    // Diagnostik sementara untuk membedakan angka dashboard, RPC varian, dan data lokal.
+    // Tidak mengubah perhitungan produksi; dapat dipanggil dari console dengan
+    // `debugStokAngka()` setelah aplikasi selesai memuat.
+    window.debugStokAngka = function () {
+        const serverVariantTotal = _stockVariantServer
+            ? [..._stockVariantServer.values()].reduce((sum, qty) => sum + (Number(qty) || 0), 0)
+            : null;
+        const localInput = appData.riwayatInput.reduce((sum, row) =>
+            sum + (row.items || []).reduce((s, item) => s + (Number(item.qty) || 0), 0) * (row.mode === 'retur' ? -1 : 1), 0);
+        const localOutput = appData.riwayatTransaksi.reduce((sum, row) =>
+            sum + (row.items || []).reduce((s, item) => s + (Number(item.qty) || 0), 0), 0);
+        const result = {
+            dashboardRpc: _dashboardTotalsServer,
+            dashboardNet: _dashboardTotalsServer
+                ? _dashboardTotalsServer.masuk - _dashboardTotalsServer.retur - _dashboardTotalsServer.keluar
+                : null,
+            serverVariantTotal,
+            localNet: localInput - localOutput,
+            inputHeaders: appData.riwayatInput.length,
+            transactionHeaders: appData.riwayatTransaksi.length,
+            inputUniqueIds: new Set(appData.riwayatInput.map(row => String(row.id))).size,
+        };
+        console.table(result);
+        return result;
+    };
+
     // ==================== FETCH TANPA LIMIT (ANTI TERPOTONG) ====================
     // Supabase/PostgREST membatasi hasil query max 1000 baris per request secara default.
     // Kalau tabel (misal riwayat_input_item) sudah punya >1000 baris, select('*') biasa
@@ -4484,6 +4983,9 @@ END $$;</textarea>
     // untuk menjamin urutan yang konsisten saat melakukan paginasi, mencegah data
     // terlewat (race condition) jika ada data baru masuk saat proses fetch berjalan.
     async function fetchAllRows(table, selectStr = '*') {
+        // Adapter kompatibilitas: pagination terpusat di repository.
+        return await dataRepository.rows(table, selectStr);
+        /*
         const PAGE = 1000;
         let from = 0;
         let all = [];
@@ -4509,6 +5011,7 @@ END $$;</textarea>
             from += PAGE;
         }
         return all;
+        */
     }
 
     // =========================================================
@@ -4616,8 +5119,16 @@ END $$;</textarea>
 
         document.body.classList.add('lock-page-scroll');
 
-        // Data master + stok dipersiapkan di belakang layar.
+        RPPerformance.start('startup.total');
+        RPPerformance.start('startup.data');
         await muatSemuaData();
+        RPPerformance.log(RPPerformance.end('startup.data', {
+            masterRows: Object.values(masterData).reduce((sum, rows) => sum + rows.length, 0),
+            inputRows: appData.riwayatInput.length,
+            transactionRows: appData.riwayatTransaksi.length,
+            settlementRows: appData.pelunasan.length,
+            expenseRows: typeof _cacheRiwayatBeban !== 'undefined' ? _cacheRiwayatBeban.length : 0
+        }));
 
         setLoadingStatus('MENYIAPKAN TAMPILAN...', 80);
         // Ditunggu penuh (await) — termasuk render dashboard stok & riwayat yang
@@ -4627,7 +5138,11 @@ END $$;</textarea>
         // paralel dengan muatSemuaData, jadi biasanya sudah selesai duluan) — supaya
         // SEMUA background tab sudah ada di cache sebelum overlay hilang, tidak ada
         // lagi tab yang "gambar background-nya masih ngeload" pas pertama dibuka.
+        RPPerformance.start('startup.ui');
         await Promise.all([initUI(), _bgImagesPreloadPromise]);
+        RPPerformance.log(RPPerformance.end('startup.ui', {
+            domNodes: document.getElementsByTagName('*').length
+        }));
 
         // Realtime dan notifikasi langsung disiapkan sebelum loading ditutup.
         setLoadingStatus('MENYIAPKAN NOTIFIKASI...', 95);
@@ -4638,6 +5153,7 @@ END $$;</textarea>
         // App sudah siap sepenuhnya di belakang layar. Overlay baru boleh
         // ditutup setelah durasi minimum animasi terpenuhi.
         finishInitialLoading();
+        RPPerformance.log(RPPerformance.end('startup.total'));
     }
 
     // ==================== INISIALISASI APP ====================
@@ -4716,10 +5232,12 @@ END $$;</textarea>
                     },
                 },
             });
+            dataRepository = RPDataRepository.create(sbClient);
+            externalRepository = RPExternalRepository.create(sbClient);
 
             // Tes koneksi dengan timeout 15 detik
             const pingResult = await withTimeout(
-                sbClient.from('pengaturan').select('key').limit(1),
+                dataRepository.probe('pengaturan', 'key'),
                 15000,
                 'Koneksi Supabase'
             );
@@ -4868,6 +5386,17 @@ CREATE TABLE IF NOT EXISTS bayar_sebagian (
     created_at timestamptz default now()
 );
 
+CREATE TABLE IF NOT EXISTS beban_operasional (
+    id bigint generated by default as identity primary key,
+    kategori text not null,
+    keterangan text,
+    nominal integer default 0,
+    tanggal text not null,
+    sumber text default 'ADMIN',
+    foto text,
+    created_at timestamptz default now()
+);
+
 -- ============================================
 -- DISABLE ROW LEVEL SECURITY (semua tabel)
 -- Wajib agar anon key bisa akses data
@@ -4884,6 +5413,7 @@ ALTER TABLE transaksi DISABLE ROW LEVEL SECURITY;
 ALTER TABLE transaksi_item DISABLE ROW LEVEL SECURITY;
 ALTER TABLE pelunasan DISABLE ROW LEVEL SECURITY;
 ALTER TABLE bayar_sebagian DISABLE ROW LEVEL SECURITY;
+ALTER TABLE beban_operasional DISABLE ROW LEVEL SECURITY;
 
 -- ============================================
 -- AKTIFKAN REALTIME (wajib, agar sinkron otomatis antar device)
@@ -4901,6 +5431,7 @@ BEGIN
     BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE transaksi; EXCEPTION WHEN duplicate_object THEN NULL; END;
     BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE transaksi_item; EXCEPTION WHEN duplicate_object THEN NULL; END;
     BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE pelunasan; EXCEPTION WHEN duplicate_object THEN NULL; END;
+    BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE beban_operasional; EXCEPTION WHEN duplicate_object THEN NULL; END;
 END $$;
 
 -- ============================================
@@ -4926,10 +5457,19 @@ BEGIN
     PERFORM setval(pg_get_serial_sequence('transaksi','id'), COALESCE((SELECT MAX(id) FROM transaksi), 1));
     PERFORM setval(pg_get_serial_sequence('transaksi_item','id'), COALESCE((SELECT MAX(id) FROM transaksi_item), 1));
     PERFORM setval(pg_get_serial_sequence('pelunasan','id'), COALESCE((SELECT MAX(id) FROM pelunasan), 1));
+    PERFORM setval(pg_get_serial_sequence('beban_operasional','id'), COALESCE((SELECT MAX(id) FROM beban_operasional), 1));
 END;
 $fn$;
 
-GRANT EXECUTE ON FUNCTION public.fix_id_sequences() TO anon, authenticated;`;
+GRANT EXECUTE ON FUNCTION public.fix_id_sequences() TO anon, authenticated;
+
+-- Kompatibilitas aplikasi Pesanan: status selesai disiapkan harus tersimpan lintas perangkat.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'produksi_orders') THEN
+    ALTER TABLE public.produksi_orders ADD COLUMN IF NOT EXISTS disiapkan_selesai boolean NOT NULL DEFAULT false;
+  END IF;
+END $$;`;
 
     function tampilkanModalSQL(fromConfig) {
         // Hapus modal lama jika ada
@@ -5032,91 +5572,83 @@ GRANT EXECUTE ON FUNCTION public.fix_id_sequences() TO anon, authenticated;`;
         });
     })();
 
-    // ==================== LOAD SEMUA DATA DARI SUPABASE ====================
+    // ==================== LOAD DATA STARTUP & RIWAYAT ON-DEMAND ====================
+    let _historyDataLoaded = false;
+    let _historyDataPromise = null;
+
+    async function ensureHistoryDataLoaded() {
+        if (_historyDataLoaded) return;
+        if (_historyDataPromise) return _historyDataPromise;
+
+        _historyDataPromise = (async () => {
+            const repository = dataRepository;
+            const [riDataRaw, riItemsData, trxDataRaw, trxItemsData] = await Promise.all([
+                repository.inventory.headers(),
+                repository.inventory.items(),
+                repository.transactions.headers(),
+                repository.transactions.items(),
+            ]);
+            appData.riwayatInput = RPDataMappers.mapInputHistory(riDataRaw, riItemsData);
+            appData.riwayatTransaksi = RPDataMappers.mapTransactions(trxDataRaw, trxItemsData);
+
+            try {
+                const pelDB = await repository.payments.settlements();
+                appData.pelunasan = RPDataMappers.mapSettlements(pelDB || []);
+            } catch (e) {
+                console.warn('Tabel pelunasan belum ada, fitur pelunasan akan tersedia setelah SQL dijalankan.');
+                appData.pelunasan = [];
+            }
+            _historyDataLoaded = true;
+        })();
+
+        try {
+            await _historyDataPromise;
+        } finally {
+            _historyDataPromise = null;
+        }
+    }
+
     async function muatSemuaData() {
         const setLoadingText = (t, p) => setLoadingStatus(t, p);
 
         try {
             setLoadingText('MEMUAT DATA MASTER...', 25);
             const TIMEOUT_MS = 20000;
+            const repository = dataRepository;
             const [v, b, m, w, u, pengaturan] = await withTimeout(Promise.all([
-                sbClient.from('vendor').select('*').order('id'),
-                sbClient.from('brand').select('*').order('id'),
-                sbClient.from('model').select('*, brand:brand_id(nama)').order('id'),
-                sbClient.from('warna').select('*').order('id'),
-                sbClient.from('ukuran').select('*').order('id'),
-                sbClient.from('pengaturan').select('*'),
+                repository.master.vendor(),
+                repository.master.brand(),
+                repository.master.model(),
+                repository.master.warna(),
+                repository.master.ukuran(),
+                repository.master.pengaturan(),
             ]), TIMEOUT_MS, 'Muat data master');
 
-            // Query Supabase yang gagal (RLS, tabel belum ada, key tidak berizin, dst)
-            // tidak melempar exception — datang sebagai {data:null, error:{...}} dengan
-            // status sukses. Tanpa dicek, ini akan lolos jadi "data kosong" tanpa pesan
-            // apa pun ke user. Kumpulkan semua error dari batch ini dan lempar sekaligus
-            // supaya ditangani oleh catch di bawah dan ditampilkan sebagai toast.
-            const masterErrors = [
-                ['vendor', v.error], ['brand', b.error], ['model', m.error],
-                ['warna', w.error], ['ukuran', u.error], ['pengaturan', pengaturan.error],
-            ].filter(([, err]) => err);
-            if (masterErrors.length) {
-                throw new Error('Gagal memuat data master (' + masterErrors.map(([t]) => t).join(', ') + '): ' + masterErrors[0][1].message);
-            }
-
-            masterData.vendor = (v.data || []).map(x => ({ id: x.id, nama: x.nama, telp: x.telp || '' }));
-            masterData.brand  = (b.data || []).map(x => ({ id: x.id, nama: x.nama }));
-            masterData.model  = (m.data || []).map(x => ({ id: x.id, brandId: x.brand_id, brandNama: x.brand?.nama || x.brand_nama || '', nama: x.nama, harga: x.harga || 0, hargaModal: x.harga_modal || 0 }));
-            masterData.warna  = (w.data || []).map(x => ({ id: x.id, nama: x.nama, kode: x.kode }));
-            masterData.ukuran = (u.data || []).map(x => ({ id: x.id, nama: x.nama }));
+            RPDataMappers.mapMasterData(masterData, { vendor: v, brand: b, model: m, warna: w, ukuran: u });
 
             // Load pengaturan lebih awal agar theme tampil sebelum render
-            const pengArr = pengaturan.data || [];
+            const pengArr = pengaturan || [];
             const pMain = pengArr.find(p => p.key === 'theme_main');
             const pSec  = pengArr.find(p => p.key === 'theme_secondary');
             if (pMain && pSec) changeTheme(pMain.value, pSec.value);
 
-            setLoadingText('MEMUAT RIWAYAT TRANSAKSI...', 45);
-            // fetchDashboardTotalsServer() ditembak paralel di sini (bukan di-await sendirian)
-            // supaya kalau lambat/gagal tidak menunda loading screen — hasilnya cuma dipakai
-            // sebagai "percepatan" KPI, bukan satu-satunya sumber data (ada fallback lokal).
-            const [riDataRaw, riItemsData, trxDataRaw, trxItemsData] = await withTimeout(Promise.all([
-                fetchAllRows('riwayat_input', 'id,mode,brand,model,keterangan,tanggal,jam'),
-                fetchAllRows('riwayat_input_item', 'id,riwayat_input_id,warna,ukuran,qty'),
-                fetchAllRows('transaksi', 'id,vendor,brand,model,harga,harga_modal,status,tanggal,jam,order_code'),
-                fetchAllRows('transaksi_item', 'id,transaksi_id,warna,ukuran,qty,ssk'),
+            setLoadingText('MENYIAPKAN RINGKASAN STOK...', 45);
+            // Dashboard memakai aggregate server. Riwayat lengkap baru diambil ketika
+            // dibutuhkan oleh tab/laporan, sehingga startup tidak memuat seluruh ledger.
+            await withTimeout(Promise.all([
                 fetchDashboardTotalsServer(),
-            ]), TIMEOUT_MS, 'Muat riwayat');
-            // Urutan tampil: terbaru dulu
-            const ri = { data: [...riDataRaw].sort((a, b) => b.id - a.id) };
-            const riItems = { data: riItemsData };
-            const trx = { data: [...trxDataRaw].sort((a, b) => b.id - a.id) };
-            const trxItems = { data: trxItemsData };
+                fetchStockVariantServer(),
+            ]), TIMEOUT_MS, 'Muat ringkasan stok');
 
-            // Gunakan Map untuk lookup O(1) — jauh lebih cepat dari .filter() pada data besar
-            const riItemsMap = {};
-            (riItems.data || []).forEach(i => {
-                if (!riItemsMap[i.riwayat_input_id]) riItemsMap[i.riwayat_input_id] = [];
-                riItemsMap[i.riwayat_input_id].push({ id: i.id, warna: i.warna, ukuran: i.ukuran, qty: i.qty });
-            });
-            appData.riwayatInput = (ri.data || []).map(r => ({
-                id: r.id, mode: r.mode, brand: r.brand, model: r.model,
-                keterangan: r.keterangan || '',
-                tanggal: r.tanggal, jam: r.jam,
-                items: riItemsMap[r.id] || []
-            }));
-            // Cek arsip retur lama di background — tidak di-await supaya tidak menunda
-            // loading screen (proses ini insert+delete ke DB, bisa agak lama kalau data besar).
-            if (typeof cekDanArsipkanReturLama === 'function') setTimeout(() => cekDanArsipkanReturLama(), 4000);
-
-            const trxItemsMap = {};
-            (trxItems.data || []).forEach(i => {
-                if (!trxItemsMap[i.transaksi_id]) trxItemsMap[i.transaksi_id] = [];
-                trxItemsMap[i.transaksi_id].push({ id: i.id, warna: i.warna, ukuran: i.ukuran, qty: i.qty, ssk: i.ssk });
-            });
-            appData.riwayatTransaksi = (trx.data || []).map(t => ({
-                id: t.id, vendor: t.vendor, brand: t.brand, model: t.model,
-                harga: t.harga || 0, hargaModal: t.harga_modal || 0, status: t.status,
-                tanggal: t.tanggal, jam: t.jam, orderCode: t.order_code || null,
-                items: trxItemsMap[t.id] || []
-            }));
+            // Jika salah satu RPC ringkasan gagal, dashboard harus memuat ledger lokal
+            // agar KPI tidak berada dalam kondisi campuran (misalnya kartu brand terisi
+            // dari server tetapi Total Produk/Barang Keluar masih 0 dari state kosong).
+            if (!_stockVariantServer || !_dashboardTotalsServer) {
+                await withTimeout(ensureHistoryDataLoaded(), TIMEOUT_MS, 'Muat data stok lokal');
+                // Jangan mencampur sumber server dan lokal pada satu dashboard.
+                // Jika pasangan RPC tidak lengkap, pakai kalkulator lokal secara konsisten.
+                if (!_stockVariantServer || !_dashboardTotalsServer) _stockVariantServer = null;
+            }
 
         } catch(e) {
             console.warn('muatSemuaData error:', e.message);
@@ -5128,111 +5660,70 @@ GRANT EXECUTE ON FUNCTION public.fix_id_sequences() TO anon, authenticated;`;
             showToast('⚠️ ' + (e.message || 'Gagal memuat sebagian data dari database.'));
         }
 
-        // Load pelunasan secara terpisah agar tidak mengganggu data utama
-        // (tabel ini mungkin belum dibuat jika user belum jalankan SQL terbaru)
-        try {
-            setLoadingText('MEMUAT DATA PELUNASAN...', 65);
-            const pelDB = await withTimeout(
-                sbClient.from('pelunasan').select('id,transaksi_id,vendor,jumlah,keterangan,tanggal,jam').order('id', { ascending: false }),
-                15000, 'Muat pelunasan'
-            );
-            appData.pelunasan = (pelDB.data || []).map(p => ({
-                id: p.id, transaksi_id: p.transaksi_id, vendor: p.vendor,
-                jumlah: p.jumlah || 0, keterangan: p.keterangan || '',
-                tanggal: p.tanggal, jam: p.jam
-            }));
-        } catch(e) {
-            console.warn('Tabel pelunasan belum ada, fitur pelunasan akan tersedia setelah SQL dijalankan.');
-            appData.pelunasan = [];
-        }
-
-        // Preload RIWAYAT BEBAN (periode minggu ini, sama seperti filter default-nya)
-        // di loading screen awal ini juga -- SAMA seperti riwayat_input/transaksi di
-        // atas. Tanpa ini, TAB RIWAYAT BEBAN selalu nampilin spinner "Memuat data..."
-        // tiap kali dibuka -- termasuk pas pertama kali app dibuka -- padahal datanya
-        // sama-sama dari Supabase kayak tab lain, cuma sebelumnya baru ditarik pas
-        // tab-nya sendiri dibuka (bukan lebih awal di sini). silent=true: jangan
-        // tampilkan spinner (tab-nya juga belum kelihatan) & jangan render ulang
-        // kalau datanya kebetulan kosong dari awal.
-        try {
-            setLoadingText('MEMUAT DATA BEBAN...', 70);
-            if (typeof loadRiwayatBebanList === 'function') await loadRiwayatBebanList(true);
-        } catch (e) {
-            console.warn('Gagal preload beban_operasional saat startup:', e.message);
-        }
+        // Data beban tidak dipreload saat startup. Tab Riwayat Beban memuat datanya
+        // sendiri ketika benar-benar dibuka, sehingga query dan render ini tidak
+        // menghambat jalur startup pengguna yang hanya membuka dashboard stok.
     }
 
     // ==================== FETCH GRANULAR PER TABEL (dipakai saat realtime sync) ====================
     // Masing-masing fungsi ini HANYA menarik & mengubah bagian masterData/appData miliknya sendiri,
     // supaya saat realtime sync tidak perlu menarik ulang SEMUA 11 tabel tiap ada 1 perubahan.
     async function fetchVendorData() {
-        const { data } = await sbClient.from('vendor').select('*').order('id');
+        const data = await dataRepository.master.vendor();
         masterData.vendor = (data || []).map(x => ({ id: x.id, nama: x.nama, telp: x.telp || '' }));
     }
     async function fetchBrandData() {
-        const { data } = await sbClient.from('brand').select('*').order('id');
+        const data = await dataRepository.master.brand();
         masterData.brand = (data || []).map(x => ({ id: x.id, nama: x.nama }));
     }
     async function fetchModelData() {
-        const { data } = await sbClient.from('model').select('*, brand:brand_id(nama)').order('id');
+        const data = await dataRepository.master.model();
         masterData.model = (data || []).map(x => ({ id: x.id, brandId: x.brand_id, brandNama: x.brand?.nama || x.brand_nama || '', nama: x.nama, harga: x.harga || 0, hargaModal: x.harga_modal || 0 }));
     }
     async function fetchWarnaData() {
-        const { data } = await sbClient.from('warna').select('*').order('id');
+        const data = await dataRepository.master.warna();
         masterData.warna = (data || []).map(x => ({ id: x.id, nama: x.nama, kode: x.kode }));
     }
     async function fetchUkuranData() {
-        const { data } = await sbClient.from('ukuran').select('*').order('id');
+        const data = await dataRepository.master.ukuran();
         masterData.ukuran = (data || []).map(x => ({ id: x.id, nama: x.nama }));
     }
     async function fetchPengaturanData() {
-        const { data } = await sbClient.from('pengaturan').select('*');
+        const data = await dataRepository.master.pengaturan();
         const pengArr = data || [];
         const pMain = pengArr.find(p => p.key === 'theme_main');
         const pSec  = pengArr.find(p => p.key === 'theme_secondary');
         if (pMain && pSec) changeTheme(pMain.value, pSec.value);
     }
     async function fetchRiwayatInputData() {
+        const repository = dataRepository;
         const [riData, riItemsData] = await Promise.all([
-            fetchAllRows('riwayat_input', 'id,mode,brand,model,keterangan,tanggal,jam'),
-            fetchAllRows('riwayat_input_item', 'id,riwayat_input_id,warna,ukuran,qty'),
+            repository.inventory.headers(),
+            repository.inventory.items(),
         ]);
-        const riItemsMap = {};
-        riItemsData.forEach(i => {
-            if (!riItemsMap[i.riwayat_input_id]) riItemsMap[i.riwayat_input_id] = [];
-            riItemsMap[i.riwayat_input_id].push({ id: i.id, warna: i.warna, ukuran: i.ukuran, qty: i.qty });
-        });
-        appData.riwayatInput = riData.sort((a, b) => b.id - a.id).map(r => ({
-            id: r.id, mode: r.mode, brand: r.brand, model: r.model,
-            keterangan: r.keterangan || '',
-            tanggal: r.tanggal, jam: r.jam,
-            items: riItemsMap[r.id] || []
-        }));
+        appData.riwayatInput = RPDataMappers.mapInputHistory(riData, riItemsData);
         // Cek arsip retur lama juga di sini (dipanggil ulang tiap ada perubahan realtime
         // pada riwayat_input/riwayat_input_item). Aman dari loop: cekDanArsipkanReturLama
         // sendiri juga menulis ke tabel ini, tapi setelah sekali jalan jumlah retur sudah
         // turun ke ~100 sehingga panggilan berikutnya langsung berhenti di pengecekan awal.
         if (typeof cekDanArsipkanReturLama === 'function') setTimeout(() => cekDanArsipkanReturLama(), 500);
-        fetchDashboardTotalsServer(); // tidak di-await: KPI update begitu selesai, tidak menunda fetch di atas
+        await Promise.all([fetchDashboardTotalsServer(), fetchStockVariantServer()]);
     }
     async function fetchTransaksiData() {
+        const repository = dataRepository;
         const [trxData, trxItemsData] = await Promise.all([
-            fetchAllRows('transaksi', 'id,vendor,brand,model,harga,harga_modal,status,tanggal,jam,order_code'),
-            fetchAllRows('transaksi_item', 'id,transaksi_id,warna,ukuran,qty,ssk'),
+            repository.transactions.headers(),
+            repository.transactions.items(),
         ]);
-        const trxItemsMap = {};
-        trxItemsData.forEach(i => {
-            if (!trxItemsMap[i.transaksi_id]) trxItemsMap[i.transaksi_id] = [];
-            trxItemsMap[i.transaksi_id].push({ id: i.id, warna: i.warna, ukuran: i.ukuran, qty: i.qty, ssk: i.ssk });
-        });
-        appData.riwayatTransaksi = trxData.sort((a, b) => b.id - a.id).map(t => ({
-            id: t.id, vendor: t.vendor, brand: t.brand, model: t.model,
-            harga: t.harga || 0, hargaModal: t.harga_modal || 0, status: t.status,
-            orderCode: t.order_code || null,
-            tanggal: t.tanggal, jam: t.jam,
-            items: trxItemsMap[t.id] || []
-        }));
-        fetchDashboardTotalsServer(); // tidak di-await: KPI update begitu selesai, tidak menunda fetch di atas
+        appData.riwayatTransaksi = RPDataMappers.mapTransactions(trxData, trxItemsData);
+        await Promise.all([fetchDashboardTotalsServer(), fetchStockVariantServer()]);
+    }
+
+    async function refreshStockCachesAfterMutation() {
+        await Promise.all([fetchDashboardTotalsServer(), fetchStockVariantServer()]);
+        if (!_stockVariantServer || !_dashboardTotalsServer) {
+            await ensureHistoryDataLoaded();
+        }
     }
     // Sinkron status pembayaran ke app Pesanan: dipanggil setiap kali satu atau lebih
     // transaksi ditandai LUNAS. Kalau transaksi itu tercatat berasal dari sebuah pesanan
@@ -5247,7 +5738,7 @@ GRANT EXECUTE ON FUNCTION public.fix_id_sequences() TO anon, authenticated;`;
             const masihCredit = appData.riwayatTransaksi.some(t => t.orderCode === code && t.status === 'credit');
             if (masihCredit) continue;
             try {
-                await sbClient.from('produksi_orders').update({ status_bayar: 'lunas' }).eq('order_code', code);
+                await externalRepository.pesanan.setPaymentStatus(code, 'lunas');
             } catch (e) {
                 console.warn('Gagal sinkron status pembayaran ke Pesanan untuk order', code, e);
             }
@@ -5255,26 +5746,14 @@ GRANT EXECUTE ON FUNCTION public.fix_id_sequences() TO anon, authenticated;`;
     }
 
     async function fetchPelunasanData() {
-        const pelData = await fetchAllRows('pelunasan', 'id,transaksi_id,vendor,jumlah,keterangan,tanggal,jam');
-        appData.pelunasan = pelData.sort((a, b) => b.id - a.id).map(p => ({
-            id: p.id, transaksi_id: p.transaksi_id, vendor: p.vendor,
-            jumlah: p.jumlah || 0, keterangan: p.keterangan || '',
-            tanggal: p.tanggal, jam: p.jam
-        }));
+        const pelData = await dataRepository.payments.settlements();
+        appData.pelunasan = RPDataMappers.mapSettlements(pelData);
     }
 
 async function fetchBayarSebagianData() {
     try {
-        const bsData = await fetchAllRows('bayar_sebagian', 'id,vendor,jumlah_bayar,total_tagihan,sisa,keterangan,tanggal,jam');
-        appData.bayarSebagian = bsData.sort((a, b) => b.id - a.id).map(bs => ({
-            id: bs.id,
-            vendor: bs.vendor,
-            jumlah_bayar: bs.jumlah_bayar || 0,
-            total_tagihan: bs.total_tagihan || 0,
-            sisa: bs.sisa || 0,
-            keterangan: bs.keterangan || '',
-            tanggal: bs.tanggal, jam: bs.jam
-        }));
+        const bsData = await dataRepository.payments.partial();
+        appData.bayarSebagian = RPDataMappers.mapPartialPayments(bsData);
     } catch(e) { console.warn('Tabel bayar_sebagian belum ada.'); appData.bayarSebagian = []; }
 }
 
@@ -5619,7 +6098,7 @@ async function fetchBayarSebagianData() {
 
             let itemsHtml = '';
             let tabelHeader = '';
-            
+
             if (items.length === 0) {
                 itemsHtml = '<div style="font-size:11px;color:#999;font-style:italic;">(tidak ada rincian item)</div>';
             } else {
@@ -5630,7 +6109,7 @@ async function fetchBayarSebagianData() {
                     + '<span style="font-size:9px;font-weight:800;color:#999;letter-spacing:0.5px;display:flex;justify-content:center;align-items:center;">WARNA</span>'
                     + '<span style="font-size:9px;font-weight:800;color:#999;letter-spacing:0.5px;display:flex;justify-content:center;align-items:center;">QTY</span>'
                     + '</div>';
-                
+
                 itemsHtml = Object.keys(brandMap).map(brand => {
                     const brandLabel = brand
                         ? '<div style="margin-bottom:5px;">'
@@ -5727,7 +6206,7 @@ async function fetchBayarSebagianData() {
             if (!sbClient) { showToast('❌ Tidak ada koneksi ke server'); return; }
             if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; }
             try {
-                const { data: updRows, error } = await sbClient.from(PESANAN_TABLE).update({ stage: 1 }).eq('order_code', orderCode).select('id');
+                const { data: updRows, error } = await externalRepository.pesanan.confirm(orderCode);
                 if (error) throw error;
                 showToast('✅ Pesanan ' + orderCode + ' dikonfirmasi');
                 // JANGAN cuma pasrah nunggu event Realtime UPDATE buat mematikan alarm — kadang
@@ -5756,8 +6235,7 @@ async function fetchBayarSebagianData() {
             if (!sbClient) { showToast('❌ Tidak ada koneksi ke server'); return; }
             if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; }
             try {
-                const { error } = await sbClient.from(PESANAN_TABLE)
-                    .update({ disiapkan_selesai: true }).eq('order_code', orderCode);
+                const { error } = await externalRepository.pesanan.markPrepared(orderCode);
                 if (error) throw error;
                 showToast('📦 ' + orderCode + ' ditandai selesai disiapkan');
                 const orders = await _fetchAktifPesananOrders();
@@ -5948,11 +6426,11 @@ async function fetchBayarSebagianData() {
             if (!token) { console.warn('[FCM Push] Gagal dapat token FCM.'); return; }
 
             if (sbClient) {
-                const { error } = await sbClient.from('fcm_tokens').upsert({
+                const { error } = await externalRepository.fcm.upsertToken({
                     token,
                     device_info: navigator.userAgent,
                     updated_at: new Date().toISOString(),
-                }, { onConflict: 'token' });
+                });
                 if (error) console.warn('[FCM Push] Gagal simpan token ke Supabase:', error.message);
                 else console.log('[FCM Push] Token terdaftar, push notification (WA-style) aktif.');
             }
@@ -5978,7 +6456,7 @@ async function fetchBayarSebagianData() {
     async function initPesananNotif() {
         if (!sbClient) { _updatePesananBellBadge(); return; }
         try {
-            const { data, error } = await sbClient.from(PESANAN_TABLE).select('id, order_code').eq('stage', 0);
+            const { data, error } = await externalRepository.pesanan.listWaiting();
             if (!error) {
                 pesananMenungguCount = (data || []).length;
                 _pesananMenungguCodes.clear();
@@ -6016,7 +6494,7 @@ async function fetchBayarSebagianData() {
         try {
             // Polling hanya perlu status dan kode pesanan. Kolom items bisa berupa JSON besar
             // dan tidak perlu diunduh setiap 20 detik.
-            const { data, error } = await sbClient.from(PESANAN_TABLE).select('id, order_code, stage').eq('stage', 0);
+            const { data, error } = await externalRepository.pesanan.listWaitingWithStage();
             if (!error && data) {
                 const baru = data.filter(o => o.id != null && !_pesananProcessedIds.has(o.id));
                 pesananMenungguCount = data.length;
@@ -6234,11 +6712,12 @@ async function fetchBayarSebagianData() {
         const list = appData.riwayatTransaksi;
         const parentPayloads = payloads.filter(p => p.table === 'transaksi');
         const itemPayloads = payloads.filter(p => p.table === 'transaksi_item');
+        const sameId = (a, b) => a != null && b != null && String(a) === String(b);
 
         for (const p of parentPayloads) {
             if (p.eventType === 'INSERT') {
                 const t = p.new;
-                if (!list.some(x => x.id === t.id)) {
+                if (!list.some(x => sameId(x.id, t.id))) {
                     list.push({
                         id: t.id, vendor: t.vendor, brand: t.brand, model: t.model,
                         harga: t.harga || 0, hargaModal: t.harga_modal || 0, status: t.status,
@@ -6249,7 +6728,7 @@ async function fetchBayarSebagianData() {
                 }
             } else if (p.eventType === 'UPDATE') {
                 const t = p.new;
-                const idx = list.findIndex(x => x.id === t.id);
+                const idx = list.findIndex(x => sameId(x.id, t.id));
                 if (idx === -1) return false; // belum ada lokal, aman-nya fallback full fetch
                 list[idx] = {
                     id: t.id, vendor: t.vendor, brand: t.brand, model: t.model,
@@ -6259,7 +6738,7 @@ async function fetchBayarSebagianData() {
                     items: list[idx].items // pertahankan item yang sudah ada
                 };
             } else if (p.eventType === 'DELETE') {
-                const idx = list.findIndex(x => x.id === p.old.id);
+                const idx = list.findIndex(x => sameId(x.id, p.old.id));
                 if (idx !== -1) list.splice(idx, 1);
             }
         }
@@ -6267,41 +6746,65 @@ async function fetchBayarSebagianData() {
         for (const p of itemPayloads) {
             if (p.eventType === 'INSERT') {
                 const i = p.new;
-                const parent = list.find(x => x.id === i.transaksi_id);
+                const parent = list.find(x => sameId(x.id, i.transaksi_id));
                 if (!parent) return false; // parent belum ada lokal -> fallback full fetch
-                if (!parent.items.some(x => x.id === i.id)) {
+                if (!parent.items.some(x => sameId(x.id, i.id))) {
                     parent.items.push({ id: i.id, warna: i.warna, ukuran: i.ukuran, qty: i.qty, ssk: i.ssk });
                 }
             } else if (p.eventType === 'UPDATE') {
                 const i = p.new;
-                const parent = list.find(x => x.id === i.transaksi_id);
+                const parent = list.find(x => sameId(x.id, i.transaksi_id));
                 if (!parent) return false;
-                const iidx = parent.items.findIndex(x => x.id === i.id);
+                const iidx = parent.items.findIndex(x => sameId(x.id, i.id));
                 const itemData = { id: i.id, warna: i.warna, ukuran: i.ukuran, qty: i.qty, ssk: i.ssk };
                 if (iidx === -1) parent.items.push(itemData); else parent.items[iidx] = itemData;
             } else if (p.eventType === 'DELETE') {
                 // payload.old DELETE default cuma berisi primary key (id), tanpa transaksi_id,
                 // jadi cari & hapus item itu di SEMUA parent (bukan lookup by transaksi_id).
                 for (const parent of list) {
-                    const iidx = parent.items.findIndex(x => x.id === p.old.id);
+                    const iidx = parent.items.findIndex(x => sameId(x.id, p.old.id));
                     if (iidx !== -1) { parent.items.splice(iidx, 1); break; }
                 }
             }
         }
 
         list.sort((a, b) => b.id - a.id); // urutan tampil tetap: terbaru dulu
+        _dedupeTransaksiState();
         return true;
+    }
+
+    function _dedupeTransaksiState() {
+        const list = appData.riwayatTransaksi;
+        const parentById = new Map();
+        for (let idx = list.length - 1; idx >= 0; idx--) {
+            const current = list[idx];
+            const parentKey = current.id == null ? `missing:${idx}` : String(current.id);
+            const existing = parentById.get(parentKey);
+            if (!existing) {
+                parentById.set(parentKey, current);
+                continue;
+            }
+            const itemById = new Map((existing.items || []).filter(item => item.id != null).map(item => [String(item.id), item]));
+            for (const item of current.items || []) {
+                if (item.id == null || !itemById.has(String(item.id))) {
+                    existing.items.push(item);
+                    if (item.id != null) itemById.set(String(item.id), item);
+                }
+            }
+            list.splice(idx, 1);
+        }
     }
 
     function _patchRiwayatInputGroup(payloads) {
         const list = appData.riwayatInput;
         const parentPayloads = payloads.filter(p => p.table === 'riwayat_input');
         const itemPayloads = payloads.filter(p => p.table === 'riwayat_input_item');
+        const sameId = (a, b) => a != null && b != null && String(a) === String(b);
 
         for (const p of parentPayloads) {
             if (p.eventType === 'INSERT') {
                 const r = p.new;
-                if (!list.some(x => x.id === r.id)) {
+                if (!list.some(x => sameId(x.id, r.id))) {
                     list.push({
                         id: r.id, mode: r.mode, brand: r.brand, model: r.model,
                         keterangan: r.keterangan || '',
@@ -6311,7 +6814,7 @@ async function fetchBayarSebagianData() {
                 }
             } else if (p.eventType === 'UPDATE') {
                 const r = p.new;
-                const idx = list.findIndex(x => x.id === r.id);
+                const idx = list.findIndex(x => sameId(x.id, r.id));
                 if (idx === -1) return false;
                 list[idx] = {
                     id: r.id, mode: r.mode, brand: r.brand, model: r.model,
@@ -6320,7 +6823,7 @@ async function fetchBayarSebagianData() {
                     items: list[idx].items
                 };
             } else if (p.eventType === 'DELETE') {
-                const idx = list.findIndex(x => x.id === p.old.id);
+                const idx = list.findIndex(x => sameId(x.id, p.old.id));
                 if (idx !== -1) list.splice(idx, 1);
             }
         }
@@ -6328,28 +6831,54 @@ async function fetchBayarSebagianData() {
         for (const p of itemPayloads) {
             if (p.eventType === 'INSERT') {
                 const i = p.new;
-                const parent = list.find(x => x.id === i.riwayat_input_id);
+                const parent = list.find(x => sameId(x.id, i.riwayat_input_id));
                 if (!parent) return false;
-                if (!parent.items.some(x => x.id === i.id)) {
+                if (!parent.items.some(x => sameId(x.id, i.id))) {
                     parent.items.push({ id: i.id, warna: i.warna, ukuran: i.ukuran, qty: i.qty });
                 }
             } else if (p.eventType === 'UPDATE') {
                 const i = p.new;
-                const parent = list.find(x => x.id === i.riwayat_input_id);
+                const parent = list.find(x => sameId(x.id, i.riwayat_input_id));
                 if (!parent) return false;
-                const iidx = parent.items.findIndex(x => x.id === i.id);
+                const iidx = parent.items.findIndex(x => sameId(x.id, i.id));
                 const itemData = { id: i.id, warna: i.warna, ukuran: i.ukuran, qty: i.qty };
                 if (iidx === -1) parent.items.push(itemData); else parent.items[iidx] = itemData;
             } else if (p.eventType === 'DELETE') {
                 for (const parent of list) {
-                    const iidx = parent.items.findIndex(x => x.id === p.old.id);
+                    const iidx = parent.items.findIndex(x => sameId(x.id, p.old.id));
                     if (iidx !== -1) { parent.items.splice(iidx, 1); break; }
                 }
             }
         }
 
         list.sort((a, b) => b.id - a.id);
+        _dedupeRiwayatInputState();
         return true;
+    }
+
+    // Guard terakhir untuk race antara insert lokal, realtime INSERT, dan full-fetch.
+    // Deduplikasi dilakukan pada state, bukan hanya pada hasil render, supaya kalkulator
+    // stok tidak pernah menerima header/item yang sama dua kali.
+    function _dedupeRiwayatInputState() {
+        const list = appData.riwayatInput;
+        const parentById = new Map();
+        for (let idx = list.length - 1; idx >= 0; idx--) {
+            const current = list[idx];
+            const parentKey = current.id == null ? `missing:${idx}` : String(current.id);
+            const existing = parentById.get(parentKey);
+            if (!existing) {
+                parentById.set(parentKey, current);
+                continue;
+            }
+            const itemById = new Map((existing.items || []).filter(item => item.id != null).map(item => [String(item.id), item]));
+            for (const item of current.items || []) {
+                if (item.id == null || !itemById.has(String(item.id))) {
+                    existing.items.push(item);
+                    if (item.id != null) itemById.set(String(item.id), item);
+                }
+            }
+            list.splice(idx, 1);
+        }
     }
 
     // Debounce + kumpulkan grup yang "kotor" (berubah): kalau ada banyak perubahan sekaligus
@@ -6462,6 +6991,11 @@ async function fetchBayarSebagianData() {
                 // 2) Sisanya (termasuk yang gagal ditambal & butuh fallback) tetap full-fetch
                 const groupsToFetch = groupsToProcess.filter(g => !patchedOk.has(g));
                 await Promise.all(groupsToFetch.map(g => REALTIME_GROUP_HANDLERS[g]?.fetch?.()));
+                // Cache aggregate harus ikut diperbarui setelah INSERT/UPDATE/DELETE,
+                // termasuk gema tulisan sendiri yang sengaja tidak di-patch ulang.
+                if (groupsToProcess.includes('riwayatInput') || groupsToProcess.includes('transaksi')) {
+                    await Promise.all([fetchDashboardTotalsServer(), fetchStockVariantServer()]);
+                }
                 // 3) Render semua grup yang benar-benar perlu di-refresh
                 groupsToProcess.forEach(g => REALTIME_GROUP_HANDLERS[g]?.render?.());
             } catch (e) {
@@ -6506,11 +7040,14 @@ async function fetchBayarSebagianData() {
         await _nextFrame();
         renderStokDashboard();
 
-        // Batch 3: riwayat — lebih berat, ditunda 1 frame lagi
-        await _nextFrame();
-        _renderRiwayatTransaksiOri();
-        _renderRiwayatInputOri();
-        _renderPelunasanViewOri();
+        // Riwayat lengkap dimuat on-demand saat tab/laporan dibuka. Jika RPC stok
+        // gagal, muatSemuaData() sudah memuat fallback lokal sehingga blok ini tetap aman.
+        if (_historyDataLoaded) {
+            await _nextFrame();
+            _renderRiwayatTransaksiOri();
+            _renderRiwayatInputOri();
+            _renderPelunasanViewOri();
+        }
     }
 
     // ==================== DEBUG HELPER (sementara, aman dihapus kapan saja) ====================
@@ -6574,7 +7111,7 @@ function hitungStokBrand(brandId) {
             const currentWarna = (item.warna || "").trim().toUpperCase();
             const currentUkuran = (item.ukuran || "").trim().toUpperCase();
             const key = `${currentModel}||${currentWarna}||${currentUkuran}`;
-            
+
             if (!map[key]) map[key] = 0;
             map[key] += d.mode === 'retur' ? -item.qty : item.qty;
         });
@@ -6587,7 +7124,7 @@ function hitungStokBrand(brandId) {
             const currentWarna = (item.warna || "").trim().toUpperCase();
             const currentUkuran = (item.ukuran || "").trim().toUpperCase();
             const key = `${currentModel}||${currentWarna}||${currentUkuran}`;
-            
+
             if (!map[key]) map[key] = 0;
             map[key] -= item.qty;
         });
@@ -6662,7 +7199,7 @@ function hitungStokSemuaBrandDanModel() {
 // Hitung stok bersih = stok DB - qty yang sudah dipakai di baris lain dalam form transaksi aktif
 function hitungStokEfektifTrx(modelNama, warnaNama, ukuranNama, kecualiRowId, brandNama, brandId) {
     let stokDB = hitungStokItem(modelNama, warnaNama, ukuranNama, brandNama, brandId);
-    
+
     const mTarget = (modelNama || "").trim().toUpperCase();
     const wTarget = (warnaNama || "").trim().toUpperCase();
     const uTarget = (ukuranNama || "").trim().toUpperCase();
@@ -6671,15 +7208,15 @@ function hitungStokEfektifTrx(modelNama, warnaNama, ukuranNama, kecualiRowId, br
     _getTrxRows().forEach(row => {
         const rowId = row.id.replace('trx-row-', '');
         if (String(rowId) === String(kecualiRowId)) return;
-        
+
         const wLabel = document.getElementById(`trx-warna-label-${rowId}`);
         const uLabel = document.getElementById(`trx-ukuran-label-${rowId}`);
         const qtyEl = document.getElementById(`trx-qty-${rowId}`);
-        
+
         const w = (wLabel?.textContent || "").trim().toUpperCase();
         const u = (uLabel?.textContent || "").trim().toUpperCase();
         const q = parseInt(qtyEl?.value) || 0;
-        
+
         // FIX: cek model via trxState (satu form = satu model), warna & ukuran per baris
         const activeModel = (trxState?.modelNama || "").trim().toUpperCase();
         const modelMatch = !mTarget || !activeModel || activeModel === mTarget;
@@ -6761,7 +7298,7 @@ function hitungStokItem(modelNama, warnaNama, ukuranNama, brandNama, brandId) {
         if (brandId) return b && b.id == brandId;
         return b ? b.id == (masterData.brand.find(x => (x.nama||"").trim().toUpperCase() === bNama)?.id) : (d.brand || "").trim().toUpperCase() === bNama;
     }
-    
+
     let stok = 0;
     appData.riwayatInput.forEach(d => {
         if (!brandMatch(d)) return;
@@ -6769,7 +7306,7 @@ function hitungStokItem(modelNama, warnaNama, ukuranNama, brandNama, brandId) {
             const currentModel = (d.model || "").trim().toUpperCase();
             const currentWarna = (item.warna || "").trim().toUpperCase();
             const currentUkuran = (item.ukuran || "").trim().toUpperCase();
-            
+
             if (`${currentModel}||${currentWarna}||${currentUkuran}` === key) {
                 stok += d.mode === 'retur' ? -item.qty : item.qty;
             }
@@ -6781,7 +7318,7 @@ function hitungStokItem(modelNama, warnaNama, ukuranNama, brandNama, brandId) {
             const currentModel = (d.model || "").trim().toUpperCase();
             const currentWarna = (item.warna || "").trim().toUpperCase();
             const currentUkuran = (item.ukuran || "").trim().toUpperCase();
-            
+
             if (`${currentModel}||${currentWarna}||${currentUkuran}` === key) {
                 stok -= item.qty;
             }
@@ -6791,29 +7328,106 @@ function hitungStokItem(modelNama, warnaNama, ukuranNama, brandNama, brandId) {
     return stok;
 }
 
+// Adapter sementara: seluruh perhitungan stok sekarang melewati domain module.
+// Fungsi global dipertahankan agar renderer dan form lama belum perlu diubah sekaligus.
+const _rpStockSnapshot = () => RPStockCalculator.create({ masterData, appData });
+
+function _serverStockBrandMap(brandId) {
+    if (!_stockVariantServer) return null;
+    const brand = masterData.brand.find(b => b.id == brandId);
+    if (!brand) return {};
+    const brandKey = String(brand.nama || '').trim().toUpperCase();
+    const result = {};
+    _stockVariantServer.forEach((qty, key) => {
+        const parts = key.split('||');
+        if (parts[0] !== brandKey) return;
+        result[parts.slice(1).join('||')] = qty;
+    });
+    return result;
+}
+
+function _serverStockAllBrands() {
+    if (!_stockVariantServer) return null;
+    const byBrand = new Map();
+    _stockVariantServer.forEach((qty, key) => {
+        const parts = key.split('||');
+        const brand = parts.shift();
+        const model = parts.shift();
+        if (!byBrand.has(brand)) byBrand.set(brand, { total: 0, models: new Set() });
+        const entry = byBrand.get(brand);
+        entry.total += Number(qty) || 0;
+        if (model) entry.models.add(model);
+    });
+    return masterData.brand.map(brand => {
+        const entry = byBrand.get(String(brand.nama || '').trim().toUpperCase());
+        return { ...brand, total: entry ? entry.total : 0, modelCount: entry ? entry.models.size : 0 };
+    });
+}
+
+// Recreate calculator per call supaya selalu membaca snapshot state terbaru.
+hitungStokBrand = function (brandId) {
+    const serverMap = _serverStockBrandMap(brandId);
+    if (serverMap) return serverMap;
+    return _rpStockSnapshot().brand(brandId);
+};
+hitungStokSemuaBrandDanModel = function () {
+    const serverResult = _serverStockAllBrands();
+    if (serverResult) return serverResult;
+    return _rpStockSnapshot().allBrands();
+};
+hitungStokItem = function (modelNama, warnaNama, ukuranNama, brandNama, brandId) {
+    const cacheKey = [
+        (modelNama || '').trim().toUpperCase(),
+        (warnaNama || '').trim().toUpperCase(),
+        (ukuranNama || '').trim().toUpperCase(),
+        (brandNama || '').trim().toUpperCase(),
+        brandId ?? ''
+    ].join('||');
+
+    // Jika RPC stok tersedia, gunakan hasil agregasi server sebagai sumber utama.
+    // Map.has() penting: nilai 0 adalah stok valid dan tidak boleh dianggap gagal.
+    const serverKey = [
+        (brandNama || '').trim().toUpperCase(),
+        (modelNama || '').trim().toUpperCase(),
+        (warnaNama || '').trim().toUpperCase(),
+        (ukuranNama || '').trim().toUpperCase(),
+    ].join('||');
+    if (_stockVariantServer && _stockVariantServer.has(serverKey)) {
+        const serverValue = _stockVariantServer.get(serverKey);
+        _stokItemCache.set(cacheKey, serverValue);
+        return serverValue;
+    }
+
+    if (_stokItemCache.has(cacheKey)) return _stokItemCache.get(cacheKey);
+    const value = _rpStockSnapshot().item(modelNama, warnaNama, ukuranNama, brandNama, brandId);
+    _stokItemCache.set(cacheKey, value);
+
+    return value;
+};
+
 function updateSSK(tab, rowId) {
     const modelNama = tab === 'input' ? inputState.modelNama : trxState.modelNama;
     const brandNama = tab === 'input' ? inputState.brandNama : trxState.brandNama;
     const brandId = tab === 'input' ? inputState.brandId : trxState.brandId;
     const warnaEl = document.getElementById(`${tab}-warna-label-${rowId}`);
     const ukuranEl = document.getElementById(`${tab}-ukuran-label-${rowId}`);
-    
+
     // PERBAIKAN UTAMA: Tambahkan pembersihan spasi dan ubah ke UPPERCASE di level UI render
     const warnaNama = (warnaEl?.textContent || '').trim().toUpperCase();
     const ukuranNama = (ukuranEl?.textContent || '').trim().toUpperCase();
-    
+
     const sskEl = document.getElementById(`${tab}-ssk-${rowId}`);
     if (!sskEl) return;
-    
+
     const belumLengkap = !modelNama || !warnaNama || !ukuranNama || warnaNama.startsWith('PILIH') || ukuranNama.startsWith('PILIH');
     if (belumLengkap) {
         sskEl.value = '';
         sskEl.style.color = '';
         return;
     }
-    
+
     const stokSaatIni = hitungStokItem(modelNama, warnaNama, ukuranNama, brandNama, brandId);
-    
+
     if (tab === 'input') {
         if (stokSaatIni <= 0) {
             sskEl.value = '';
@@ -6840,28 +7454,28 @@ function updateSSK(tab, rowId) {
         sskEl.style.color = stokSaatIni <= 4 ? '#facc15' : '#4ade80';
         return;
     }
-    
+
     const qtyEl = document.getElementById(`${tab}-qty-${rowId}`);
     let qty = parseInt(qtyEl?.value) || 0;
-    
+
     const stokEfektif = hitungStokEfektifTrx(modelNama, warnaNama, ukuranNama, rowId, brandNama, brandId);
     const maxStok = Math.max(0, stokEfektif);
-    
+
     if (qty > maxStok) {
         qty = maxStok;
         if (qtyEl) qtyEl.value = qty;
     }
-    
+
     const sisa = stokEfektif - qty;
     sskEl.value = sisa;
-    
+
     if (qtyEl) {
         const minusBtn = qtyEl.parentElement?.querySelector('button:first-child');
         const plusBtn = qtyEl.parentElement?.querySelector('button:last-child');
         if (minusBtn) minusBtn.style.opacity = qty <= 0 ? '0.3' : '1';
         if (plusBtn) plusBtn.style.opacity = qty >= maxStok ? '0.3' : '1';
     }
-    
+
     if (sisa < 0) {
         sskEl.style.color = '#f87171';
     } else if (sisa <= 4) {
@@ -6872,6 +7486,8 @@ function updateSSK(tab, rowId) {
 }
 
     function renderStokDashboard() {
+        _dedupeRiwayatInputState();
+        _dedupeTransaksiState();
         let totalMasuk = 0, totalRetur = 0, totalKeluar = 0;
         if (_dashboardTotalsServer) {
             // Sumber cepat: hasil SUM yang sudah dihitung di database (lihat
@@ -6927,7 +7543,13 @@ function updateSSK(tab, rowId) {
                 });
                 const kpiTotalStokEl = document.getElementById('kpi-total-stok');
                 const kpiTotalBrandEl = document.getElementById('kpi-total-brand');
-                if (kpiTotalStokEl) { kpiTotalStokEl.textContent = brandStok.reduce((s, b) => s + Math.max(0, b.total), 0).toLocaleString('id-ID'); kpiTotalStokEl.classList.remove('kpi-skel'); }
+                // Jika aggregate dashboard tersedia, KPI harus memakai angka net server.
+                // Jangan menimpanya dengan penjumlahan kartu brand karena RPC varian dapat
+                // memiliki granularitas berbeda dan berisiko menghitung satu varian dua kali.
+                if (kpiTotalStokEl && !_dashboardTotalsServer) {
+                    kpiTotalStokEl.textContent = brandStok.reduce((s, b) => s + Math.max(0, b.total), 0).toLocaleString('id-ID');
+                    kpiTotalStokEl.classList.remove('kpi-skel');
+                }
                 if (kpiTotalBrandEl) { kpiTotalBrandEl.textContent = totalKeluar.toLocaleString('id-ID'); kpiTotalBrandEl.classList.remove('kpi-skel'); }
                 if (brandStok.length === 0) {
                     brandListEl.innerHTML = '<div class="text-center text-black text-[11px] py-8 flex flex-col items-center gap-2"><i class="fa-solid fa-inbox text-2xl opacity-40"></i>Belum ada stok tersedia.</div>';
@@ -7333,12 +7955,27 @@ function updateSSK(tab, rowId) {
 
         // Defer render berat ke setelah tab tampil di layar
         requestAnimationFrame(() => {
+            const needsHistory = ['riwayat-input', 'riwayat-retur', 'riwayat', 'laba'].includes(tabName);
+            if (needsHistory && !_historyDataLoaded) {
+                ensureHistoryDataLoaded().then(() => {
+                    if (_activeTab !== tabName) return;
+                    if (tabName === 'riwayat-input' && typeof renderRiwayatInputTab === 'function') renderRiwayatInputTab();
+                    if (tabName === 'riwayat-retur' && typeof renderRiwayatReturTab === 'function') renderRiwayatReturTab();
+                    if (tabName === 'riwayat') {
+                        const loadedSubTab = getActiveRiwayatSubTab();
+                        if (loadedSubTab === 'kredit' || loadedSubTab === 'lunas') _renderRiwayatTransaksiOri();
+                        else if (loadedSubTab === 'pelunasan') _renderPelunasanViewOri();
+                    }
+                    if (tabName === 'laba' && typeof renderLabaKotor === 'function') renderLabaKotor();
+                }).catch(e => showToast('⚠️ Gagal memuat riwayat: ' + e.message));
+            }
+
             // Dashboard stok sudah disiapkan sebelum tab lama disembunyikan,
             // agar tidak ada frame kosong saat kembali lewat FAB HOME/BACK.
             // Jangan render ulang di sini karena dapat menghidupkan kembali
             // blank flash pada perangkat/webview yang lebih lambat.
             if (tabName === 'riwayat-input') {
-                if (typeof renderRiwayatInputTab === 'function') renderRiwayatInputTab();
+                if (_historyDataLoaded && typeof renderRiwayatInputTab === 'function') renderRiwayatInputTab();
             }
             if (tabName === 'riwayat-beban') {
                 if (_bebanNeedsReset) {
@@ -7355,7 +7992,7 @@ function updateSSK(tab, rowId) {
                     _resetReturDefaults();
                     _returNeedsReset = false;
                 }
-                if (typeof renderRiwayatReturTab === 'function') renderRiwayatReturTab();
+                if (_historyDataLoaded && typeof renderRiwayatReturTab === 'function') renderRiwayatReturTab();
             }
             if (tabName === 'riwayat') {
                 // kembalikan ke kondisi default: sub-tab INPUT DATA, filter tanggal
@@ -7365,8 +8002,8 @@ function updateSSK(tab, rowId) {
                     _riwayatNeedsReset = false;
                 }
                 const activeSubTab = getActiveRiwayatSubTab();
-                if (activeSubTab === 'kredit' || activeSubTab === 'lunas') _renderRiwayatTransaksiOri();
-                else if (activeSubTab === 'pelunasan') _renderPelunasanViewOri();
+                if (_historyDataLoaded && (activeSubTab === 'kredit' || activeSubTab === 'lunas')) _renderRiwayatTransaksiOri();
+                else if (_historyDataLoaded && activeSubTab === 'pelunasan') _renderPelunasanViewOri();
                 else if (activeSubTab === 'bayar-sebagian') { if (typeof _renderBayarSebagianViewOri === 'function') _renderBayarSebagianViewOri(); }
             }
             _updateBackBtnMode();
@@ -7387,7 +8024,7 @@ function updateSSK(tab, rowId) {
                     if (el) el.classList.add('collapsed');
                     if (ic) ic.classList.remove('rotated');
                 });
-                
+
             }
         });
     }
@@ -7811,14 +8448,14 @@ function updateSSK(tab, rowId) {
         const btnSimpan = document.getElementById('koreksi-btn-simpan');
         setButtonLoading(btnSimpan, true, 'MENYIMPAN...');
         try {
-            const { data: ri, error: riErr } = await sbClient.from('riwayat_input').insert({
+            const { data: ri, error: riErr } = await dataRepository.writes.insert('riwayat_input', {
                 mode: 'masuk', brand: brandNama, model: model,
                 keterangan: `KOREKSI STOK (dari ${stokSkrg} → ${stokTarget})`, tanggal, jam
-            }).select().single();
+            }, true);
             if (riErr) throw riErr;
-            const { data: insertedItems, error: itemErr } = await sbClient.from('riwayat_input_item').insert([
+            const { data: insertedItems, error: itemErr } = await dataRepository.writes.insert('riwayat_input_item', [
                 { riwayat_input_id: ri.id, warna, ukuran, qty: selisih }
-            ]).select();
+            ], false);
             if (itemErr) throw itemErr;
             // Update local data
             appData.riwayatInput.unshift({
@@ -7826,7 +8463,9 @@ function updateSSK(tab, rowId) {
                 keterangan: `KOREKSI STOK (dari ${stokSkrg} → ${stokTarget})`, tanggal, jam,
                 items: [{ id: insertedItems[0]?.id, warna, ukuran, qty: selisih }]
             });
+            _dedupeRiwayatInputState();
             // Refresh detail view
+            await refreshStockCachesAfterMutation();
             _detailStokMap = hitungStokBrand(_detailBrandId);
             const totalPcs = Object.values(_detailStokMap).reduce((s, v) => s + Math.max(0, v), 0);
             document.getElementById('detail-brand-total').innerText = totalPcs.toLocaleString('id-ID') + ' Pcs';
@@ -8111,7 +8750,7 @@ function updateSSK(tab, rowId) {
         const btnSimpanPengaturan = document.getElementById('btn-simpan-pengaturan');
         setButtonLoading(btnSimpanPengaturan, true, 'MENYIMPAN...');
         try {
-            const { error } = await sbClient.from('pengaturan').upsert([
+            const { error } = await dataRepository.writes.upsert('pengaturan', [
                 { key: 'theme_main', value: main },
                 { key: 'theme_secondary', value: sec }
             ], { onConflict: 'key' });
@@ -8131,7 +8770,7 @@ function updateSSK(tab, rowId) {
         if (isDuplikat) { showToast('⚠️ Vendor "' + nama.toUpperCase() + '" sudah ada!'); return; }
         const btnSimpanVendor = document.getElementById('btn-simpan-vendor');
         setButtonLoading(btnSimpanVendor, true, 'MENYIMPAN...');
-        const { data, error } = await sbClient.from('vendor').insert({ nama, telp }).select().single();
+        const { data, error } = await dataRepository.writes.insert('vendor', { nama, telp }, true);
         setButtonLoading(btnSimpanVendor, false);
         if (error) { showToast('❌ Gagal simpan vendor'); return; }
         masterData.vendor.push({ id: data.id, nama: data.nama, telp: data.telp || '' });
@@ -8142,7 +8781,7 @@ function updateSSK(tab, rowId) {
     }
     async function hapusVendor(id) {
         showConfirm('Hapus vendor ini?\nData yang sudah dihapus tidak bisa dikembalikan.', async function() {
-            const { error } = await sbClient.from('vendor').delete().eq('id', id);
+            const { error } = await dataRepository.writes.remove('vendor', 'id', id);
             if (error) { showToast('❌ Gagal hapus vendor: ' + error.message); return; }
             masterData.vendor = masterData.vendor.filter(v => v.id !== id);
             renderVendorList();
@@ -8177,7 +8816,7 @@ function updateSSK(tab, rowId) {
         if (isDuplikat) { showToast('⚠️ Brand "' + nama.toUpperCase() + '" sudah ada!'); return; }
         const btnSimpanBrand = document.getElementById('btn-simpan-brand');
         setButtonLoading(btnSimpanBrand, true, 'MENYIMPAN...');
-        const { data, error } = await sbClient.from('brand').insert({ nama: nama.toUpperCase() }).select().single();
+        const { data, error } = await dataRepository.writes.insert('brand', { nama: nama.toUpperCase() }, true);
         setButtonLoading(btnSimpanBrand, false);
         if (error) { showToast('❌ Gagal: ' + error.message); return; }
         masterData.brand.push({ id: data.id, nama: data.nama });
@@ -8188,7 +8827,7 @@ function updateSSK(tab, rowId) {
     }
     async function hapusBrand(id) {
         showConfirm('Hapus brand ini?\nData yang sudah dihapus tidak bisa dikembalikan.', async function() {
-            const { error } = await sbClient.from('brand').delete().eq('id', id);
+            const { error } = await dataRepository.writes.remove('brand', 'id', id);
             if (error) { showToast('❌ Gagal hapus brand: ' + error.message); return; }
             masterData.brand = masterData.brand.filter(b => b.id !== id);
             renderBrandList(); renderBrandOptions();
@@ -8271,7 +8910,7 @@ function updateSSK(tab, rowId) {
         if (toInsert.length === 0) { showAlert('Isi minimal satu nama model!', {type:'warning'}); return; }
         const btnSimpanModel = document.getElementById('btn-simpan-model');
         setButtonLoading(btnSimpanModel, true, 'MENYIMPAN...');
-        const { data, error } = await sbClient.from('model').insert(toInsert).select();
+        const { data, error } = await dataRepository.writes.insert('model', toInsert, false);
         setButtonLoading(btnSimpanModel, false);
         if (error) { showToast('❌ Gagal simpan model'); return; }
         data.forEach(m => masterData.model.push({ id: m.id, brandId: m.brand_id, brandNama: m.brand_nama, nama: m.nama, harga: m.harga || 0, hargaModal: m.harga_modal || 0 }));
@@ -8284,7 +8923,7 @@ function updateSSK(tab, rowId) {
     }
     async function hapusModel(id) {
         showConfirm('Hapus model ini?\nData yang sudah dihapus tidak bisa dikembalikan.', async function() {
-            const { error } = await sbClient.from('model').delete().eq('id', id);
+            const { error } = await dataRepository.writes.remove('model', 'id', id);
             if (error) { showToast('❌ Gagal hapus model: ' + error.message); return; }
             masterData.model = masterData.model.filter(m => m.id !== id);
             renderModelList();
@@ -8297,7 +8936,7 @@ function updateSSK(tab, rowId) {
         const input = item ? item.querySelector('.edit-harga-input') : null;
         if (input) {
             const hargaBaru = parseInt(input.value) || 0;
-            const { error } = await sbClient.from('model').update({ harga: hargaBaru }).eq('id', id);
+            const { error } = await dataRepository.writes.update('model', { harga: hargaBaru }, 'id', id);
             if (error) { showToast('❌ Gagal update harga: ' + error.message); renderModelList(); return; }
             m.harga = hargaBaru;
         }
@@ -8313,7 +8952,7 @@ function updateSSK(tab, rowId) {
         const input = item ? item.querySelector('.edit-modal-input') : null;
         if (input) {
             const hargaModalBaru = parseInt(input.value) || 0;
-            const { error } = await sbClient.from('model').update({ harga_modal: hargaModalBaru }).eq('id', id);
+            const { error } = await dataRepository.writes.update('model', { harga_modal: hargaModalBaru }, 'id', id);
             if (error) { showToast('❌ Gagal update harga modal: ' + error.message); renderModelList(); return; }
             m.hargaModal = hargaModalBaru;
         }
@@ -8367,27 +9006,30 @@ function updateSSK(tab, rowId) {
             async function() {
                 try {
                     // Step 1: update tabel model
-                    const { error: e1 } = await sbClient.from('model').update({ nama: namaBaru }).eq('id', id);
+                    const { error: e1 } = await dataRepository.writes.update('model', { nama: namaBaru }, 'id', id);
                     if (e1) throw new Error('Gagal update tabel model: ' + e1.message);
                     // Step 2: cascade update riwayat_input
-                    const { error: e2 } = await sbClient.from('riwayat_input')
-                        .update({ model: namaBaru })
-                        .eq('model', namaLama)
-                        .eq('brand', m.brandNama);
+                    const { error: e2 } = await dataRepository.writes.updateWhere(
+                        'riwayat_input', { model: namaBaru },
+                        [{ column: 'model', value: namaLama }, { column: 'brand', value: m.brandNama }]
+                    );
                     if (e2) {
                         // Rollback step 1
-                        await sbClient.from('model').update({ nama: namaLama }).eq('id', id);
+                        await dataRepository.writes.update('model', { nama: namaLama }, 'id', id);
                         throw new Error('Gagal update riwayat_input: ' + e2.message);
                     }
                     // Step 3: cascade update transaksi
-                    const { error: e3 } = await sbClient.from('transaksi')
-                        .update({ model: namaBaru })
-                        .eq('model', namaLama)
-                        .eq('brand', m.brandNama);
+                    const { error: e3 } = await dataRepository.writes.updateWhere(
+                        'transaksi', { model: namaBaru },
+                        [{ column: 'model', value: namaLama }, { column: 'brand', value: m.brandNama }]
+                    );
                     if (e3) {
                         // Rollback step 1 & 2
-                        await sbClient.from('model').update({ nama: namaLama }).eq('id', id);
-                        await sbClient.from('riwayat_input').update({ model: namaLama }).eq('model', namaBaru).eq('brand', m.brandNama);
+                        await dataRepository.writes.update('model', { nama: namaLama }, 'id', id);
+                        await dataRepository.writes.updateWhere(
+                            'riwayat_input', { model: namaLama },
+                            [{ column: 'model', value: namaBaru }, { column: 'brand', value: m.brandNama }]
+                        );
                         throw new Error('Gagal update transaksi: ' + e3.message);
                     }
                     // Update local state
@@ -8502,7 +9144,7 @@ function updateSSK(tab, rowId) {
         if (toInsert.length === 0) { showAlert('Isi minimal satu nama warna!', {type:'warning'}); return; }
         const btnSimpanWarna = document.getElementById('btn-simpan-warna');
         setButtonLoading(btnSimpanWarna, true, 'MENYIMPAN...');
-        const { data, error } = await sbClient.from('warna').insert(toInsert).select();
+        const { data, error } = await dataRepository.writes.insert('warna', toInsert, false);
         setButtonLoading(btnSimpanWarna, false);
         if (error) { showToast('❌ Gagal simpan warna'); return; }
         data.forEach(w => masterData.warna.push({ id: w.id, nama: w.nama, kode: w.kode }));
@@ -8513,7 +9155,7 @@ function updateSSK(tab, rowId) {
         showToast(`✅ ${data.length} warna disimpan!`);
     }
     async function hapusWarna(id) {
-        const { error } = await sbClient.from('warna').delete().eq('id', id);
+        const { error } = await dataRepository.writes.remove('warna', 'id', id);
         if (error) { showToast('❌ Gagal hapus warna: ' + error.message); return; }
         masterData.warna = masterData.warna.filter(w => w.id !== id);
         renderWarnaList();
@@ -8552,7 +9194,7 @@ function updateSSK(tab, rowId) {
     async function simpanEditWarna(id, kode) {
         const w = masterData.warna.find(x => x.id === id);
         if (!w) return;
-        const { error } = await sbClient.from('warna').update({ kode }).eq('id', id);
+        const { error } = await dataRepository.writes.update('warna', { kode }, 'id', id);
         if (error) { showToast('❌ Gagal update warna: ' + error.message); renderWarnaList(); return; }
         w.kode = kode;
         showToast('✅ Warna diperbarui!');
@@ -8608,7 +9250,7 @@ function updateSSK(tab, rowId) {
         if (toInsert.length === 0) { showAlert('Isi minimal satu nama ukuran!', {type:'warning'}); return; }
         const btnSimpanUkuran = document.getElementById('btn-simpan-ukuran');
         setButtonLoading(btnSimpanUkuran, true, 'MENYIMPAN...');
-        const { data, error } = await sbClient.from('ukuran').insert(toInsert).select();
+        const { data, error } = await dataRepository.writes.insert('ukuran', toInsert, false);
         setButtonLoading(btnSimpanUkuran, false);
         if (error) { showToast('❌ Gagal: ' + error.message); return; }
         data.forEach(u => masterData.ukuran.push({ id: u.id, nama: u.nama }));
@@ -8619,7 +9261,7 @@ function updateSSK(tab, rowId) {
         showToast(`✅ ${data.length} ukuran disimpan!`);
     }
     async function hapusUkuran(id) {
-        const { error } = await sbClient.from('ukuran').delete().eq('id', id);
+        const { error } = await dataRepository.writes.remove('ukuran', 'id', id);
         if (error) { showToast('❌ Gagal hapus ukuran: ' + error.message); return; }
         masterData.ukuran = masterData.ukuran.filter(u => u.id !== id);
         renderUkuranList();
@@ -8672,7 +9314,7 @@ function updateSSK(tab, rowId) {
                 if (el) el.classList.add('collapsed');
                 if (ic) ic.classList.remove('rotated');
             });
-            
+
         }
     }
 
@@ -8983,9 +9625,13 @@ function updateSSK(tab, rowId) {
         if (!r) return;
         // Foto Base64 diambil hanya ketika pengguna benar-benar membukanya.
         if (!r.foto) {
-            const { data, error } = await sbClient.from('beban_operasional').select('foto').eq('id', id).maybeSingle();
-            if (error) { showToast('Gagal mengambil foto: ' + error.message); return; }
-            r.foto = data?.foto || null;
+            try {
+                const data = await dataRepository.one('beban_operasional', 'foto', [{ column: 'id', value: id }]);
+                r.foto = data?.foto || null;
+            } catch (error) {
+                showToast('Gagal mengambil foto: ' + error.message);
+                return;
+            }
         }
         tampilkanFotoBebanLightbox(r.foto);
     }
@@ -9036,9 +9682,10 @@ function updateSSK(tab, rowId) {
         const { awalISO, akhirISO } = _rangeMingguIniBeban();
         try {
             // Jangan ikut mengunduh Base64 foto pada setiap refresh daftar.
-            const { data, error } = await sbClient.from('beban_operasional').select('id,kategori,nominal,tanggal,keterangan,sumber').gte('tanggal', awalISO).lte('tanggal', akhirISO).order('tanggal', { ascending: false }).order('id', { ascending: false });
-            if (error) throw error;
-            _cacheBebanInput = data || [];
+            _cacheBebanInput = await dataRepository.expenses.list(
+                'id,kategori,nominal,tanggal,keterangan,sumber',
+                { from: awalISO, to: akhirISO }
+            );
         } catch (e) {
             _cacheBebanInput = [];
         }
@@ -9064,9 +9711,8 @@ function updateSSK(tab, rowId) {
     const RIWAYAT_BEBAN_PAGE_SIZE = 10;
     let _riwayatBebanPage = 1;
     // true setelah percobaan load PERTAMA (sukses ataupun gagal). Dipakai supaya
-    // spinner "Memuat data..." cuma muncul sekali di percobaan pertama -- biasanya
-    // sudah selesai lebih awal lewat preload di muatSemuaData() sebelum tab-nya
-    // sendiri sempat dibuka. Kunjungan berikutnya ke tab ini (dalam sesi yang sama)
+    // spinner "Memuat data..." cuma muncul sekali di percobaan pertama. Kunjungan
+    // berikutnya ke tab ini (dalam sesi yang sama)
     // langsung nampilin data yang sudah ada (walau sedikit basi) sambil query baru
     // jalan diam-diam di background -- sama persis feel-nya dgn tab Riwayat Input/
     // Retur yang render instan dari cache tanpa loading sama sekali.
@@ -9077,8 +9723,7 @@ function updateSSK(tab, rowId) {
         const dariVal = document.getElementById('filter-dari-tanggal')?.value || '';
         const sampaiVal = document.getElementById('filter-sampai-tanggal')?.value || '';
 
-        // Kalau sudah pernah ada data dari load sebelumnya (baik dari preload awal
-        // saat startup maupun kunjungan tab sebelumnya), render dulu isi cache yang
+        // Kalau sudah pernah ada data dari load sebelumnya, render dulu isi cache yang
         // ada supaya tab langsung kelihatan isinya -- query di bawah tetap jalan
         // buat sinkronisasi tapi TANPA spinner, biar tidak terasa "loading" tiap
         // kali tab ini dibuka ulang.
@@ -9104,11 +9749,10 @@ function updateSSK(tab, rowId) {
 
         try {
             // Foto Base64 sangat besar; daftar cukup mengambil metadata.
-            let q = sbClient.from('beban_operasional').select('id,kategori,nominal,tanggal,keterangan,sumber');
-            if (dariVal) q = q.gte('tanggal', dariVal);
-            if (sampaiVal) q = q.lte('tanggal', sampaiVal);
-            const { data, error } = await q.order('tanggal', { ascending: false }).order('id', { ascending: false });
-            if (error) throw error;
+            const data = await dataRepository.expenses.list(
+                'id,kategori,nominal,tanggal,keterangan,sumber',
+                { from: dariVal, to: sampaiVal }
+            );
             _riwayatBebanTableMissing = false;
             _cacheRiwayatBeban = data || [];
             if (missingBanner) missingBanner.classList.add('hidden');
@@ -9229,7 +9873,7 @@ function updateSSK(tab, rowId) {
         const btn = document.getElementById('btn-simpan-beban-input');
         setButtonLoading(btn, true, 'MENYIMPAN...');
         try {
-            const { error } = await sbClient.from('beban_operasional').insert({ kategori, nominal, tanggal, keterangan, sumber: 'ADMIN', foto: _bebanFotoBase64 });
+            const { error } = await dataRepository.writes.insert('beban_operasional', { kategori, nominal, tanggal, keterangan, sumber: 'ADMIN', foto: _bebanFotoBase64 }, false);
             if (error) throw error;
             document.getElementById('beban-input-kategori').value = '';
             document.getElementById('beban-input-nominal').value = '';
@@ -9269,7 +9913,7 @@ function updateSSK(tab, rowId) {
 
     function hapusBebanInput(id) {
         showConfirm('Hapus catatan biaya ini?\nData yang sudah dihapus tidak bisa dikembalikan.', async function() {
-            const { error } = await sbClient.from('beban_operasional').delete().eq('id', id);
+            const { error } = await dataRepository.writes.remove('beban_operasional', 'id', id);
             if (error) { showToast('❌ Gagal hapus: ' + error.message); return; }
             showToast('✅ Biaya dihapus.');
             loadBebanInputList();
@@ -9304,7 +9948,7 @@ function updateSSK(tab, rowId) {
         const btn = document.getElementById('btn-simpan-beban-owner');
         setButtonLoading(btn, true, 'MENYIMPAN...');
         try {
-            const { error } = await sbClient.from('beban_operasional').insert({ kategori, nominal, tanggal, keterangan, sumber: 'OWNER', foto: null });
+            const { error } = await dataRepository.writes.insert('beban_operasional', { kategori, nominal, tanggal, keterangan, sumber: 'OWNER', foto: null }, false);
             if (error) throw error;
             document.getElementById('laba-owner-beban-kategori').value = '';
             document.getElementById('laba-owner-beban-nominal').value = '';
@@ -9354,21 +9998,21 @@ function updateSSK(tab, rowId) {
         const btnModel = document.getElementById('laba-subtab-model');
         const actionBarOwner = document.getElementById('action-bar-laba-owner');
         const showOwner = which === 'owner';
-        
+
         // Toggle panel visibility
         if (panelOwner) { panelOwner.style.display = showOwner ? 'flex' : 'none'; }
         if (panelModel) { panelModel.style.display = showOwner ? 'none' : 'flex'; }
-        
+
         // Update button styles
-        if (btnOwner) { 
+        if (btnOwner) {
             btnOwner.style.color = showOwner ? '#ff8c00' : '#8fa2bd';
             btnOwner.style.borderBottomColor = showOwner ? '#ff8c00' : 'transparent';
         }
-        if (btnModel) { 
+        if (btnModel) {
             btnModel.style.color = !showOwner ? '#ff8c00' : '#8fa2bd';
             btnModel.style.borderBottomColor = !showOwner ? '#ff8c00' : 'transparent';
         }
-        
+
         // Tombol SIMPAN BIAYA (OWNER) bulat (fixed, sejajar tombol back) hanya
         // tampil saat sub-panel OWNER yang dipilih di tab LABA yang aktif.
         if (actionBarOwner) actionBarOwner.style.display = (showOwner && _activeTab === 'laba') ? 'flex' : 'none';
@@ -9927,10 +10571,10 @@ function updateSSK(tab, rowId) {
             const now = new Date();
             const tanggal = now.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' });
             const jam = now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
-            const { data: ri, error: riErr } = await sbClient.from('riwayat_input').insert({
+            const { data: ri, error: riErr } = await dataRepository.writes.insert('riwayat_input', {
                 mode: inputState.mode, brand: inputState.brandNama, model: inputState.modelNama,
                 keterangan, tanggal, jam
-            }).select().single();
+            }, true);
             if (riErr) {
                 // FIX: sebelumnya pesan error generik "Gagal simpan input" tanpa detail,
                 // jadi kalau gagal (RLS/policy, kolom tidak cocok, dll) tidak ketahuan
@@ -9941,16 +10585,21 @@ function updateSSK(tab, rowId) {
                 return;
             }
 
-            const { data: insertedItems, error: itemErr } = await sbClient.from('riwayat_input_item').insert(items.map(i => ({ riwayat_input_id: ri.id, ...i }))).select();
+            const { data: insertedItems, error: itemErr } = await dataRepository.writes.insert(
+                'riwayat_input_item',
+                items.map(i => ({ riwayat_input_id: ri.id, ...i })),
+                false
+            );
             if (itemErr) {
                 console.error('Gagal simpan riwayat_input_item:', itemErr);
-                await sbClient.from('riwayat_input').delete().eq('id', ri.id);
+                await dataRepository.writes.remove('riwayat_input', 'id', ri.id);
                 showToast('❌ Gagal simpan detail item: ' + (itemErr.message || itemErr.code || 'unknown error') + ' — dibatalkan.');
                 return;
             }
             const itemsWithId = (insertedItems || []).map(i => ({ id: i.id, warna: i.warna, ukuran: i.ukuran, qty: i.qty }));
 
             appData.riwayatInput.unshift({ id: ri.id, mode: inputState.mode, brand: inputState.brandNama, model: inputState.modelNama, keterangan, tanggal, jam, items: itemsWithId.length ? itemsWithId : items });
+            _dedupeRiwayatInputState();
 
             // FIX: data sudah SUKSES tersimpan ke Supabase di titik ini. Sebelumnya,
             // reset tampilan di bawah ini (setInputMode, dst) ada di dalam try/catch
@@ -9961,6 +10610,7 @@ function updateSSK(tab, rowId) {
             // try/catch sendiri: kalau ini gagal, cuma dicatat ke console + toast sukses
             // tetap tampil, karena datanya memang sudah aman tersimpan.
             const savedMode = inputState.mode;
+            await refreshStockCachesAfterMutation();
             showToast(savedMode === 'retur' ? '🔄 Retur disimpan!' : '✅ Data masuk disimpan!');
             try {
                 inputState.brandId = null; inputState.brandNama = ''; inputState.modelId = null; inputState.modelNama = '';
@@ -9973,7 +10623,7 @@ function updateSSK(tab, rowId) {
                 const returKeterangan = document.getElementById('input-retur-keterangan');
                 if (returKeterangan) returKeterangan.value = '';
                 inputRowCount = 0;
-                
+
                 // ===== ENABLE KEMBALI SEMUA SELECTOR SETELAH CLEAR =====
                 // Reset opacity dan pointer-events agar selector BRAND/MODEL kembali aktif
                 ['input-brand-selector', 'input-model-selector'].forEach(selId => {
@@ -9982,7 +10632,7 @@ function updateSSK(tab, rowId) {
                         el.classList.remove('opacity-40', 'pointer-events-none', 'cursor-not-allowed');
                     }
                 });
-                
+
                 // FIX: sebelumnya selalu dipaksa balik ke setInputMode('masuk') apa pun
                 // mode yang barusan dipakai, jadi habis SIMPAN RETUR malah lompat ke
                 // tampilan "Input Data". Sekarang tetap di mode yang sama (savedMode)
@@ -10049,7 +10699,7 @@ function updateSSK(tab, rowId) {
         list.innerHTML = '';
         _updateTrxRowsLockState();
     }
-    
+
     function _clearTrxDariModel() {
         trxState.modelId = null; trxState.modelNama = ''; trxState.modelHarga = 0; trxState.modelHargaModal = 0;
         document.getElementById('trx-model-display').textContent = 'Pilih model';
@@ -10559,17 +11209,16 @@ function updateSSK(tab, rowId) {
         _updateTrxRowsLockState();
     }
 
-    let _trxIsSaving = false; 
+    let _trxIsSaving = false;
     function setButtonLoading(btn, isLoading, loadingText) {
         if (!btn) return;
         if (isLoading) {
             if (!btn.dataset.originalHtml) btn.dataset.originalHtml = btn.innerHTML;
             btn.disabled = true;
-            btn.classList.add('opacity-60', 'pointer-events-none');
-            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>${loadingText || 'MENYIMPAN...'}</span>`;
+            btn.classList.add('opacity-40', 'pointer-events-none');
         } else {
             btn.disabled = false;
-            btn.classList.remove('opacity-60', 'pointer-events-none');
+            btn.classList.remove('opacity-40', 'pointer-events-none');
             if (btn.dataset.originalHtml) {
                 btn.innerHTML = btn.dataset.originalHtml;
                 delete btn.dataset.originalHtml;
@@ -10588,7 +11237,7 @@ function updateSSK(tab, rowId) {
 	        });
         if (rows.length === 0) { showAlert('Tambahkan minimal satu item!', {type:'warning'}); return; }
         let valid = true, items = [];
-        const qtyAggr = {}; 
+        const qtyAggr = {};
         rows.forEach(row => {
             const idNum = row.id.replace('trx-row-', '');
             const warna = document.getElementById('trx-warna-label-' + idNum)?.textContent?.trim();
@@ -10703,10 +11352,10 @@ function updateSSK(tab, rowId) {
         const now = new Date();
         const tanggal = now.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' });
         const jam = now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
-        const { data: trx, error: trxErr } = await sbClient.from('transaksi').insert({
+        const { data: trx, error: trxErr } = await dataRepository.writes.insert('transaksi', {
             vendor: snapVendorNama, brand: snapBrandNama, model: snapModelNama,
             harga: snapModelHarga, harga_modal: snapModelHargaModal, status: snapStatusBayar, tanggal, jam
-        }).select().single();
+        }, true);
         // PERBAIKAN: sebelumnya toast cuma bilang "Gagal simpan transaksi" tanpa alasan, jadi
         // susah didiagnosa (mis. project Supabase FREE lagi paused, API key tidak valid, dst).
         // Sekarang pesan error asli dari Supabase ikut ditampilkan & di-log ke console.
@@ -10715,10 +11364,14 @@ function updateSSK(tab, rowId) {
             showToast('❌ Gagal simpan transaksi: ' + (trxErr.message || trxErr.code || 'unknown error'));
             setButtonLoading(_btnSimpanTrx, false); _trxIsSaving = false; _updateSimpanTrxBtnState(); return;
         }
-        const { data: insertedTrxItems, error: itemErr } = await sbClient.from('transaksi_item').insert(items.map(i => ({ transaksi_id: trx.id, ...i }))).select();
+        const { data: insertedTrxItems, error: itemErr } = await dataRepository.writes.insert(
+            'transaksi_item',
+            items.map(i => ({ transaksi_id: trx.id, ...i })),
+            false
+        );
         if (itemErr) {
             console.error('[simpanTransaksi] Insert transaksi_item gagal:', itemErr);
-            await sbClient.from('transaksi').delete().eq('id', trx.id);
+            await dataRepository.writes.remove('transaksi', 'id', trx.id);
             showToast('❌ Gagal simpan item transaksi: ' + (itemErr.message || itemErr.code || 'unknown error') + '. Dibatalkan.');
             setButtonLoading(_btnSimpanTrx, false);
             _trxIsSaving = false;
@@ -10730,6 +11383,8 @@ function updateSSK(tab, rowId) {
         // (yang berisiko kena 2 baris sekaligus kalau ada variasi ganda) melainkan pakai id yang pasti.
         const itemsWithId = (insertedTrxItems || []).map(i => ({ id: i.id, warna: i.warna, ukuran: i.ukuran, qty: i.qty, ssk: i.ssk }));
         appData.riwayatTransaksi.unshift({ id: trx.id, vendor: snapVendorNama, brand: snapBrandNama, model: snapModelNama, harga: snapModelHarga, hargaModal: snapModelHargaModal, status: snapStatusBayar, tanggal, jam, items: itemsWithId.length ? itemsWithId : items });
+        _dedupeTransaksiState();
+        await refreshStockCachesAfterMutation();
         trxState = { vendorId: null, vendorNama: '', brandId: null, brandNama: '', modelId: null, modelNama: '', modelHarga: 0, modelHargaModal: 0, statusBayar: 'lunas' };
         document.getElementById('trx-vendor-display').textContent = 'Pilih vendor';
         document.getElementById('trx-brand-display').textContent = 'Pilih brand';
@@ -11221,8 +11876,7 @@ function updateSSK(tab, rowId) {
         // diam-diam ke cara lama (full fetch + filter lokal) supaya fitur tetap jalan.
         const bebanPromise = (async () => {
             try {
-                const { data, error } = await sbClient.rpc('rp_get_beban_total', { p_dari: dariISO, p_sampai: sampaiISO });
-                if (error) throw error;
+                const data = await dataRepository.rpc('rp_get_beban_total', { p_dari: dariISO, p_sampai: sampaiISO });
                 return Number(data) || 0;
             } catch (e) {
                 console.warn('[Laba Rugi] rp_get_beban_total belum tersedia, fallback ke hitung lokal:', e.message);
@@ -11569,7 +12223,7 @@ function updateSSK(tab, rowId) {
         if (!record) { showToast('❌ Data retur tidak ditemukan.'); return; }
         const totalQty = record.items.reduce((s, i) => s + i.qty, 0);
         showConfirm(`Hapus riwayat retur ini?\n\n${record.brand} — ${record.model}\n${totalQty} pcs • ${record.tanggal} ${record.jam}\n\nStok yang tadi dipotong retur ini akan kembali. Data yang sudah dihapus tidak bisa dikembalikan.`, async function() {
-            const { error } = await sbClient.from('riwayat_input').delete().eq('id', id);
+            const { error } = await dataRepository.writes.remove('riwayat_input', 'id', id);
             if (error) { showToast('❌ Gagal hapus retur: ' + error.message); return; }
             const idx = appData.riwayatInput.findIndex(d => d.id === id);
             if (idx !== -1) appData.riwayatInput.splice(idx, 1);
@@ -11736,7 +12390,7 @@ function updateSSK(tab, rowId) {
 
         setButtonLoading(btnEl, true, 'MENYIMPAN...');
         try {
-            var result = await sbClient.from("riwayat_input_item").update({ qty: qtyBaru }).eq("id", item.id);
+            var result = await dataRepository.writes.update("riwayat_input_item", { qty: qtyBaru }, "id", item.id);
             if (result.error) throw result.error;
             item.qty = qtyBaru;
             _invalidateStokItemCache();
@@ -11769,7 +12423,7 @@ function updateSSK(tab, rowId) {
             localStorage.setItem('trx_seen_vendor', JSON.stringify(stored));
         }
     }
-    
+
     let _filterTrxStatus = 'kredit'; // default: panel TRANSAKSI menampilkan status KREDIT
 
     // PAGINATION: pagination dilakukan di level GRUP VENDOR (bukan di level transaksi/data),
@@ -12472,7 +13126,7 @@ function updateSSK(tab, rowId) {
                 return;
             }
         }
-    
+
         // PERBAIKAN: pakai daftar transaksi yang SAMA PERSIS dengan yang sedang tampil di layar
         // (hasil filter tanggal + status dari renderRiwayatTransaksi), bukan filter ulang yang bisa out-of-sync.
         const trxVendor = _vendorGroupCache[vendor] || [];
@@ -12741,7 +13395,7 @@ function updateSSK(tab, rowId) {
                 return it;
             });
             if (!changed) return;
-            const { error: updErr } = await sbClient.from('produksi_orders').update({ items }).eq('order_code', orderCode);
+        const { error: updErr } = await externalRepository.pesanan.updateItems(orderCode, items);
             if (updErr) console.warn('Gagal sinkron qty ke Pesanan (' + orderCode + '):', updErr.message);
         } catch (e) {
             console.warn('Gagal sinkron qty ke Pesanan (' + orderCode + '):', e.message || e);
@@ -12779,13 +13433,16 @@ function updateSSK(tab, rowId) {
                 let error;
                 if (item.id) {
                     _markOwnQtyWrite(item.id, qtyBaru); // tandai dulu SEBELUM update, biar gema Realtime-nya kekejar
-                    ({ error } = await sbClient.from('transaksi_item').update({ qty: qtyBaru }).eq('id', item.id));
+                    ({ error } = await dataRepository.writes.update('transaksi_item', { qty: qtyBaru }, 'id', item.id));
                 } else {
-                    ({ error } = await sbClient.from('transaksi_item')
-                        .update({ qty: qtyBaru })
-                        .eq('transaksi_id', trxId)
-                        .eq('warna', item.warna)
-                        .eq('ukuran', item.ukuran));
+                    ({ error } = await dataRepository.writes.updateWhere(
+                        'transaksi_item', { qty: qtyBaru },
+                        [
+                            { column: 'transaksi_id', value: trxId },
+                            { column: 'warna', value: item.warna },
+                            { column: 'ukuran', value: item.ukuran }
+                        ]
+                    ));
                 }
                 if (error) throw error;
                 item.qty = qtyBaru;
@@ -12816,9 +13473,13 @@ function updateSSK(tab, rowId) {
                 const ids = inputKorup.map(d => d.id).filter(id => id !== null && id !== undefined);
                 if (ids.length === 0) { showToast('ID data korup tidak ditemukan.'); return; }
                 try {
-                    const { error: itemErr } = await sbClient.from('riwayat_input_item').delete().in('riwayat_input_id', ids);
+                    const { error: itemErr } = await dataRepository.writes.removeWhere(
+                        'riwayat_input_item', [{ column: 'riwayat_input_id', op: 'in', value: ids }]
+                    );
                     if (itemErr) throw itemErr;
-                    const { error: riErr } = await sbClient.from('riwayat_input').delete().in('id', ids);
+                    const { error: riErr } = await dataRepository.writes.removeWhere(
+                        'riwayat_input', [{ column: 'id', op: 'in', value: ids }]
+                    );
                     if (riErr) throw riErr;
                     appData.riwayatInput = appData.riwayatInput.filter(d => !ids.includes(d.id));
                     renderRiwayatInput();
@@ -12842,9 +13503,13 @@ function updateSSK(tab, rowId) {
                 const ids = trxKorup.map(t => t.id).filter(id => id !== null && id !== undefined);
                 if (ids.length === 0) { showToast('ID transaksi korup tidak ditemukan.'); return; }
                 try {
-                    const { error: itemErr } = await sbClient.from('transaksi_item').delete().in('transaksi_id', ids);
+                    const { error: itemErr } = await dataRepository.writes.removeWhere(
+                        'transaksi_item', [{ column: 'transaksi_id', op: 'in', value: ids }]
+                    );
                     if (itemErr) throw itemErr;
-                    const { error: trxErr } = await sbClient.from('transaksi').delete().in('id', ids);
+                    const { error: trxErr } = await dataRepository.writes.removeWhere(
+                        'transaksi', [{ column: 'id', op: 'in', value: ids }]
+                    );
                     if (trxErr) throw trxErr;
                     appData.riwayatTransaksi = appData.riwayatTransaksi.filter(t => !ids.includes(t.id));
                     selectedTrxIds.clear();
@@ -12977,7 +13642,7 @@ function updateSSK(tab, rowId) {
         showToast('⏳ Menghapus data...');
         _markOwnDelete('trx', trxId);
         try {
-            const { error } = await sbClient.from('transaksi').delete().eq('id', trxId);
+            const { error } = await dataRepository.writes.remove('transaksi', 'id', trxId);
             if (error) throw error;
 
             if (cardEl) {
@@ -13042,13 +13707,16 @@ function updateSSK(tab, rowId) {
             for (const item of itemsToHapus) {
                 let error;
                 if (item.id) {
-                    ({ error } = await sbClient.from('transaksi_item').delete().eq('id', item.id));
+                    ({ error } = await dataRepository.writes.remove('transaksi_item', 'id', item.id));
                 } else {
-                    ({ error } = await sbClient.from('transaksi_item')
-                        .delete()
-                        .eq('transaksi_id', trxId)
-                        .eq('warna', item.warna)
-                        .eq('ukuran', item.ukuran));
+                    ({ error } = await dataRepository.writes.removeWhere(
+                        'transaksi_item',
+                        [
+                            { column: 'transaksi_id', value: trxId },
+                            { column: 'warna', value: item.warna },
+                            { column: 'ukuran', value: item.ukuran }
+                        ]
+                    ));
                 }
                 if (error) throw error;
             }
@@ -13056,8 +13724,7 @@ function updateSSK(tab, rowId) {
             // Cleanup atomik di server (bukan andalkan hitungan lokal `hapusAll` yang bisa basi
             // kalau ada sesi/tab lain yang barusan ubah transaksi yang sama) — hapus header
             // transaksi HANYA kalau memang sudah 0 item & belum lunas.
-            const { error: cleanErr } = await sbClient.rpc('cleanup_transaksi_kosong', { p_trx_id: trxId });
-            if (cleanErr) throw cleanErr;
+            await dataRepository.rpc('cleanup_transaksi_kosong', { p_trx_id: trxId });
 
             // Animasi hilang sebelum re-render
             if (cardEl && hapusAll) {
@@ -13589,14 +14256,14 @@ function updateSSK(tab, rowId) {
 
         // Sistem: TOTAL - PEMBAYARAN SEBAGIAN langsung
         // Simpan 1 record ke pelunasan dengan transaksi_id = null (bukan partial per-transaksi)
-        const { data, error } = await sbClient.from('pelunasan').insert({
+        const { data, error } = await dataRepository.writes.insert('pelunasan', {
             transaksi_id: null,
             vendor,
             jumlah: bayar,
             keterangan,
             tanggal,
             jam
-        }).select().single();
+        }, true);
 
         if (error) {
             showToast('❌ Gagal menyimpan: ' + error.message);
@@ -13625,7 +14292,7 @@ function updateSSK(tab, rowId) {
             const creditTrxVendor = appData.riwayatTransaksi.filter(t => t.vendor === vendor && t.status === 'credit');
             const orderCodesTerdampak = [];
             for (const t of creditTrxVendor) {
-                const { error: errUpdate } = await sbClient.from('transaksi').update({ status: 'lunas' }).eq('id', t.id);
+                const { error: errUpdate } = await dataRepository.writes.update('transaksi', { status: 'lunas' }, 'id', t.id);
                 if (!errUpdate) { t.status = 'lunas'; if (t.orderCode) orderCodesTerdampak.push(t.orderCode); }
             }
             await syncPesananPembayaran(orderCodesTerdampak);
@@ -13651,7 +14318,7 @@ function updateSSK(tab, rowId) {
             let berhasil = 0;
             const orderCodesTerdampak = [];
             for (const t of creditTrx) {
-                const { error } = await sbClient.from('transaksi').update({ status: 'lunas' }).eq('id', t.id);
+                const { error } = await dataRepository.writes.update('transaksi', { status: 'lunas' }, 'id', t.id);
                 if (error) continue;
                 t.status = 'lunas';
                 if (t.orderCode) orderCodesTerdampak.push(t.orderCode);
@@ -13693,9 +14360,9 @@ function updateSSK(tab, rowId) {
                 const sisaHutang = Math.max(0, totalNominal - sudahBayar);
                 if (sisaHutang <= 0) continue;
 
-                const { data, error } = await sbClient.from('pelunasan').insert({
+                const { data, error } = await dataRepository.writes.insert('pelunasan', {
                     transaksi_id: t.id, vendor, jumlah: sisaHutang, keterangan, tanggal, jam
-                }).select().single();
+                }, true);
                 if (error) {
                     gagal++;
                     pesanErrorTerakhir = error.message || 'gagal simpan pelunasan';
@@ -13705,10 +14372,10 @@ function updateSSK(tab, rowId) {
 
                 appData.pelunasan.unshift({ id: data.id, transaksi_id: t.id, vendor, jumlah: sisaHutang, keterangan, tanggal, jam });
 
-                const { error: errUpdate } = await sbClient.from('transaksi').update({ status: 'lunas' }).eq('id', t.id);
+                const { error: errUpdate } = await dataRepository.writes.update('transaksi', { status: 'lunas' }, 'id', t.id);
                 if (errUpdate) {
                     // Rollback catatan pelunasan supaya tidak nyangkut setengah-setengah.
-                    await sbClient.from('pelunasan').delete().eq('id', data.id);
+                    await dataRepository.writes.remove('pelunasan', 'id', data.id);
                     appData.pelunasan = appData.pelunasan.filter(p => p.id !== data.id);
                     gagal++;
                     pesanErrorTerakhir = errUpdate.message || 'gagal update status transaksi';
@@ -13928,9 +14595,9 @@ function updateSSK(tab, rowId) {
                 const trx = appData.riwayatTransaksi.find(t => t.id === trxId);
                 if (!trx || sisaHutang <= 0) continue;
 
-                const { data, error } = await sbClient.from('pelunasan').insert({
+                const { data, error } = await dataRepository.writes.insert('pelunasan', {
                     transaksi_id: trxId, vendor: trx.vendor, jumlah: sisaHutang, keterangan, tanggal, jam
-                }).select().single();
+                }, true);
                 if (error) {
                     gagal++;
                     pesanErrorTerakhir = error.message || 'gagal simpan pelunasan';
@@ -13940,11 +14607,11 @@ function updateSSK(tab, rowId) {
 
                 appData.pelunasan.unshift({ id: data.id, transaksi_id: trxId, vendor: trx.vendor, jumlah: sisaHutang, keterangan, tanggal, jam });
 
-                const { error: errUpdate } = await sbClient.from('transaksi').update({ status: 'lunas' }).eq('id', trxId);
+                const { error: errUpdate } = await dataRepository.writes.update('transaksi', { status: 'lunas' }, 'id', trxId);
                 if (errUpdate) {
                     // Rollback catatan pelunasan yang baru dibuat supaya data tidak nyangkut setengah-setengah
                     // (sudah tercatat bayar tapi transaksi masih berstatus credit).
-                    await sbClient.from('pelunasan').delete().eq('id', data.id);
+                    await dataRepository.writes.remove('pelunasan', 'id', data.id);
                     appData.pelunasan = appData.pelunasan.filter(p => p.id !== data.id);
                     gagal++;
                     pesanErrorTerakhir = errUpdate.message || 'gagal update status transaksi';
@@ -13971,7 +14638,7 @@ function updateSSK(tab, rowId) {
         }, {title:'LUNASI TERPILIH', type:'success', icon:'💰', ok:'YA, LUNASI'});
     }
 
-    let _pelIsSaving = false; 
+    let _pelIsSaving = false;
 
     async function simpanPelunasan(trxId, vendor, sisaHutang, btnEl) {
         if (_pelIsSaving) { showToast('⚠️ Sedang menyimpan, harap tunggu...'); return; }
@@ -13986,7 +14653,7 @@ function updateSSK(tab, rowId) {
                 showToast('⚠️ Transaksi ini sudah lunas!');
                 return;
             }
-            
+
             sisaHutang = Math.max(0, sisaHutang);
         }
 
@@ -14001,9 +14668,9 @@ function updateSSK(tab, rowId) {
 
         _pelIsSaving = true;
         setButtonLoading(btnEl, true, 'MEMPROSES...');
-        const { data, error } = await sbClient.from('pelunasan').insert({
+        const { data, error } = await dataRepository.writes.insert('pelunasan', {
             transaksi_id: trxId, vendor, jumlah, keterangan, tanggal, jam
-        }).select().single();
+        }, true);
         if (error) {
             console.error('Gagal insert pelunasan untuk transaksi', trxId, error);
             showToast('❌ Gagal simpan pelunasan: ' + (error.message || 'error tidak diketahui'));
@@ -14014,10 +14681,10 @@ function updateSSK(tab, rowId) {
 
         const trx = appData.riwayatTransaksi.find(t => Number(t.id) === trxId);
         if (trx) {
-            const { error: errUpdate } = await sbClient.from('transaksi').update({ status: 'lunas' }).eq('id', trxId);
+                const { error: errUpdate } = await dataRepository.writes.update('transaksi', { status: 'lunas' }, 'id', trxId);
             if (errUpdate) {
                 // Rollback catatan pelunasan supaya tidak nyangkut setengah-setengah.
-                await sbClient.from('pelunasan').delete().eq('id', data.id);
+                await dataRepository.writes.remove('pelunasan', 'id', data.id);
                 appData.pelunasan = appData.pelunasan.filter(p => p.id !== data.id);
                 console.error('Gagal update status transaksi', trxId, errUpdate);
                 showToast('❌ Gagal menandai transaksi LUNAS: ' + (errUpdate.message || 'error tidak diketahui'));
@@ -14044,7 +14711,7 @@ function updateSSK(tab, rowId) {
     async function hapusPelunasan(pelId, trxId) {
         trxId = Number(trxId); pelId = Number(pelId);
         showConfirm('Hapus catatan pembayaran ini?\nData yang sudah dihapus tidak bisa dikembalikan.', async function() {
-            const { error: delErr } = await sbClient.from('pelunasan').delete().eq('id', pelId);
+            const { error: delErr } = await dataRepository.writes.remove('pelunasan', 'id', pelId);
             if (delErr) { showToast('❌ Gagal hapus pembayaran'); return; }
             // Hapus dari appData lokal
             appData.pelunasan = appData.pelunasan.filter(p => Number(p.id) !== pelId);
@@ -14054,16 +14721,16 @@ function updateSSK(tab, rowId) {
                 const totalBayarSisa = appData.pelunasan
                     .filter(p => Number(p.transaksi_id) === trxId)
                     .reduce((s, p) => s + p.jumlah, 0);
-                
+
                 const statusBaru = totalBayarSisa >= totalNominal ? 'lunas' : 'credit';
                 if (trx.status !== statusBaru) {
-                    const { error: updErr } = await sbClient.from('transaksi').update({ status: statusBaru }).eq('id', trxId);
+                    const { error: updErr } = await dataRepository.writes.update('transaksi', { status: statusBaru }, 'id', trxId);
                     if (updErr) { showToast('⚠️ Pembayaran dihapus tapi gagal update status transaksi'); }
                     else {
                         trx.status = statusBaru;
                         if (trx.orderCode) {
                             if (statusBaru === 'lunas') await syncPesananPembayaran([trx.orderCode]);
-                            else await sbClient.from('produksi_orders').update({ status_bayar: 'belum_lunas' }).eq('order_code', trx.orderCode).catch(()=>{});
+                            else await externalRepository.pesanan.setPaymentStatus(trx.orderCode, 'belum_lunas').catch(()=>{});
                         }
                     }
                 }
@@ -14093,15 +14760,15 @@ function updateSSK(tab, rowId) {
 
         showConfirm('Kembalikan transaksi ini ke status KREDIT?\nSemua catatan pembayaran untuk transaksi ini akan ikut dihapus.', async function() {
             for (const p of pelTerkait) {
-                const { error } = await sbClient.from('pelunasan').delete().eq('id', p.id);
+                const { error } = await dataRepository.writes.remove('pelunasan', 'id', p.id);
                 if (error) { showToast('❌ Gagal hapus catatan pembayaran, coba lagi'); return; }
             }
             appData.pelunasan = appData.pelunasan.filter(p => Number(p.transaksi_id) !== trxId);
 
-            const { error: updErr } = await sbClient.from('transaksi').update({ status: 'credit' }).eq('id', trxId);
+            const { error: updErr } = await dataRepository.writes.update('transaksi', { status: 'credit' }, 'id', trxId);
             if (updErr) { showToast('⚠️ Pembayaran dihapus tapi gagal update status transaksi'); return; }
             trx.status = 'credit';
-            if (trx.orderCode) await sbClient.from('produksi_orders').update({ status_bayar: 'belum_lunas' }).eq('order_code', trx.orderCode).catch(()=>{});
+            if (trx.orderCode) await externalRepository.pesanan.setPaymentStatus(trx.orderCode, 'belum_lunas').catch(()=>{});
 
             renderRiwayatTransaksi();
             renderPelunasanView();
@@ -14668,7 +15335,7 @@ function updateSSK(tab, rowId) {
             showToast('⏳ Menyiapkan backup...');
 
             const _sbFetchAll = async (table) => { try { return await fetchAllRows(table, '*'); } catch(e) { return []; } };
-            const [vData, bData, mData, wData, uData, riData, riItemsData, trxData, trxItemsData, pelData, pengaturanRes] = await Promise.all([
+    const [vData, bData, mData, wData, uData, riData, riItemsData, trxData, trxItemsData, pelData, pengaturanData] = await Promise.all([
     _sbFetchAll('vendor'),
     _sbFetchAll('brand'),
     _sbFetchAll('model'),
@@ -14679,7 +15346,7 @@ function updateSSK(tab, rowId) {
     _sbFetchAll('transaksi'),
     _sbFetchAll('transaksi_item'),
     _sbFetchAll('pelunasan'),
-    sbClient.from('pengaturan').select('*'),
+    dataRepository.rows('pengaturan', '*'),
 ]);
 
             const backupData = {
@@ -14699,7 +15366,7 @@ function updateSSK(tab, rowId) {
                 transaksi:          trxData || [],
                 transaksi_item:     trxItemsData || [],
                 pelunasan:          pelData || [],
-                pengaturan:         pengaturanRes.data || [],
+                pengaturan:         pengaturanData || [],
             };
 
             const totalRec =
@@ -14800,16 +15467,16 @@ function updateSSK(tab, rowId) {
                             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> MEMPROSES...';
                             showToast('⏳ Menghapus data lama...');
 
-                            await sbClient.from('pelunasan').delete().neq('id', 0);
-                            await sbClient.from('transaksi_item').delete().neq('id', 0);
-                            await sbClient.from('transaksi').delete().neq('id', 0);
-                            await sbClient.from('riwayat_input_item').delete().neq('id', 0);
-                            await sbClient.from('riwayat_input').delete().neq('id', 0);
-                            await sbClient.from('model').delete().neq('id', 0);
-                            await sbClient.from('brand').delete().neq('id', 0);
-                            await sbClient.from('vendor').delete().neq('id', 0);
-                            await sbClient.from('warna').delete().neq('id', 0);
-                            await sbClient.from('ukuran').delete().neq('id', 0);
+                            await dataRepository.writes.removeWhere('pelunasan', [{ column: 'id', op: 'neq', value: 0 }]);
+                            await dataRepository.writes.removeWhere('transaksi_item', [{ column: 'id', op: 'neq', value: 0 }]);
+                            await dataRepository.writes.removeWhere('transaksi', [{ column: 'id', op: 'neq', value: 0 }]);
+                            await dataRepository.writes.removeWhere('riwayat_input_item', [{ column: 'id', op: 'neq', value: 0 }]);
+                            await dataRepository.writes.removeWhere('riwayat_input', [{ column: 'id', op: 'neq', value: 0 }]);
+                            await dataRepository.writes.removeWhere('model', [{ column: 'id', op: 'neq', value: 0 }]);
+                            await dataRepository.writes.removeWhere('brand', [{ column: 'id', op: 'neq', value: 0 }]);
+                            await dataRepository.writes.removeWhere('vendor', [{ column: 'id', op: 'neq', value: 0 }]);
+                            await dataRepository.writes.removeWhere('warna', [{ column: 'id', op: 'neq', value: 0 }]);
+                            await dataRepository.writes.removeWhere('ukuran', [{ column: 'id', op: 'neq', value: 0 }]);
 
                             showToast('⏳ Mengisi data backup...');
 
@@ -14820,7 +15487,7 @@ function updateSSK(tab, rowId) {
 
                                 for (let i = 0; i < rows.length; i += 100) {
                                     const chunk = rows.slice(i, i + 100);
-                                    const { error } = await sbClient.from(table).insert(chunk);
+                                    const { error } = await dataRepository.writes.insertRaw(table, chunk);
                                     if (error) throw new Error(`Gagal insert ${table}: ${error.message}`);
                                 }
                             };
@@ -14839,7 +15506,7 @@ function updateSSK(tab, rowId) {
                             if (d.pengaturan && d.pengaturan.length > 0) {
                                 const safePengaturan = d.pengaturan.filter(p => p.key !== 'pin_login' && p.key !== 'pin_master');
                                 if (safePengaturan.length > 0) {
-                                    const { error: pengaturanErr } = await sbClient.from('pengaturan').upsert(safePengaturan, { onConflict: 'key' });
+                                    const { error: pengaturanErr } = await dataRepository.writes.upsert('pengaturan', safePengaturan, { onConflict: 'key' });
                                     if (pengaturanErr) throw new Error(`Gagal restore pengaturan: ${pengaturanErr.message}`);
                                 }
                             }
@@ -14853,8 +15520,7 @@ function updateSSK(tab, rowId) {
                             // transaksi_pkey" (atau tabel lain). Panggil fungsi SQL fix_id_sequences()
                             // (lihat file fix_sequences.sql) untuk menyamakan sequence ke MAX(id) tiap tabel.
                             try {
-                                const { error: seqErr } = await sbClient.rpc('fix_id_sequences');
-                                if (seqErr) console.warn('Gagal sinkronkan sequence id setelah restore:', seqErr.message);
+                                await dataRepository.rpc('fix_id_sequences');
                             } catch (seqEx) {
                                 console.warn('Gagal sinkronkan sequence id setelah restore:', seqEx.message);
                             }
@@ -14899,7 +15565,7 @@ function updateSSK(tab, rowId) {
 
     const _renderRiwayatTransaksiOri = renderRiwayatTransaksi;
     renderRiwayatTransaksi = _debounce(function() {
-        
+
         const tabRiwayat = document.getElementById('tab-riwayat');
         if (tabRiwayat && tabRiwayat.classList.contains('hidden')) return;
         _renderRiwayatTransaksiOri();
@@ -15037,19 +15703,19 @@ function updateSSK(tab, rowId) {
         if (e.key === 'F3') {
             e.preventDefault(); e.stopPropagation(); return false;
         }
-        
+
         if ((e.ctrlKey || e.metaKey) && (e.key === 'l' || e.key === 'L')) {
             e.preventDefault(); e.stopPropagation(); return false;
         }
-        
+
         if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
             e.preventDefault(); e.stopPropagation(); return false;
         }
-        
+
         if (e.key === 'F5' || ((e.ctrlKey || e.metaKey) && (e.key === 'r' || e.key === 'R'))) {
             e.preventDefault(); e.stopPropagation(); return false;
         }
-        
+
         if (!inInput && !e.ctrlKey && !e.metaKey && !e.altKey) {
             // Blokir semua printable chars termasuk /, space, huruf, angka
             if (e.key.length === 1 || e.key === '/') {
