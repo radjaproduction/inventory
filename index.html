@@ -5789,7 +5789,7 @@ async function fetchBayarSebagianData() {
         if (!badge || !sbClient) return;
         try {
             const orders = await _fetchAktifPesananOrders();
-            const aktifCount = orders.filter(o => !o.disiapkan_selesai).length;
+            const aktifCount = orders.filter(o => !o.disiapkan_selesai && Array.isArray(o.items) && o.items.length > 0).length;
             if (aktifCount > 0) {
                 badge.textContent = aktifCount > 99 ? '99+' : String(aktifCount);
                 badge.classList.remove('hidden');
