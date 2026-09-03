@@ -5618,9 +5618,19 @@ async function fetchBayarSebagianData() {
             });
 
             let itemsHtml = '';
+            let tabelHeader = '';
+            
             if (items.length === 0) {
                 itemsHtml = '<div style="font-size:11px;color:#999;font-style:italic;">(tidak ada rincian item)</div>';
             } else {
+                // ── Header kolom tabel (hanya ada kalau ada item) ──
+                tabelHeader = '<div style="display:grid;grid-template-columns:1fr 50px 75px 50px;gap:4px 10px;padding:0 8px 4px;margin-bottom:2px;">'
+                    + '<span style="font-size:9px;font-weight:800;color:#999;letter-spacing:0.5px;display:flex;align-items:center;">MODEL</span>'
+                    + '<span style="font-size:9px;font-weight:800;color:#999;letter-spacing:0.5px;display:flex;justify-content:center;align-items:center;">SIZE</span>'
+                    + '<span style="font-size:9px;font-weight:800;color:#999;letter-spacing:0.5px;display:flex;justify-content:center;align-items:center;">WARNA</span>'
+                    + '<span style="font-size:9px;font-weight:800;color:#999;letter-spacing:0.5px;display:flex;justify-content:center;align-items:center;">QTY</span>'
+                    + '</div>';
+                
                 itemsHtml = Object.keys(brandMap).map(brand => {
                     const brandLabel = brand
                         ? '<div style="margin-bottom:5px;">'
@@ -5641,24 +5651,14 @@ async function fetchBayarSebagianData() {
                         return '<div style="display:grid;grid-template-columns:1fr 50px 75px 50px;gap:4px 10px;align-items:center;padding:5px 8px;background:' + rowBg + ';border-radius:8px;margin-bottom:4px;border:' + rowBorder + ';">'
                             + '<div style="font-size:11px;font-weight:700;color:' + (isPri ? '#991b1b' : '#1a1a2e') + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'
                             + model + urgentBadge + '</div>'
-                            + '<div style="font-size:10px;font-weight:600;color:#555;background:#f1f5f9;border-radius:5px;padding:1px 7px;white-space:nowrap;text-align:center;">' + size + '</div>'
-                            + '<div style="font-size:10px;font-weight:600;color:#666;background:#f5f5f5;border-radius:5px;padding:1px 7px;white-space:nowrap;text-align:center;">' + warna + '</div>'
-                            + '<div style="font-size:11px;font-weight:900;color:#ff8c00;white-space:nowrap;text-align:center;">×' + qty + '</div>'
+                            + '<div style="font-size:10px;font-weight:600;color:#555;background:#f1f5f9;border-radius:5px;padding:1px 7px;white-space:nowrap;display:flex;justify-content:center;align-items:center;height:24px;">' + size + '</div>'
+                            + '<div style="font-size:10px;font-weight:600;color:#666;background:#f5f5f5;border-radius:5px;padding:1px 7px;white-space:nowrap;display:flex;justify-content:center;align-items:center;height:24px;">' + warna + '</div>'
+                            + '<div style="font-size:11px;font-weight:900;color:#ff8c00;white-space:nowrap;display:flex;justify-content:center;align-items:center;height:24px;">×' + qty + '</div>'
                             + '</div>';
                     }).join('');
                     return '<div style="margin-bottom:8px;">' + brandLabel + rows + '</div>';
                 }).join('');
             }
-
-            // ── Header kolom tabel ──
-            const tabelHeader = items.length > 0
-                ? '<div style="display:grid;grid-template-columns:1fr 50px 75px 50px;gap:4px 10px;padding:0 8px 4px;margin-bottom:2px;">'
-                  + '<span style="font-size:9px;font-weight:800;color:#999;letter-spacing:0.5px;">MODEL</span>'
-                  + '<span style="font-size:9px;font-weight:800;color:#999;letter-spacing:0.5px;text-align:center;">SIZE</span>'
-                  + '<span style="font-size:9px;font-weight:800;color:#999;letter-spacing:0.5px;text-align:center;">WARNA</span>'
-                  + '<span style="font-size:9px;font-weight:800;color:#999;letter-spacing:0.5px;text-align:center;">QTY</span>'
-                  + '</div>'
-                : '';
 
             // ── Waktu ──
             const waktu = o.created_at ? (() => {
