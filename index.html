@@ -39,12 +39,14 @@
         .rp-card-body{padding:10px 12px;border-top:1px solid rgba(118,153,201,.14);}
         .rp-trx-detail-wrap{margin-top:2px;border:1px solid rgba(118,153,201,.22);border-radius:10px;overflow:hidden;background:rgba(6,20,43,.52);}
         .rp-trx-detail-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:9px;}
-        .rp-trx-detail-table th{padding:6px 5px;background:rgba(118,153,201,.14);color:#b9c8dc;text-align:left;font-size:8px;font-weight:900;letter-spacing:.25px;white-space:nowrap;}
-        .rp-trx-detail-table td{padding:6px 5px;color:#f4f7fb;border-top:1px solid rgba(118,153,201,.12);vertical-align:middle;overflow:hidden;}
+        .rp-trx-detail-table th{padding:6px 5px;background:rgba(118,153,201,.14);color:#b9c8dc;text-align:center;font-size:8px;font-weight:900;letter-spacing:.25px;white-space:nowrap;}
+        .rp-trx-detail-table th:nth-child(1){text-align:left;}
+        .rp-trx-detail-table td{padding:6px 5px;color:#f4f7fb;border-top:1px solid rgba(118,153,201,.12);vertical-align:middle;overflow:hidden;text-align:center;}
+        .rp-trx-detail-table td:nth-child(1){text-align:left;}
         .rp-trx-detail-table th:nth-child(1){width:29%;}.rp-trx-detail-table th:nth-child(2){width:18%;}.rp-trx-detail-table th:nth-child(3){width:12%;}.rp-trx-detail-table th:nth-child(4){width:10%;}.rp-trx-detail-table th:nth-child(5){width:15%;}.rp-trx-detail-table th:nth-child(6){width:16%;}
         .rp-trx-detail-table .rp-trx-product{display:block;font-weight:900;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;}
         .rp-trx-detail-table .rp-trx-brand{display:block;color:#ffad2f;font-size:7.5px;font-weight:900;text-transform:uppercase;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;}
-        .rp-trx-detail-table .rp-trx-num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
+        .rp-trx-detail-table .rp-trx-num{text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums;}
         .rp-trx-detail-total{display:flex;justify-content:flex-end;gap:9px;padding:7px 6px;border-top:1px solid rgba(255,140,0,.35);background:rgba(255,140,0,.09);color:#f4f7fb;font-size:9px;}
         .rp-trx-detail-total b{color:#ffad2f;}
 
@@ -13012,7 +13014,7 @@ function updateSSK(tab, rowId) {
             grandTotal += totalNominal;
             grandTotalQty += row.qty;
             return `<tr style="border-bottom:1px solid #e5e7eb;">
-                <td style="padding:8px 12px;font-weight:700;color:#111;text-align:center;">${row.model}</td>
+                <td style="padding:8px 12px;font-weight:700;color:#111;text-align:left;">${row.model}</td>
                 <td style="padding:8px 12px;text-align:center;color:#111;">${row.qty}</td>
                 <td style="padding:8px 12px;text-align:center;color:#111;">Rp ${row.harga.toLocaleString('id-ID')}</td>
                 <td style="padding:8px 12px;text-align:center;font-weight:900;color:#111;">Rp ${totalNominal.toLocaleString('id-ID')}</td>
@@ -13077,7 +13079,7 @@ function updateSSK(tab, rowId) {
             <div class="th-tablewrap">
                 <table>
                     <thead><tr>
-                        <th>MODEL</th><th>QTY</th>
+                        <th style="text-align:left;">MODEL</th><th>QTY</th>
                         <th>HARGA</th>
                         <th style="background:rgba(0,0,0,0.18);">TOTAL</th>
                     </tr></thead>
@@ -14820,9 +14822,9 @@ function updateSSK(tab, rowId) {
         // Tabel riwayat pembayaran sebagian
         const riwayatRows = riwayatBayar.map(p => `
             <tr style="border-bottom:1px solid #e5e7eb;">
-                <td style="padding:6px 10px;color:#111;">${p.tanggal} ${p.jam}</td>
-                <td style="padding:6px 10px;color:#000;">${p.keterangan || 'BAYAR SEBAGIAN'}</td>
-                <td style="padding:6px 10px;text-align:right;font-weight:900;color:#16a34a;">Rp ${p.jumlah.toLocaleString('id-ID')}</td>
+                <td style="padding:6px 10px;color:#111;text-align:center;">${p.tanggal} ${p.jam}</td>
+                <td style="padding:6px 10px;color:#000;text-align:left;">${p.keterangan || 'BAYAR SEBAGIAN'}</td>
+                <td style="padding:6px 10px;text-align:center;font-weight:900;color:#16a34a;">Rp ${p.jumlah.toLocaleString('id-ID')}</td>
             </tr>`).join('');
 
         const docHtml = `
@@ -14850,7 +14852,8 @@ function updateSSK(tab, rowId) {
             .th-paybox { background:#d4d4d4; border:1px solid #c0c0c0; border-radius:8px; overflow:hidden; }
             .th-paybox table { width:100%; border-collapse:collapse; }
             .th-paybox thead tr { background:#b0b0b0; }
-            .th-paybox thead th { padding:6px 10px; font-size:9px; font-weight:900; color:#111; text-align:left; }
+            .th-paybox thead th { padding:6px 10px; font-size:9px; font-weight:900; color:#111; text-align:center; }
+            .th-paybox thead th:nth-child(2) { text-align:left; }
             .th-paybox tbody td { padding:6px 10px; font-size:10px; }
             .th-paybox tbody tr:nth-child(even) { background:#e0e0e0; }
             .th-sisabox { margin:0 18px 10px; background:#fee2e2; border:1.5px solid #dc2626; border-radius:8px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
@@ -14898,7 +14901,7 @@ function updateSSK(tab, rowId) {
                 <div class="th-paybox">
                     <table>
                         <thead><tr>
-                            <th>TANGGAL</th><th>KETERANGAN</th><th style="text-align:right;">JUMLAH DIBAYAR</th>
+                            <th>TANGGAL</th><th style="text-align:left;">KETERANGAN</th><th>JUMLAH DIBAYAR</th>
                         </tr></thead>
                         <tbody>${riwayatRows}</tbody>
                     </table>
