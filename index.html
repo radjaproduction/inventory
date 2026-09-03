@@ -5553,7 +5553,7 @@ async function fetchBayarSebagianData() {
     function _renderRincianPesananList(orders) {
         const wrap = document.getElementById('rincian-pesanan-list');
         if (!wrap) return;
-        const aktif = (orders || []).filter(o => !o.disiapkan_selesai);
+        const aktif = (orders || []).filter(o => !o.disiapkan_selesai && Array.isArray(o.items) && o.items.length > 0);
         if (aktif.length === 0) {
             wrap.innerHTML = '<div style="padding:30px 10px;text-align:center;color:#888;font-size:12px;">Tidak ada pesanan aktif saat ini 🎉</div>';
             return;
@@ -5686,8 +5686,8 @@ async function fetchBayarSebagianData() {
                 + '</div>'
                 + noteHtml
                 + '</div>'
-                // ── BODY: daftar item ──
-                + '<div style="padding:10px 12px;">'
+                // ── BODY: daftar item (padding conditional) ──
+                + '<div style="padding:' + (items.length > 0 ? '10px 12px' : '8px 12px') + ';">'
                 + tabelHeader
                 + itemsHtml
                 + '</div>'
