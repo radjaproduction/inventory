@@ -87,7 +87,7 @@
             html, body { background: #ffffff !important; }
         }
     </style>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Radja Production - App</title>
 
     <link rel="manifest" href="/inventory/manifest.json">
@@ -366,6 +366,7 @@
         body {
             background-color: #06142B; color: #eaf1fb;
             font-family: 'Montserrat', sans-serif;
+            line-height: 1.45;
             -webkit-tap-highlight-color: transparent;
             min-height: 100vh;
             min-height: -webkit-fill-available;
@@ -388,6 +389,27 @@
         * { scrollbar-width: none; -ms-overflow-style: none; }
         html, body { overscroll-behavior: none; overscroll-behavior-y: none; overscroll-behavior-x: none; height: 100%; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Accessible keyboard focus: several compact controls use focus:outline-none
+           for the visual style, so provide one consistent focus indicator here. */
+        :where(button, input, select, textarea, [tabindex]):focus-visible {
+            outline: 3px solid #ffb347 !important;
+            outline-offset: 2px;
+        }
+
+        /* Keep the primary icon/action controls usable on touch screens. */
+        .rp-stock-icon-btn { width: 44px; height: 44px; }
+        .rp-vendor-select-btn { min-width: 44px; min-height: 44px; }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                scroll-behavior: auto !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
         .brand-text { color: var(--brand-main) !important; }
         .brand-bg { background-color: var(--brand-main) !important; }
         .brand-gradient-bg { background: var(--brand-gradient) !important; }
@@ -1580,7 +1602,7 @@
 #tab-stok.rp-stock-screen .rp-stock-dashboard{min-height:100vh;min-height:100dvh;gap:0;position:relative}
 .rp-stock-hero{padding:0 0 18px;position:relative;z-index:30;}
 .rp-stock-header-col{display:flex;flex-direction:column;width:calc(100% + 32px);margin:0 -16px 0;background:#0a1c38;border:0;border-radius:0;padding:calc(14px + env(safe-area-inset-top)) 16px 14px;position:sticky;top:0;z-index:40}
-.rp-stock-hero-top{display:flex;align-items:center;justify-content:space-between;gap:12px}.rp-stock-brand-lockup{display:flex;align-items:center;gap:9px;min-width:0}.rp-stock-logo-svg,.rp-stock-logo{width:150px;height:34px;object-fit:contain;flex-shrink:0}.rp-stock-actions{display:flex;gap:8px}.rp-stock-icon-btn{width:38px;height:38px;border:1px solid rgba(255,255,255,.2);border-radius:12px;background:rgba(7,25,52,.72);color:#eef3fb;display:flex;align-items:center;justify-content:center;position:relative;font-size:15px}.rp-stock-badge{position:absolute;right:-2px;top:-3px;min-width:15px;height:15px;border-radius:99px;background:var(--rp-orange);color:#111;font-size:8px;font-weight:900;display:flex;align-items:center;justify-content:center;border:2px solid #06142b}
+.rp-stock-hero-top{display:flex;align-items:center;justify-content:space-between;gap:12px}.rp-stock-brand-lockup{display:flex;align-items:center;gap:9px;min-width:0}.rp-stock-logo-svg,.rp-stock-logo{width:150px;height:34px;object-fit:contain;flex-shrink:0}.rp-stock-actions{display:flex;gap:8px}.rp-stock-icon-btn{width:44px;height:44px;border:1px solid rgba(255,255,255,.2);border-radius:12px;background:rgba(7,25,52,.72);color:#eef3fb;display:flex;align-items:center;justify-content:center;position:relative;font-size:15px}.rp-stock-badge{position:absolute;right:-2px;top:-3px;min-width:15px;height:15px;border-radius:99px;background:var(--rp-orange);color:#111;font-size:8px;font-weight:900;display:flex;align-items:center;justify-content:center;border:2px solid #06142b}
 .rp-stock-heading{padding:22px 4px 4px}.rp-stock-heading h1{font-size:30px;line-height:1;font-weight:900;letter-spacing:-.04em;margin:0;color:#fff}.rp-stock-heading h1 span{color:var(--rp-orange)}.rp-stock-heading p{margin:9px 0 0;color:#b7c3d6;font-size:11px;line-height:1.65;font-weight:600}
 .rp-stock-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:4px 0 12px}.rp-stock-kpi{min-width:0;min-height:92px;border:1.5px solid var(--rp-card-border);border-radius:var(--rp-card-radius);background:var(--rp-card-bg);padding:11px 8px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:7px;box-shadow:0 8px 22px rgba(0,0,0,.18)}.rp-kpi-icon{width:31px;height:31px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;flex-shrink:0}.rp-kpi-top{display:flex;align-items:center;gap:7px}.rp-kpi-orange .rp-kpi-icon{background:linear-gradient(145deg,#ffb11a,#ff7800)}.rp-kpi-blue .rp-kpi-icon{background:linear-gradient(145deg,#42a5ff,#1264da)}.rp-kpi-green .rp-kpi-icon{background:linear-gradient(145deg,#45d58b,#179c60)}.rp-kpi-label{font-size:9px;font-weight:700;color:#d6dfed;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rp-kpi-value{font-size:20px;font-weight:900;line-height:1;color:#fff;margin-top:3px}.rp-kpi-sub{font-size:7px;color:#9fb0c8;font-weight:600;margin-top:3px;white-space:nowrap}
 .rp-stock-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:10px;padding:0 2px}.rp-stock-section-head h2{font-size:15px;line-height:1;font-weight:900;color:#fff;margin:0;letter-spacing:.01em}.rp-stock-section-head p{font-size:8px;color:#7386a1;margin:5px 0 0;font-weight:600}.rp-stock-section-head button{border:0;background:transparent;color:var(--rp-orange);font-size:10px;font-weight:900;display:flex;align-items:center;gap:5px;white-space:nowrap}
