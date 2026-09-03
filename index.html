@@ -5630,6 +5630,7 @@ async function fetchBayarSebagianData() {
                     const rows = brandMap[brand].map(({ it, idx }) => {
                         const model    = _escPesanan(_namaDari(it));
                         const size     = _escPesanan(it.size || it.ukuran || '—');
+                        const warna    = _escPesanan(it.warna || it.color || '—');
                         const qty      = it.qty || 0;
                         const isPri    = priIdxSet.has(idx);
                         const rowBg    = isPri ? '#fff5f5' : '#fff';
@@ -5637,11 +5638,12 @@ async function fetchBayarSebagianData() {
                         const urgentBadge = isPri
                             ? '<span style="font-size:8px;font-weight:900;color:#fff;background:#ef4444;border-radius:4px;padding:2px 5px;margin-left:5px;vertical-align:middle;letter-spacing:0.4px;">⚡ URGENT</span>'
                             : '';
-                        return '<div style="display:grid;grid-template-columns:1fr auto auto;gap:4px 10px;align-items:center;padding:5px 8px;background:' + rowBg + ';border-radius:8px;margin-bottom:4px;border:' + rowBorder + ';">'
+                        return '<div style="display:grid;grid-template-columns:1fr 50px 75px 50px;gap:4px 10px;align-items:center;padding:5px 8px;background:' + rowBg + ';border-radius:8px;margin-bottom:4px;border:' + rowBorder + ';">'
                             + '<div style="font-size:11px;font-weight:700;color:' + (isPri ? '#991b1b' : '#1a1a2e') + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'
                             + model + urgentBadge + '</div>'
-                            + '<div style="font-size:10px;font-weight:600;color:#555;background:#f1f5f9;border-radius:5px;padding:1px 7px;white-space:nowrap;">' + size + '</div>'
-                            + '<div style="font-size:11px;font-weight:900;color:#ff8c00;white-space:nowrap;">×' + qty + '</div>'
+                            + '<div style="font-size:10px;font-weight:600;color:#555;background:#f1f5f9;border-radius:5px;padding:1px 7px;white-space:nowrap;text-align:center;">' + size + '</div>'
+                            + '<div style="font-size:10px;font-weight:600;color:#666;background:#f5f5f5;border-radius:5px;padding:1px 7px;white-space:nowrap;text-align:center;">' + warna + '</div>'
+                            + '<div style="font-size:11px;font-weight:900;color:#ff8c00;white-space:nowrap;text-align:center;">×' + qty + '</div>'
                             + '</div>';
                     }).join('');
                     return '<div style="margin-bottom:8px;">' + brandLabel + rows + '</div>';
@@ -5650,10 +5652,11 @@ async function fetchBayarSebagianData() {
 
             // ── Header kolom tabel ──
             const tabelHeader = items.length > 0
-                ? '<div style="display:grid;grid-template-columns:1fr auto auto;gap:4px 10px;padding:0 8px 4px;margin-bottom:2px;">'
+                ? '<div style="display:grid;grid-template-columns:1fr 50px 75px 50px;gap:4px 10px;padding:0 8px 4px;margin-bottom:2px;">'
                   + '<span style="font-size:9px;font-weight:800;color:#999;letter-spacing:0.5px;">MODEL</span>'
-                  + '<span style="font-size:9px;font-weight:800;color:#999;letter-spacing:0.5px;">SIZE</span>'
-                  + '<span style="font-size:9px;font-weight:800;color:#999;letter-spacing:0.5px;">QTY</span>'
+                  + '<span style="font-size:9px;font-weight:800;color:#999;letter-spacing:0.5px;text-align:center;">SIZE</span>'
+                  + '<span style="font-size:9px;font-weight:800;color:#999;letter-spacing:0.5px;text-align:center;">WARNA</span>'
+                  + '<span style="font-size:9px;font-weight:800;color:#999;letter-spacing:0.5px;text-align:center;">QTY</span>'
                   + '</div>'
                 : '';
 
