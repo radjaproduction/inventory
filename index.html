@@ -6034,7 +6034,14 @@ async function fetchBayarSebagianData() {
     function _renderRincianPesananList(orders) {
         const wrap = document.getElementById('rincian-pesanan-list');
         if (!wrap) return;
-        const aktif = (orders || []).filter(o => !o.disiapkan_selesai && Array.isArray(o.items) && o.items.length > 0);
+        // PERBAIKAN: sebelumnya filter ini juga mewajibkan items.length > 0, jadi order yang
+        // items-nya kosong (misal gagal kesimpan sempurna dari app Pesanan) ikut disembunyikan
+        // dari popup ini — padahal render di bawah SUDAH siap menampilkan kondisi item kosong
+        // ("(tidak ada rincian item)"). Akibatnya order begini tetap dihitung untuk alarm/badge
+        // (lihat pesananMenungguCount, yang cuma cek stage=0) tapi TIDAK PERNAH muncul di sini,
+        // jadi tidak ada tombol Konfirmasi buat mematikan alarmnya — alarm bunyi terus tanpa
+        // jalan keluar. Sekarang order tetap ditampilkan walau items-nya kosong.
+        const aktif = (orders || []).filter(o => !o.disiapkan_selesai);
         if (aktif.length === 0) {
             wrap.innerHTML = '<div style="padding:30px 10px;text-align:center;color:#888;font-size:12px;">Tidak ada pesanan aktif saat ini 🎉</div>';
             return;
@@ -6277,7 +6284,9 @@ async function fetchBayarSebagianData() {
         if (!badge || !sbClient) return;
         try {
             const orders = await _fetchAktifPesananOrders();
-            const aktifCount = orders.filter(o => !o.disiapkan_selesai && Array.isArray(o.items) && o.items.length > 0).length;
+            // Disamakan dengan filter di _renderRincianPesananList — order dengan items kosong
+            // tetap dihitung aktif (lihat catatan di sana untuk alasannya).
+            const aktifCount = orders.filter(o => !o.disiapkan_selesai).length;
             if (aktifCount > 0) {
                 badge.textContent = aktifCount > 99 ? '99+' : String(aktifCount);
                 badge.classList.remove('hidden');
