@@ -8883,9 +8883,15 @@ function updateSSK(tab, rowId) {
         if (el) el.remove();
     }
     async function simpanModel() {
-        const brandId = document.getElementById('model-pilih-brand').value;
+        const brandSelect = document.getElementById('model-pilih-brand');
+        const brandId = brandSelect?.value;
         if (!brandId) { showAlert('Pilih brand terlebih dahulu!', {type:'warning'}); return; }
         const brand = masterData.brand.find(b => b.id == brandId);
+        if (!brand) {
+            showAlert('Brand yang dipilih sudah tidak tersedia. Muat ulang daftar brand lalu coba lagi.', {type:'warning'});
+            renderBrandOptions();
+            return;
+        }
         const rows = document.querySelectorAll('#model-rows-container > div');
         const toInsert = [];
         const duplikatList = [];
@@ -8912,16 +8918,33 @@ function updateSSK(tab, rowId) {
         if (toInsert.length === 0) { showAlert('Isi minimal satu nama model!', {type:'warning'}); return; }
         const btnSimpanModel = document.getElementById('btn-simpan-model');
         setButtonLoading(btnSimpanModel, true, 'MENYIMPAN...');
-        const { data, error } = await dataRepository.writes.insert('model', toInsert, false);
-        setButtonLoading(btnSimpanModel, false);
-        if (error) { showToast('❌ Gagal simpan model'); return; }
-        data.forEach(m => masterData.model.push({ id: m.id, brandId: m.brand_id, brandNama: m.brand_nama, nama: m.nama, harga: m.harga || 0, hargaModal: m.harga_modal || 0 }));
-        document.getElementById('model-rows-container').innerHTML = '';
-        modelRowCount = 0;
-        tambahModelRow();
-        document.getElementById('model-pilih-brand').value = '';
-        renderModelList();
-        showToast('✅ Model disimpan!');
+        try {
+            const result = await dataRepository.writes.insert('model', toInsert, false);
+            if (result?.error) throw result.error;
+            const data = result?.data;
+
+            // Jika respons insert tidak mengembalikan baris, sinkronkan ulang
+            // dari database agar UI tetap mencerminkan data yang tersimpan.
+            if (Array.isArray(data) && data.length) {
+                data.forEach(m => masterData.model.push({
+                    id: m.id, brandId: m.brand_id, brandNama: m.brand_nama || brand.nama,
+                    nama: m.nama, harga: m.harga || 0, hargaModal: m.harga_modal || 0
+                }));
+            } else {
+                await fetchModelData();
+            }
+            document.getElementById('model-rows-container').innerHTML = '';
+            modelRowCount = 0;
+            tambahModelRow();
+            brandSelect.value = '';
+            renderModelList();
+            showToast('✅ Model disimpan!');
+        } catch (err) {
+            console.error('Gagal simpan model:', err);
+            showToast('❌ Gagal simpan model: ' + (err?.message || err?.code || 'koneksi/database bermasalah'));
+        } finally {
+            setButtonLoading(btnSimpanModel, false);
+        }
     }
     async function hapusModel(id) {
         showConfirm('Hapus model ini?\nData yang sudah dihapus tidak bisa dikembalikan.', async function() {
