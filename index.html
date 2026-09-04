@@ -6210,15 +6210,23 @@ async function fetchBayarSebagianData() {
             try {
                 const { data: updRows, error } = await externalRepository.pesanan.confirm(orderCode);
                 if (error) throw error;
+                // PERBAIKAN: Supabase TIDAK mengembalikan error kalau update-nya tidak match baris
+                // manapun (misal order_code sudah berubah/dihapus device lain lebih dulu) — dia cuma
+                // balikin array kosong. Sebelumnya kode ini langsung menganggap sukses (toast ✅ +
+                // counter/alarm dimatikan) walau DB-nya sama sekali tidak berubah, sehingga order itu
+                // tetap 'stage=0' di server dan alarm bunyi lagi begitu resync/polling berikutnya jalan
+                // — padahal tampilannya sempat bilang "sudah dikonfirmasi". Sekarang wajib ada baris
+                // yang benar-benar ter-update baru dianggap sukses.
+                if (!updRows || !updRows.length) {
+                    throw new Error('Tidak ada baris yang ter-update di database (order_code sudah berubah/dihapus?). Coba muat ulang daftar pesanan.');
+                }
                 showToast('✅ Pesanan ' + orderCode + ' dikonfirmasi');
                 // JANGAN cuma pasrah nunggu event Realtime UPDATE buat mematikan alarm — kadang
                 // echo-nya telat/nggak nyampe (koneksi Realtime kurang stabil), jadi update
                 // pesananMenungguCount & badge LANGSUNG di sini juga begitu DB sukses diubah.
                 // Order id-nya didaftarkan ke _pesananProcessedIds supaya event Realtime yang
                 // (mungkin) tetap nyusul nanti, atau polling fallback, tidak menghitungnya dobel.
-                if (updRows && updRows.length) {
-                    updRows.forEach(r => { if (r.id != null) _pesananProcessedIds.add(r.id); });
-                }
+                updRows.forEach(r => { if (r.id != null) _pesananProcessedIds.add(r.id); });
                 pesananMenungguCount = Math.max(0, pesananMenungguCount - 1);
                 _pesananMenungguCodes.delete(orderCode);
                 _updatePesananBellBadge();
@@ -6227,7 +6235,7 @@ async function fetchBayarSebagianData() {
                 _renderRincianPesananList(orders);
             } catch (e) {
                 console.error('Gagal konfirmasi pesanan:', e);
-                showToast('❌ Gagal konfirmasi, coba lagi');
+                showToast('❌ Gagal konfirmasi: ' + (e?.message || 'coba lagi'));
                 if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '<i class="fa-solid fa-check"></i> Konfirmasi'; }
             }
         } else if (action === 'disiapkan') {
@@ -8772,14 +8780,22 @@ function updateSSK(tab, rowId) {
         if (isDuplikat) { showToast('⚠️ Vendor "' + nama.toUpperCase() + '" sudah ada!'); return; }
         const btnSimpanVendor = document.getElementById('btn-simpan-vendor');
         setButtonLoading(btnSimpanVendor, true, 'MENYIMPAN...');
-        const { data, error } = await dataRepository.writes.insert('vendor', { nama, telp }, true);
-        setButtonLoading(btnSimpanVendor, false);
-        if (error) { showToast('❌ Gagal simpan vendor'); return; }
-        masterData.vendor.push({ id: data.id, nama: data.nama, telp: data.telp || '' });
-        document.getElementById('input-vendor-nama').value = '';
-        document.getElementById('input-vendor-telp').value = '';
-        renderVendorList();
-        showToast('✅ Vendor disimpan!');
+        try {
+            const result = await dataRepository.writes.insert('vendor', { nama, telp }, true);
+            if (result?.error) throw result.error;
+            if (!result?.data) throw new Error('Database tidak mengembalikan data vendor setelah insert.');
+            const data = result.data;
+            masterData.vendor.push({ id: data.id, nama: data.nama, telp: data.telp || '' });
+            document.getElementById('input-vendor-nama').value = '';
+            document.getElementById('input-vendor-telp').value = '';
+            renderVendorList();
+            showToast('✅ Vendor disimpan!');
+        } catch (err) {
+            console.error('Gagal simpan vendor:', err);
+            showToast('❌ Gagal simpan vendor: ' + (err?.message || err?.code || 'koneksi/database bermasalah'));
+        } finally {
+            setButtonLoading(btnSimpanVendor, false);
+        }
     }
     async function hapusVendor(id) {
         showConfirm('Hapus vendor ini?\nData yang sudah dihapus tidak bisa dikembalikan.', async function() {
@@ -8818,14 +8834,22 @@ function updateSSK(tab, rowId) {
         if (isDuplikat) { showToast('⚠️ Brand "' + nama.toUpperCase() + '" sudah ada!'); return; }
         const btnSimpanBrand = document.getElementById('btn-simpan-brand');
         setButtonLoading(btnSimpanBrand, true, 'MENYIMPAN...');
-        const { data, error } = await dataRepository.writes.insert('brand', { nama: nama.toUpperCase() }, true);
-        setButtonLoading(btnSimpanBrand, false);
-        if (error) { showToast('❌ Gagal: ' + error.message); return; }
-        masterData.brand.push({ id: data.id, nama: data.nama });
-        document.getElementById('input-brand-nama').value = '';
-        renderBrandList();
-        renderBrandOptions();
-        showToast('✅ Brand disimpan!');
+        try {
+            const result = await dataRepository.writes.insert('brand', { nama: nama.toUpperCase() }, true);
+            if (result?.error) throw result.error;
+            if (!result?.data) throw new Error('Database tidak mengembalikan data brand setelah insert.');
+            const data = result.data;
+            masterData.brand.push({ id: data.id, nama: data.nama });
+            document.getElementById('input-brand-nama').value = '';
+            renderBrandList();
+            renderBrandOptions();
+            showToast('✅ Brand disimpan!');
+        } catch (err) {
+            console.error('Gagal simpan brand:', err);
+            showToast('❌ Gagal simpan brand: ' + (err?.message || err?.code || 'koneksi/database bermasalah'));
+        } finally {
+            setButtonLoading(btnSimpanBrand, false);
+        }
     }
     async function hapusBrand(id) {
         showConfirm('Hapus brand ini?\nData yang sudah dihapus tidak bisa dikembalikan.', async function() {
@@ -8961,9 +8985,16 @@ function updateSSK(tab, rowId) {
         const input = item ? item.querySelector('.edit-harga-input') : null;
         if (input) {
             const hargaBaru = parseInt(input.value) || 0;
-            const { error } = await dataRepository.writes.update('model', { harga: hargaBaru }, 'id', id);
-            if (error) { showToast('❌ Gagal update harga: ' + error.message); renderModelList(); return; }
-            m.harga = hargaBaru;
+            try {
+                const { error } = await dataRepository.writes.update('model', { harga: hargaBaru }, 'id', id);
+                if (error) throw error;
+                m.harga = hargaBaru;
+            } catch (err) {
+                console.error('Gagal update harga model:', err);
+                showToast('❌ Gagal update harga: ' + (err?.message || err?.code || 'koneksi/database bermasalah'));
+                renderModelList();
+                return;
+            }
         }
         renderModelList();
         showToast('✅ Harga diperbarui!');
@@ -8977,9 +9008,16 @@ function updateSSK(tab, rowId) {
         const input = item ? item.querySelector('.edit-modal-input') : null;
         if (input) {
             const hargaModalBaru = parseInt(input.value) || 0;
-            const { error } = await dataRepository.writes.update('model', { harga_modal: hargaModalBaru }, 'id', id);
-            if (error) { showToast('❌ Gagal update harga modal: ' + error.message); renderModelList(); return; }
-            m.hargaModal = hargaModalBaru;
+            try {
+                const { error } = await dataRepository.writes.update('model', { harga_modal: hargaModalBaru }, 'id', id);
+                if (error) throw error;
+                m.hargaModal = hargaModalBaru;
+            } catch (err) {
+                console.error('Gagal update harga modal:', err);
+                showToast('❌ Gagal update harga modal: ' + (err?.message || err?.code || 'koneksi/database bermasalah'));
+                renderModelList();
+                return;
+            }
         }
         renderModelList();
         showToast('✅ Harga modal diperbarui!');
@@ -9169,15 +9207,23 @@ function updateSSK(tab, rowId) {
         if (toInsert.length === 0) { showAlert('Isi minimal satu nama warna!', {type:'warning'}); return; }
         const btnSimpanWarna = document.getElementById('btn-simpan-warna');
         setButtonLoading(btnSimpanWarna, true, 'MENYIMPAN...');
-        const { data, error } = await dataRepository.writes.insert('warna', toInsert, false);
-        setButtonLoading(btnSimpanWarna, false);
-        if (error) { showToast('❌ Gagal simpan warna'); return; }
-        data.forEach(w => masterData.warna.push({ id: w.id, nama: w.nama, kode: w.kode }));
-        document.getElementById('warna-rows-container').innerHTML = '';
-        warnaRowCount = 0;
-        tambahWarnaRow();
-        renderWarnaList();
-        showToast(`✅ ${data.length} warna disimpan!`);
+        try {
+            const result = await dataRepository.writes.insert('warna', toInsert, false);
+            if (result?.error) throw result.error;
+            const data = result?.data;
+            if (!Array.isArray(data) || data.length === 0) throw new Error('Database tidak mengembalikan data warna setelah insert.');
+            data.forEach(w => masterData.warna.push({ id: w.id, nama: w.nama, kode: w.kode }));
+            document.getElementById('warna-rows-container').innerHTML = '';
+            warnaRowCount = 0;
+            tambahWarnaRow();
+            renderWarnaList();
+            showToast(`✅ ${data.length} warna disimpan!`);
+        } catch (err) {
+            console.error('Gagal simpan warna:', err);
+            showToast('❌ Gagal simpan warna: ' + (err?.message || err?.code || 'koneksi/database bermasalah'));
+        } finally {
+            setButtonLoading(btnSimpanWarna, false);
+        }
     }
     async function hapusWarna(id) {
         const { error } = await dataRepository.writes.remove('warna', 'id', id);
@@ -9219,10 +9265,16 @@ function updateSSK(tab, rowId) {
     async function simpanEditWarna(id, kode) {
         const w = masterData.warna.find(x => x.id === id);
         if (!w) return;
-        const { error } = await dataRepository.writes.update('warna', { kode }, 'id', id);
-        if (error) { showToast('❌ Gagal update warna: ' + error.message); renderWarnaList(); return; }
-        w.kode = kode;
-        showToast('✅ Warna diperbarui!');
+        try {
+            const { error } = await dataRepository.writes.update('warna', { kode }, 'id', id);
+            if (error) throw error;
+            w.kode = kode;
+            showToast('✅ Warna diperbarui!');
+        } catch (err) {
+            console.error('Gagal update warna:', err);
+            showToast('❌ Gagal update warna: ' + (err?.message || err?.code || 'koneksi/database bermasalah'));
+            renderWarnaList();
+        }
     }
 
     // ==================== MASTER DATA: UKURAN ====================
@@ -9275,15 +9327,23 @@ function updateSSK(tab, rowId) {
         if (toInsert.length === 0) { showAlert('Isi minimal satu nama ukuran!', {type:'warning'}); return; }
         const btnSimpanUkuran = document.getElementById('btn-simpan-ukuran');
         setButtonLoading(btnSimpanUkuran, true, 'MENYIMPAN...');
-        const { data, error } = await dataRepository.writes.insert('ukuran', toInsert, false);
-        setButtonLoading(btnSimpanUkuran, false);
-        if (error) { showToast('❌ Gagal: ' + error.message); return; }
-        data.forEach(u => masterData.ukuran.push({ id: u.id, nama: u.nama }));
-        document.getElementById('ukuran-rows-container').innerHTML = '';
-        ukuranRowCount = 0;
-        tambahUkuranRow();
-        renderUkuranList();
-        showToast(`✅ ${data.length} ukuran disimpan!`);
+        try {
+            const result = await dataRepository.writes.insert('ukuran', toInsert, false);
+            if (result?.error) throw result.error;
+            const data = result?.data;
+            if (!Array.isArray(data) || data.length === 0) throw new Error('Database tidak mengembalikan data ukuran setelah insert.');
+            data.forEach(u => masterData.ukuran.push({ id: u.id, nama: u.nama }));
+            document.getElementById('ukuran-rows-container').innerHTML = '';
+            ukuranRowCount = 0;
+            tambahUkuranRow();
+            renderUkuranList();
+            showToast(`✅ ${data.length} ukuran disimpan!`);
+        } catch (err) {
+            console.error('Gagal simpan ukuran:', err);
+            showToast('❌ Gagal simpan ukuran: ' + (err?.message || err?.code || 'koneksi/database bermasalah'));
+        } finally {
+            setButtonLoading(btnSimpanUkuran, false);
+        }
     }
     async function hapusUkuran(id) {
         const { error } = await dataRepository.writes.remove('ukuran', 'id', id);
