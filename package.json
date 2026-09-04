@@ -20,5 +20,8 @@
   "homepage": "https://github.com/radjaproduction/inventory#readme",
   "devDependencies": {
     "@playwright/test": "^1.62.1"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.115.0"
   }
 }
