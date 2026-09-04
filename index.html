@@ -15616,8 +15616,12 @@ function updateSSK(tab, rowId) {
                             // (lihat file fix_sequences.sql) untuk menyamakan sequence ke MAX(id) tiap tabel.
                             try {
                                 await dataRepository.rpc('fix_id_sequences');
+                                console.log('✓ Sequence id berhasil disinkronkan setelah restore');
                             } catch (seqEx) {
-                                console.warn('Gagal sinkronkan sequence id setelah restore:', seqEx.message);
+                                console.error('❌ CRITICAL: Gagal sinkronkan sequence id setelah restore:', seqEx.message);
+                                console.error('Stack trace:', seqEx.stack);
+                                // PENTING: Tunjukkan error ke user, jangan silent!
+                                showToast('⚠️ PERHATIAN: Sinkronisasi sequence ID gagal!\n\nData baru yang diinput nanti mungkin error.\nHubungi admin atau coba restore ulang.');
                             }
 
                             showToast('✅ Restore selesai! Memuat ulang data...');
