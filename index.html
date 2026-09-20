@@ -10781,11 +10781,13 @@ function updateSSK(tab, rowId) {
                 ? 'TRX-' + sortedIds[0]
                 : 'GABUNGAN';
         const tanggalCetak = now.toLocaleDateString('id-ID', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
-        const legacyPeriodIds = appData.riwayatTransaksi
-            .filter(d => d.vendor === 'BANG FARID' && tanggalDalamRange(d.tanggal, new Date(2026, 8, 12), new Date(2026, 8, 18)))
-            .map(d => d.id);
-        const isLegacySepPeriod = selected.length === legacyPeriodIds.length
-            && selected.every(d => legacyPeriodIds.includes(d.id));
+        const legacyStart = new Date(2026, 8, 12, 0, 0, 0);
+        const legacyEnd = new Date(2026, 8, 18, 23, 59, 59);
+        const isLegacySepPeriod = selected.length > 0
+            && selected.every(d => {
+                const date = parseTanggalID(d.tanggal);
+                return d.vendor === 'BANG FARID' && date && date >= legacyStart && date <= legacyEnd;
+            });
         const mergeMap = {};
         if (isLegacySepPeriod) {
             mergeMap.__legacy = {
