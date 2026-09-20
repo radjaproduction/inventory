@@ -10440,6 +10440,9 @@ function updateSSK(tab, rowId) {
         const _partialVendors = new Set();
         appData.pelunasan.forEach(p => {
             const isPartial = p.transaksi_id === null || p.transaksi_id === undefined;
+            // Catatan LUNAS HISTORIS 12-18 Sep (BANG FARID) bukan Bayar Sebagian borongan,
+            // jadi jangan mengunci tombol KEMBALIKAN KE KREDIT (konsisten dgn tab Bayar Sebagian).
+            if (isPartial && isLegacyHistoricalSettlement(p)) return;
             if (isPartial) {
                 _partialVendors.add(p.vendor);
                 _partialByVendor.set(p.vendor, (_partialByVendor.get(p.vendor) || 0) + (Number(p.jumlah) || 0));
@@ -10482,6 +10485,7 @@ function updateSSK(tab, rowId) {
                     </div>
                     <div class="flex items-center gap-2 flex-shrink-0">
                         ${badgeHtml}
+                        ${(_filterTrxStatus === 'lunas' && !hasBayarSebagianTrx && trxList.some(t => t.status === 'lunas')) ? `<button onclick="kembalikanSemuaKeKredit('${encodeURIComponent(vendor)}')" class="rp-vendor-select-btn" style="color:#fb923c;border:1px solid rgba(251,146,60,.4);"><i class="fa-solid fa-rotate-left"></i> KREDIT</button>` : ''}
                         <button id="pilih-semua-${vendorKey}" onclick="pilihSemuaVendor('${vendor}')" class="rp-vendor-select-btn">
                             ✓ Semua
                         </button>
@@ -12602,6 +12606,57 @@ function updateSSK(tab, rowId) {
             renderPelunasanView();
             showToast('↩️ Transaksi dikembalikan ke KREDIT.');
         }, {title:'KEMBALIKAN KE KREDIT', type:'warning', icon:'↩️', ok:'YA, KEMBALIKAN'});
+    }
+
+    // Undo massal: kembalikan SEMUA transaksi LUNAS milik 1 vendor pada rentang tanggal filter aktif
+    // ke KREDIT (misal salah klik LUNAS SEMUA). Logikanya sama dgn kembalikanKeKredit() per transaksi.
+    async function kembalikanSemuaKeKredit(vendorEncoded) {
+        const vendor = decodeURIComponent(vendorEncoded);
+        const hasBayarSebagianVendor = appData.pelunasan.some(p =>
+            p.vendor === vendor
+            && (p.transaksi_id === null || p.transaksi_id === undefined)
+            && !isLegacyHistoricalSettlement(p)
+        );
+        if (hasBayarSebagianVendor) {
+            showToast('⚠️ Vendor ini pakai Bayar Sebagian borongan. Kembalikan lewat tab BAYAR SEBAGIAN.');
+            return;
+        }
+        const { dari, sampai } = getFilterRange();
+        const daftar = appData.riwayatTransaksi.filter(t =>
+            t.vendor === vendor && t.status === 'lunas'
+            && tanggalDalamRange(t.tanggal, dari, sampai)
+            && !isLockedHistoricalTransaction(t)
+        );
+        if (daftar.length === 0) { showToast('Tidak ada transaksi LUNAS pada periode ini.'); return; }
+
+        showConfirm(`Kembalikan ${daftar.length} transaksi ${vendor} (periode filter aktif) ke status KREDIT?\nSemua catatan pembayaran transaksi tsb akan ikut dihapus.`, async function() {
+            let berhasil = 0, gagal = 0;
+            const orderCodes = [];
+            for (const trx of daftar) {
+                const trxId = Number(trx.id);
+                const pelTerkait = appData.pelunasan.filter(p => Number(p.transaksi_id) === trxId);
+                let ok = true;
+                for (const p of pelTerkait) {
+                    const { error } = await dataRepository.writes.remove('pelunasan', 'id', p.id);
+                    if (error) { ok = false; break; }
+                    appData.pelunasan = appData.pelunasan.filter(x => x.id !== p.id);
+                }
+                if (!ok) { gagal++; continue; }
+                const { error: updErr } = await dataRepository.writes.update('transaksi', { status: 'credit' }, 'id', trxId);
+                if (updErr) { gagal++; continue; }
+                trx.status = 'credit';
+                if (trx.orderCode) orderCodes.push(trx.orderCode);
+                berhasil++;
+            }
+            for (const code of [...new Set(orderCodes)]) {
+                await externalRepository.pesanan.setPaymentStatus(code, 'belum_lunas').catch(()=>{});
+            }
+            renderRiwayatTransaksi();
+            renderPelunasanView();
+            showToast(gagal === 0
+                ? `↩️ ${berhasil} transaksi ${vendor} dikembalikan ke KREDIT.`
+                : `⚠️ ${berhasil} berhasil, ${gagal} gagal dikembalikan. Coba lagi.`);
+        }, {title:'KEMBALIKAN SEMUA KE KREDIT', type:'warning', icon:'↩️', ok:'YA, KEMBALIKAN'});
     }
 
     async function cetakTagihanSebagian(vendorEncoded) {
