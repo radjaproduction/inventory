@@ -15,9 +15,9 @@
                 markPrepared: (orderCode) =>
                     client.from(pesananTable).update({ disiapkan_selesai: true }).eq('order_code', orderCode),
                 listWaiting: () =>
-                    client.from(pesananTable).select('id, order_code').eq('stage', 0),
+                    client.from(pesananTable).select('id, order_code, disiapkan_selesai').eq('stage', 0).or('disiapkan_selesai.eq.false,disiapkan_selesai.is.null'),
                 listWaitingWithStage: () =>
-                    client.from(pesananTable).select('id, order_code, stage').eq('stage', 0),
+                    client.from(pesananTable).select('id, order_code, stage, disiapkan_selesai').eq('stage', 0).or('disiapkan_selesai.eq.false,disiapkan_selesai.is.null'),
                 updateItems: (orderCode, items) =>
                     client.from(pesananTable).update({ items }).eq('order_code', orderCode),
             },

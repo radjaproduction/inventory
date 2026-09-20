@@ -3478,6 +3478,9 @@ async function fetchBayarSebagianData() {
     // catatan penjualannya baru "resmi" muncul di Riwayat setelah admin klik Konfirmasi (stage 1).
     const _pesananMenungguCodes = new Set();
     let _audioCtxPesanan = null;
+    function _isPesananMenunggu(row) {
+        return (row?.stage || 0) === 0 && row?.disiapkan_selesai !== true;
+    }
 
     // Browser umumnya blokir audio yang diputar otomatis sebelum ada interaksi user sama
     // sekali di halaman. "Buka kunci" AudioContext begitu user pertama kali sentuh/klik apa
@@ -4015,7 +4018,7 @@ async function fetchBayarSebagianData() {
                     _pesananProcessedIds.delete(first);
                 }
             }
-            if ((row.stage || 0) === 0) {
+            if (_isPesananMenunggu(row)) {
                 pesananMenungguCount++;
                 if (row.order_code) _pesananMenungguCodes.add(row.order_code);
                 _updatePesananBellBadge();
@@ -4028,7 +4031,7 @@ async function fetchBayarSebagianData() {
                 }
             }
         } else if (payload.eventType === 'UPDATE') {
-            const wasWaiting = (oldRow.stage || 0) === 0, nowWaiting = (row.stage || 0) === 0;
+            const wasWaiting = _isPesananMenunggu(oldRow), nowWaiting = _isPesananMenunggu(row);
             if (wasWaiting && !nowWaiting) pesananMenungguCount = Math.max(0, pesananMenungguCount - 1);
             else if (!wasWaiting && nowWaiting) pesananMenungguCount++;
             // Pesanan berpindah dari Menunggu -> Diterima (atau sebaliknya): sinkronkan Set
@@ -4060,7 +4063,7 @@ async function fetchBayarSebagianData() {
                 _fetchAktifPesananOrders().then(_renderRincianPesananList);
             }
         } else if (payload.eventType === 'DELETE') {
-            if ((oldRow.stage || 0) === 0) pesananMenungguCount = Math.max(0, pesananMenungguCount - 1);
+            if (_isPesananMenunggu(oldRow)) pesananMenungguCount = Math.max(0, pesananMenungguCount - 1);
             if (oldRow.order_code) _pesananMenungguCodes.delete(oldRow.order_code);
             _updatePesananBellBadge();
         }
