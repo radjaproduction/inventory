@@ -10790,12 +10790,19 @@ function updateSSK(tab, rowId) {
             });
         const mergeMap = {};
         if (isLegacySepPeriod) {
-            mergeMap.__legacy = {
-                model: 'TOTAL HISTORIS INVENTORY 12–18 SEPTEMBER 2026',
-                harga: null,
-                qty: 5617,
-                total: 23261400
-            };
+            [
+                ['ATASAN PENDEK', 461, 4000],
+                ['REGLAN KOMBINASI', 821, 4400],
+                ['ATASAN EMBOS', 1028, 7000],
+                ['CELANA PENDEK', 772, 2800],
+                ['ATASAN PANJANG', 376, 4300],
+                ['SALUR', 59, 4300],
+                ['ATASAN KOMBINASI', 1, 4000],
+                ['CELANA PANJANG', 2044, 3100],
+                ['REGLAN POLOS', 55, 4300]
+            ].forEach(([model, qty, harga]) => {
+                mergeMap[model] = { model, harga, qty };
+            });
         } else {
             selected.forEach(d => {
                 const totalQty = d.items.reduce((s, i) => s + i.qty, 0);
@@ -10845,7 +10852,7 @@ function updateSSK(tab, rowId) {
             <div class="th-infobox">
                 <div class="th-inforow"><span class="th-infolabel">No. Tagihan</span><span class="th-infoval">${noTagihan}</span></div>
                 <div class="th-inforow"><span class="th-infolabel">Kepada / Vendor</span><span class="th-infoval">${vendor}</span></div>
-                <div class="th-inforow"><span class="th-infolabel">Jumlah Transaksi</span><span class="th-infoval">${selected.length} transaksi</span></div>
+                <div class="th-inforow"><span class="th-infolabel">Jumlah Transaksi</span><span class="th-infoval">${isLegacySepPeriod ? 61 : selected.length} transaksi</span></div>
                 <div class="th-inforow"><span class="th-infolabel">Dicetak Pada</span><span class="th-infoval">${tanggalCetak}</span></div>
             </div>
             <div class="th-tablewrap">
