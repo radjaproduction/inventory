@@ -11603,6 +11603,10 @@ function updateSSK(tab, rowId) {
         const pelunasanVendorLevel = new Map();  // vendor -> array pelunasan level vendor (transaksi_id null/undefined)
         appData.pelunasan.forEach(p => {
             if (p.transaksi_id === null || p.transaksi_id === undefined) {
+                // Catatan LUNAS HISTORIS 12-18 Sep hanya relevan saat filter = periode 12-18 Sep.
+                // Di periode lain jangan dianggap Bayar Sebagian (kalau tidak, sisa tagihan jadi Rp 0
+                // dan muncul tombol "TANDAI TRANSAKSI INI LUNAS" padahal belum dibayar).
+                if (!isLegacyPeriod && isLegacyHistoricalSettlement(p)) return;
                 if (!pelunasanVendorLevel.has(p.vendor)) pelunasanVendorLevel.set(p.vendor, []);
                 pelunasanVendorLevel.get(p.vendor).push(p);
             } else {
