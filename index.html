@@ -3402,6 +3402,18 @@ END $$;`;
     // SEMUA transaksi dengan order_code yang sama sudah lunas, maka kolom status_bayar
     // pada produksi_orders (app Pesanan) ikut di-update jadi 'lunas'.
     // Aman dipanggil walau tabel/kolom belum ada (misal SQL migrasi belum dijalankan).
+    // Set status_bayar pesanan ke 'belum_lunas' di app Pesanan. JANGAN pakai .catch() langsung pada
+    // query builder Supabase: builder itu bukan Promise penuh (tidak punya .catch), jadi memanggilnya
+    // melempar TypeError SEBELUM request terkirim -> status di Pesanan tidak pernah ter-reset.
+    async function setPesananBelumLunas(orderCode) {
+        if (!orderCode) return;
+        try {
+            const { error } = await externalRepository.pesanan.setPaymentStatus(orderCode, 'belum_lunas');
+            if (error) console.warn('Gagal reset status pembayaran Pesanan', orderCode, error);
+        } catch (e) {
+            console.warn('Gagal reset status pembayaran Pesanan', orderCode, e);
+        }
+    }
     async function syncPesananPembayaran(orderCodes) {
         const codes = [...new Set((orderCodes || []).filter(Boolean))];
         if (!codes.length) return;
@@ -12558,7 +12570,7 @@ function updateSSK(tab, rowId) {
                         trx.status = statusBaru;
                         if (trx.orderCode) {
                             if (statusBaru === 'lunas') await syncPesananPembayaran([trx.orderCode]);
-                            else await externalRepository.pesanan.setPaymentStatus(trx.orderCode, 'belum_lunas').catch(()=>{});
+                            else await setPesananBelumLunas(trx.orderCode);
                         }
                     }
                 }
@@ -12600,7 +12612,7 @@ function updateSSK(tab, rowId) {
             const { error: updErr } = await dataRepository.writes.update('transaksi', { status: 'credit' }, 'id', trxId);
             if (updErr) { showToast('⚠️ Pembayaran dihapus tapi gagal update status transaksi'); return; }
             trx.status = 'credit';
-            if (trx.orderCode) await externalRepository.pesanan.setPaymentStatus(trx.orderCode, 'belum_lunas').catch(()=>{});
+            if (trx.orderCode) await setPesananBelumLunas(trx.orderCode);
 
             renderRiwayatTransaksi();
             renderPelunasanView();
@@ -12649,7 +12661,7 @@ function updateSSK(tab, rowId) {
                 berhasil++;
             }
             for (const code of [...new Set(orderCodes)]) {
-                await externalRepository.pesanan.setPaymentStatus(code, 'belum_lunas').catch(()=>{});
+                await setPesananBelumLunas(code);
             }
             renderRiwayatTransaksi();
             renderPelunasanView();
