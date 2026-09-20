@@ -9237,6 +9237,9 @@ function updateSSK(tab, rowId) {
             && sampai.getFullYear() === 2026 && sampai.getMonth() === 8 && sampai.getDate() === 18);
     }
     const LEGACY_SEP_BILLING_TOTAL = 23261400;
+    function isLegacyHistoricalSettlement(payment) {
+        return String(payment?.keterangan || '').trim() === 'LUNAS HISTORIS 12–18 SEP 2026';
+    }
     // PERBAIKAN: Fungsi ini sekarang mengonversi tanggal ke zona waktu lokal
     // dengan mengatur jam ke tengah hari (12:00) untuk menghindari masalah
     // perbandingan tanggal akibat perbedaan zona waktu (UTC vs lokal).
@@ -10729,7 +10732,9 @@ function updateSSK(tab, rowId) {
             adaTerpilihMasihCredit = selectedTrx.some(d => d.status !== 'lunas');
             if (activeVendor) {
                 vendorHasBayarSebagian = appData.pelunasan.some(
-                    p => p.vendor === activeVendor && (p.transaksi_id === null || p.transaksi_id === undefined)
+                    p => p.vendor === activeVendor
+                        && (p.transaksi_id === null || p.transaksi_id === undefined)
+                        && !isLegacyHistoricalSettlement(p)
                 );
             }
         }
@@ -12213,7 +12218,10 @@ function updateSSK(tab, rowId) {
         // dengan badge CICIL di kartu vendor, popup Bayar Sebagian, dan Cetak Surat Tagihan.
         // Kalau summary ini ikut difilter tanggal padahal Total Tagihan tidak, sisa hutang yang
         // tampil bisa salah (pembayaran lama di luar rentang filter jadi tidak terhitung).
-        const semua = appData.pelunasan.filter(p => p.transaksi_id === null || p.transaksi_id === undefined);
+        const semua = appData.pelunasan.filter(p =>
+            (p.transaksi_id === null || p.transaksi_id === undefined)
+            && !isLegacyHistoricalSettlement(p)
+        );
 
         if (semua.length === 0) {
             list.innerHTML = `<div style="text-align:center;color:#000;font-size:12px;margin-top:40px;display:flex;flex-direction:column;align-items:center;gap:8px;">
@@ -12550,7 +12558,11 @@ function updateSSK(tab, rowId) {
         const trx = appData.riwayatTransaksi.find(t => Number(t.id) === trxId);
         if (!trx) { showToast('❌ Transaksi tidak ditemukan'); return; }
 
-        const hasBayarSebagianVendor = appData.pelunasan.some(p => p.vendor === trx.vendor && (p.transaksi_id === null || p.transaksi_id === undefined));
+        const hasBayarSebagianVendor = appData.pelunasan.some(p =>
+            p.vendor === trx.vendor
+            && (p.transaksi_id === null || p.transaksi_id === undefined)
+            && !isLegacyHistoricalSettlement(p)
+        );
         if (hasBayarSebagianVendor) {
             showToast('⚠️ Vendor ini pakai Bayar Sebagian borongan. Kembalikan lewat tab BAYAR SEBAGIAN.');
             return;
@@ -12596,7 +12608,11 @@ function updateSSK(tab, rowId) {
         const totalQtyVendor = creditTrx.reduce((sum, t) => sum + t.items.reduce((s, i) => s + i.qty, 0), 0);
 
         // Riwayat bayar sebagian vendor
-        const riwayatBayar = appData.pelunasan.filter(p => p.vendor === vendor && (p.transaksi_id === null || p.transaksi_id === undefined));
+        const riwayatBayar = appData.pelunasan.filter(p =>
+            p.vendor === vendor
+            && (p.transaksi_id === null || p.transaksi_id === undefined)
+            && !isLegacyHistoricalSettlement(p)
+        );
         const totalSudahBayar = riwayatBayar.reduce((s, p) => s + p.jumlah, 0);
         const sisaTagihan = Math.max(0, totalNominalVendor - totalSudahBayar);
 
