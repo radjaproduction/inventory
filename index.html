@@ -9231,6 +9231,12 @@ function updateSSK(tab, rowId) {
         const date = parseTanggalID(trx?.tanggal);
         return Boolean(date && date >= LOCKED_HISTORICAL_START && date <= LOCKED_HISTORICAL_END);
     }
+    function isLegacySepBillingPeriod(dari, sampai) {
+        return Boolean(dari && sampai
+            && dari.getFullYear() === 2026 && dari.getMonth() === 8 && dari.getDate() === 12
+            && sampai.getFullYear() === 2026 && sampai.getMonth() === 8 && sampai.getDate() === 18);
+    }
+    const LEGACY_SEP_BILLING_TOTAL = 23261400;
     // PERBAIKAN: Fungsi ini sekarang mengonversi tanggal ke zona waktu lokal
     // dengan mengatur jam ke tengah hari (12:00) untuk menghindari masalah
     // perbandingan tanggal akibat perbedaan zona waktu (UTC vs lokal).
@@ -9753,6 +9759,7 @@ function updateSSK(tab, rowId) {
             return;
         }
         const { dari, sampai } = getFilterRange();
+        const isLegacyPeriod = isLegacySepBillingPeriod(dari, sampai);
         const filtered = appData.riwayatInput.filter(d => tanggalDalamRange(d.tanggal, dari, sampai) && (_filterInputMode === 'semua' || d.mode === _filterInputMode));
         if (filtered.length === 0) {
             list.innerHTML = '<div class="text-center text-white/60 text-xs mt-10"><i class="fa-solid fa-calendar-xmark text-3xl mb-2 opacity-50"></i><br>Tidak ada data di rentang tanggal ini.</div>';
@@ -11606,7 +11613,7 @@ function updateSSK(tab, rowId) {
         list.innerHTML = pageEntries.map(([vendor, trxList]) => {
             const vendorKey = 'pel_' + vendor.replace(/\s+/g,'_');
             // Hitung total nominal semua transaksi credit vendor ini
-            const totalNominalVendor = trxList.filter(t => t.status === 'credit').reduce((sum, t) => {
+            const calculatedNominalVendor = trxList.filter(t => t.status === 'credit').reduce((sum, t) => {
                 const totalQty = t.items.reduce((s, i) => s + i.qty, 0);
                 return sum + (totalQty * t.harga);
             }, 0);
@@ -11614,6 +11621,9 @@ function updateSSK(tab, rowId) {
             const sudahBayarPerTrx = trxList.reduce((sum, t) => sum + (pelunasanByTrxId.get(Number(t.id)) || 0), 0);
             const riwayatBayarSebagianVendor = pelunasanVendorLevel.get(vendor) || [];
             const sudahBayarSebagianVendor = riwayatBayarSebagianVendor.reduce((s, p) => s + p.jumlah, 0);
+            const totalNominalVendor = isLegacyPeriod && vendor === 'BANG FARID'
+                ? LEGACY_SEP_BILLING_TOTAL
+                : calculatedNominalVendor;
             const totalHutang = Math.max(0, totalNominalVendor - sudahBayarPerTrx - sudahBayarSebagianVendor);
             // Riwayat bayar sebagian vendor level untuk ditampilkan (sudah didapat dari Map di atas)
             const riwayatBayarSebagianVendorTampil = riwayatBayarSebagianVendor.filter(isPelunasanDalamLimit);
@@ -12113,6 +12123,31 @@ function updateSSK(tab, rowId) {
             const tanggal = now.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' });
             const jam = now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
             const keterangan = 'LUNAS SEMUA';
+            if (isLegacySepBillingPeriod(dari, sampai) && vendor === 'BANG FARID') {
+                const { data, error } = await dataRepository.writes.insert('pelunasan', {
+                    transaksi_id: null, vendor, jumlah: totalHutang, keterangan: 'LUNAS HISTORIS 12–18 SEP 2026', tanggal, jam
+                }, true);
+                if (error) {
+                    showToast('❌ Gagal menyimpan pelunasan historis: ' + (error.message || 'unknown error'));
+                    return;
+                }
+                appData.pelunasan.unshift({ id: data.id, transaksi_id: null, vendor, jumlah: totalHutang, keterangan: 'LUNAS HISTORIS 12–18 SEP 2026', tanggal, jam });
+                const orderCodesHistoris = [];
+                for (const t of creditTrx) {
+                    const { error: errUpdate } = await dataRepository.writes.update('transaksi', { status: 'lunas' }, 'id', t.id);
+                    if (errUpdate) {
+                        console.error('Gagal mengunci transaksi historis', t.id, errUpdate);
+                        continue;
+                    }
+                    t.status = 'lunas';
+                    if (t.orderCode) orderCodesHistoris.push(t.orderCode);
+                }
+                await syncPesananPembayaran(orderCodesHistoris);
+                renderPelunasanView();
+                renderRiwayatTransaksi();
+                showToast('🎉 Pelunasan historis 12–18 September berhasil dicatat: Rp ' + totalHutang.toLocaleString('id-ID'));
+                return;
+            }
 
             let berhasil = 0;
             let gagal = 0;
