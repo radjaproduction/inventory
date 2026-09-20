@@ -9238,12 +9238,23 @@ function updateSSK(tab, rowId) {
     }
     const LEGACY_SEP_BILLING_TOTAL = 23261400;
     function isLegacyHistoricalSettlement(payment) {
-        const keterangan = String(payment?.keterangan || '')
-            .trim()
+        const keterangan = [
+            payment?.keterangan,
+            payment?.catatan,
+            payment?.deskripsi
+        ]
+            .filter(Boolean)
+            .join(' ')
             .toUpperCase()
+            .replace(/[\u200B-\u200D\uFEFF]/g, '')
             .replace(/[–—−-]/g, '-')
             .replace(/\s+/g, ' ');
-        return keterangan === 'LUNAS HISTORIS 12-18 SEP 2026';
+        return /LUNAS HISTORIS 12-18 SEP 2026/.test(keterangan)
+            || (
+                String(payment?.vendor || '').trim().toUpperCase() === 'BANG FARID'
+                && Number(payment?.jumlah) === LEGACY_SEP_BILLING_TOTAL
+                && /HISTORIS/.test(keterangan)
+            );
     }
     // PERBAIKAN: Fungsi ini sekarang mengonversi tanggal ke zona waktu lokal
     // dengan mengatur jam ke tengah hari (12:00) untuk menghindari masalah
