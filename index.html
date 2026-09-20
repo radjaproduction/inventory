@@ -9222,6 +9222,12 @@ function updateSSK(tab, rowId) {
     }
 
     const BULAN_ID = { jan:0,feb:1,mar:2,apr:3,mei:4,jun:5,jul:6,agu:7,sep:8,okt:9,nov:10,des:11 };
+    const LOCKED_HISTORICAL_START = new Date(2026, 8, 12, 0, 0, 0);
+    const LOCKED_HISTORICAL_END = new Date(2026, 8, 18, 23, 59, 59);
+    function isLockedHistoricalTransaction(trx) {
+        const date = parseTanggalID(trx?.tanggal);
+        return Boolean(date && date >= LOCKED_HISTORICAL_START && date <= LOCKED_HISTORICAL_END);
+    }
     // PERBAIKAN: Fungsi ini sekarang mengonversi tanggal ke zona waktu lokal
     // dengan mengatur jam ke tengah hari (12:00) untuk menghindari masalah
     // perbandingan tanggal akibat perbedaan zona waktu (UTC vs lokal).
@@ -10313,11 +10319,9 @@ function updateSSK(tab, rowId) {
         const { dari: fDari, sampai: fSampai } = getFilterRange();
         let filteredTrx = appData.riwayatTransaksi.filter(d => tanggalDalamRange(d.tanggal, fDari, fSampai));
 
-        // Transaksi hasil sinkron otomatis dari pesanan yang MASIH "Menunggu" (belum dikonfirmasi
-        // admin) sengaja disembunyikan dari Riwayat Transaksi — stoknya tetap sudah terpotong
-        // (lihat appData.riwayatTransaksi & renderStokDashboard, TIDAK ikut difilter di sini),
-        // tapi catatan penjualannya baru "resmi" tampil di sini setelah admin klik Konfirmasi.
-        filteredTrx = filteredTrx.filter(d => !d.orderCode || !_pesananMenungguCodes.has(d.orderCode));
+        // Order online yang masih Menunggu tetap ditampilkan agar admin dapat langsung
+        // menyiapkan barang dari Riwayat Transaksi. Status Menunggu tetap terlihat sebagai
+        // badge dan tidak otomatis dianggap sudah dikonfirmasi.
 
         if (_filterTrxStatus === 'kredit') {
             filteredTrx = filteredTrx.filter(d => d.status !== 'lunas');
@@ -10486,6 +10490,7 @@ function updateSSK(tab, rowId) {
                         try {
                             const items = Array.isArray(d.items) ? d.items : [];
                             const isLunas = d.status === 'lunas';
+                            const isMenunggu = Boolean(d.orderCode && _pesananMenungguCodes.has(d.orderCode));
                             const statusClass = isLunas ? 'bg-green-600 text-white border-green-700' : 'bg-red-600 text-white border-red-700';
                             const accentBorder = isLunas ? 'rgba(34,197,94,0.55)' : 'rgba(255,140,0,0.55)';
                             const accentBg = isLunas ? 'rgba(34,197,94,0.12)' : 'rgba(255,140,0,0.12)';
@@ -10515,7 +10520,7 @@ function updateSSK(tab, rowId) {
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-center justify-between gap-2">
                                             <span class="text-[12px] font-black text-orange-400 uppercase tracking-wide truncate min-w-0"><i class="fa-solid fa-truck-fast text-[10px] mr-1"></i>${vendorLabel}</span>
-                                            <span class="px-2 py-0.5 ${statusClass} border-2 text-[9px] font-black rounded tracking-wider flex-shrink-0">${isLunas ? 'LUNAS' : 'CREDIT'}</span>
+                                            <span class="px-2 py-0.5 ${isMenunggu ? 'bg-red-500/20 text-red-300 border-red-500/50' : statusClass} border-2 text-[9px] font-black rounded tracking-wider flex-shrink-0">${isMenunggu ? 'MENUNGGU' : (isLunas ? 'LUNAS' : 'CREDIT')}</span>
                                         </div>
                                         <div class="text-[11px] font-black text-white uppercase truncate mt-0.5 min-w-0">${d.brand || '-'} / ${d.model || '-'}</div>
                                         <div class="flex items-center justify-between gap-2 mt-0.5">
@@ -11120,6 +11125,11 @@ function updateSSK(tab, rowId) {
     // "Kembalikan ke Kredit" di riwayat transaksi (sadari: itu akan menghapus catatan pembayarannya).
     async function syncQtyChangeToPesanan(orderCode, brand, model, warna, ukuran, qtyBaru) {
         if (!orderCode) return;
+        const sourceTrx = appData.riwayatTransaksi.find(t => t.orderCode === orderCode);
+        if (isLockedHistoricalTransaction(sourceTrx)) {
+            showToast('🔒 Periode 12–18 September 2026 sudah dikunci. Sinkron balik dibatalkan.');
+            return;
+        }
         try {
             const bUp = (brand || '').trim().toUpperCase(), mUp = (model || '').trim().toUpperCase();
             const modelRow = (masterData.model || []).find(m =>
@@ -11153,6 +11163,10 @@ function updateSSK(tab, rowId) {
     async function simpanEditQtyTrx(trxId) {
         const trx = appData.riwayatTransaksi.find(t => t.id === trxId);
         if (!trx) return;
+        if (isLockedHistoricalTransaction(trx)) {
+            showToast('🔒 Periode 12–18 September 2026 sudah dikunci.');
+            return;
+        }
 
         const updates = [];
         let adaPerubahan = false;
@@ -11275,6 +11289,7 @@ function updateSSK(tab, rowId) {
     function hapusTrxRiwayat(trxId) {
         const trx = appData.riwayatTransaksi.find(t => t.id === trxId);
         if (!trx) return;
+        if (isLockedHistoricalTransaction(trx)) { showToast('🔒 Periode 12–18 September 2026 sudah dikunci.'); return; }
         if (trx.status === 'lunas') { showToast('Transaksi LUNAS tidak dapat dihapus.'); return; }
 
         // BUG FIX: transaksi "yatim" — header masih ada tapi trx.items sudah 0 (biasanya sisa
