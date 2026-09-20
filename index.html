@@ -11151,60 +11151,16 @@ function updateSSK(tab, rowId) {
         }, 30);
     }
 
-    // Sinkron balik qty (Inventory → Pesanan): dipanggil dari simpanEditQtyTrx() setiap kali qty
-    // transaksi yang punya order_code diedit dari app Inventory, supaya kolom `items` di
-    // produksi_orders (yang dibaca app Pesanan) ikut ter-update. App Pesanan sudah punya listener
-    // realtime untuk tabel produksi_orders (scheduleOrdersReload → syncOrdersFromCloud, read-only),
-    // jadi cukup tulis ke sini saja — TIDAK perlu bikin listener baru di app Pesanan (aman dari loop,
-    // karena app Pesanan hanya BACA ulang saat produksi_orders berubah, tidak nulis balik ke sini).
-    // Dicocokkan lewat pid (id unik per brand+model, format 'm'+model.id — lihat buildProducts() di
-    // app Pesanan) + warna + ukuran. SENGAJA TIDAK pakai nama model saja, karena ada nama model yang
-    // dipakai lebih dari satu brand (mis. "ATASAN EMBOS", "HANTAG") — kalau cuma cocokkan nama, qty
-    // produk brand A bisa salah update ke produk brand B yang kebetulan nama+warna+ukurannya sama.
-    // Kalau tidak ketemu (mis. item sudah dihapus manual dari sisi Pesanan, atau brand/model transaksi
-    // ini tidak ada di tabel model), dilewati saja — tidak fatal, qty Inventory tetap sudah benar,
-    // cuma tampilan di Pesanan tidak ikut sinkron untuk item itu.
-    // GUARD LUNAS: kalau pesanan sudah status_bayar='lunas', app Pesanan sengaja MENGUNCI item-nya
-    // (nominal tagihan dianggap final) — sinkron qty otomatis DIBATALKAN dan admin diberi peringatan,
-    // supaya qty barang tidak diam-diam berubah tanpa nominal tagihan ikut disesuaikan. Kalau memang
-    // perlu koreksi qty pada pesanan yang sudah lunas, kembalikan dulu ke status KREDIT lewat tombol
-    // "Kembalikan ke Kredit" di riwayat transaksi (sadari: itu akan menghapus catatan pembayarannya).
-    async function syncQtyChangeToPesanan(orderCode, brand, model, warna, ukuran, qtyBaru) {
-        if (!orderCode) return;
-        const sourceTrx = appData.riwayatTransaksi.find(t => t.orderCode === orderCode);
-        if (isLockedHistoricalTransaction(sourceTrx)) {
-            showToast('🔒 Periode 12–18 September 2026 sudah dikunci. Sinkron balik dibatalkan.');
-            return;
-        }
-        try {
-            const bUp = (brand || '').trim().toUpperCase(), mUp = (model || '').trim().toUpperCase();
-            const modelRow = (masterData.model || []).find(m =>
-                (m.brandNama || '').trim().toUpperCase() === bUp && (m.nama || '').trim().toUpperCase() === mUp);
-            if (!modelRow) { console.warn('Sinkron qty ke Pesanan dilewati: model "' + model + '" (brand "' + brand + '") tidak ditemukan di master data.'); return; }
-            const pid = 'm' + modelRow.id;
-
-            const { data: ord, error: selErr } = await sbClient
-                .from('produksi_orders').select('items, status_bayar').eq('order_code', orderCode).maybeSingle();
-            if (selErr || !ord || !Array.isArray(ord.items)) return;
-            if (ord.status_bayar === 'lunas') {
-                showToast('⚠️ Qty Inventory tersimpan, TAPI TIDAK disinkron ke Pesanan — order ' + orderCode + ' sudah LUNAS (item terkunci). Kembalikan ke Kredit dulu kalau perlu koreksi qty pesanan.');
-                return;
-            }
-            let changed = false;
-            const items = ord.items.map(it => {
-                if (it.pid === pid && it.color === warna && it.size === ukuran && it.qty !== qtyBaru) {
-                    changed = true;
-                    return { ...it, qty: qtyBaru };
-                }
-                return it;
-            });
-            if (!changed) return;
-        const { error: updErr } = await externalRepository.pesanan.updateItems(orderCode, items);
-            if (updErr) console.warn('Gagal sinkron qty ke Pesanan (' + orderCode + '):', updErr.message);
-        } catch (e) {
-            console.warn('Gagal sinkron qty ke Pesanan (' + orderCode + '):', e.message || e);
-        }
-    }
+    // [v3] syncQtyChangeToPesanan sudah tidak dipakai — sinkron qty/hapus item dari Inventory ke
+    // produksi_orders (app Pesanan) kini sepenuhnya ditangani trigger database:
+    //   • trg_item_sync_pesanan_upd  → UPDATE qty/warna/ukuran transaksi_item
+    //   • trg_item_sync_pesanan_del  → DELETE transaksi_item
+    //   • trg_item_sync_pesanan_ins  → INSERT transaksi_item
+    // Trigger bekerja di server (bukan di browser), jadi tidak ada race condition, tidak
+    // bergantung pada masterData.model yang mungkin belum dimuat, dan guard LUNAS tetap
+    // berlaku karena pesanan.status_bayar='lunas' dikunci di sisi UI app Pesanan.
+    // Fungsi ini dibiarkan sebagai no-op agar tidak ada ReferenceError jika masih dipanggil.
+    function syncQtyChangeToPesanan() { /* digantikan trigger DB – lihat migration v2/v3 */ }
 
     async function simpanEditQtyTrx(trxId) {
         const trx = appData.riwayatTransaksi.find(t => t.id === trxId);
@@ -11254,12 +11210,7 @@ function updateSSK(tab, rowId) {
                 }
                 if (error) throw error;
                 item.qty = qtyBaru;
-                // Item ini berasal dari pesanan online (order_code terisi) → sinkron balik qty-nya
-                // ke produksi_orders.items supaya app Pesanan ikut menampilkan qty yang baru.
-                // Sengaja tidak di-await berurutan dengan await terpisah per item supaya loop update
-                // di atas tidak melambat — cukup "fire and lupakan", kegagalannya non-fatal (lihat komentar
-                // di syncQtyChangeToPesanan) dan tidak mengganggu update qty di Inventory yang sudah sukses.
-                if (trx.orderCode) syncQtyChangeToPesanan(trx.orderCode, trx.brand, trx.model, item.warna, item.ukuran, qtyBaru);
+                // Sinkron ke produksi_orders ditangani trigger DB (trg_item_sync_pesanan_upd) — tidak perlu kode browser.
             }
             _invalidateStokItemCache();
             _modal.close();
@@ -11489,63 +11440,9 @@ function updateSSK(tab, rowId) {
         }
     };
 
-    // CUTOFF sinkron hapus item ke Pesanan: HANYA pesanan/transaksi bertanggal 19 Sep 2026 ke atas.
-    // Periode sebelumnya (termasuk 12-18 Sep yang terkunci & yang lebih lama) TIDAK PERNAH diubah
-    // oleh sinkron ini, supaya nilai tagihan periode lama tetap seperti semula.
-    const PESANAN_SYNC_CUTOFF = new Date(2026, 8, 19, 0, 0, 0);
-
-    // Saat item/transaksi dihapus di Inventory, hapus juga item padanannya di produksi_orders.items
-    // (app Pesanan). Sebelumnya hanya sinkron EDIT qty yang ada, sehingga item yang dihapus di
-    // Inventory tetap dihitung di Pesanan -> total tagihan kedua app berbeda.
-    // Aturan aman: skip kalau order tidak ada / sebelum cutoff / sudah LUNAS / model tidak ada di master /
-    // hasilnya akan mengosongkan order (kasus itu ditangani trigger DB yang menghapus order kosong).
-    // Kunci priority_items berbasis nomor urut item ("KODE__idx"), jadi ikut digeser supaya penanda
-    // URGENT tidak pindah ke item lain.
-    async function syncHapusItemKePesanan(trx, itemsDihapus, hapusAll) {
-        try {
-            const orderCode = trx && trx.orderCode;
-            if (!orderCode) return;
-            const tglTrx = parseTanggalID(trx.tanggal);
-            if (!tglTrx || tglTrx < PESANAN_SYNC_CUTOFF) return;
-
-            const bUp = (trx.brand || '').trim().toUpperCase(), mUp = (trx.model || '').trim().toUpperCase();
-            const modelRow = (masterData.model || []).find(m =>
-                (m.brandNama || '').trim().toUpperCase() === bUp && (m.nama || '').trim().toUpperCase() === mUp);
-            if (!modelRow) return;
-            const pid = 'm' + modelRow.id;
-
-            const { data: ord, error: selErr } = await sbClient
-                .from('produksi_orders').select('items, status_bayar, created_at, priority_items').eq('order_code', orderCode).maybeSingle();
-            if (selErr || !ord || !Array.isArray(ord.items)) return;
-            if (new Date(ord.created_at) < PESANAN_SYNC_CUTOFF) return;
-            if (ord.status_bayar === 'lunas') {
-                showToast('⚠️ Item terhapus di Inventory, TAPI TIDAK disinkron ke Pesanan — order ' + orderCode + ' sudah LUNAS (item terkunci).');
-                return;
-            }
-
-            const hapusKey = new Set((itemsDihapus || []).map(i => (i.warna || '') + '|' + (i.ukuran || '')));
-            const dihapus = ord.items.map(it => it.pid === pid && (hapusAll || hapusKey.has((it.color || '') + '|' + (it.size || ''))));
-            if (!dihapus.some(Boolean)) return;
-            const sisa = ord.items.filter((_, i) => !dihapus[i]);
-            if (sisa.length === 0) return;
-
-            const idxBaru = new Map();
-            let n = 0;
-            ord.items.forEach((_, i) => { if (!dihapus[i]) idxBaru.set(i, n++); });
-            const priBaru = (ord.priority_items || []).map(k => {
-                const m = String(k).match(/^(.*)__(\d+)$/);
-                if (!m) return k;
-                const baru = idxBaru.get(Number(m[2]));
-                return baru === undefined ? null : m[1] + '__' + baru;
-            }).filter(Boolean);
-
-            const { error: updErr } = await sbClient.from('produksi_orders')
-                .update({ items: sisa, priority_items: priBaru }).eq('order_code', orderCode);
-            if (updErr) console.warn('Gagal sinkron hapus item ke Pesanan (' + orderCode + '):', updErr.message);
-        } catch (e) {
-            console.warn('Gagal sinkron hapus item ke Pesanan:', e.message || e);
-        }
-    }
+    // Sinkron hapus/ubah qty item ke app Pesanan (produksi_orders.items) sekarang ditangani TRIGGER DATABASE
+    // (trg_item_sync_pesanan_upd / trg_item_sync_pesanan_del pada transaksi_item), dengan CUTOFF pesanan
+    // dibuat >= 19 Sep 2026. Jadi tidak perlu disalin lagi lewat kode browser.
 
     async function _eksekusiHapusTrx(trxId, selectedIdxs) {
         const trx = appData.riwayatTransaksi.find(t => t.id === trxId);
@@ -11592,9 +11489,6 @@ function updateSSK(tab, rowId) {
             // kalau ada sesi/tab lain yang barusan ubah transaksi yang sama) — hapus header
             // transaksi HANYA kalau memang sudah 0 item & belum lunas.
             await dataRepository.rpc('cleanup_transaksi_kosong', { p_trx_id: trxId });
-
-            // Sinkron ke app Pesanan (hanya periode >= cutoff, lihat PESANAN_SYNC_CUTOFF).
-            await syncHapusItemKePesanan(trx, itemsToHapus, hapusAll);
 
             // Animasi hilang sebelum re-render
             if (cardEl && hapusAll) {
