@@ -2820,7 +2820,8 @@ END $$;</textarea>
         setLoadingStatus('MENYIAPKAN NOTIFIKASI...', 95);
         initRealtimeSync();
         await initPesananNotif();
-        initFcmPush(); // daftar token FCM di belakang layar, tidak perlu ditunggu (await)
+        initFcmPush(); // daftar token FCM di belakang layar saat first open
+        refreshFcmTokenIfNeeded(); // cek & recover token tiap app di-reload (jaga-jaga kalau token hilang)
 
         // App sudah siap sepenuhnya di belakang layar. Overlay baru boleh
         // ditutup setelah durasi minimum animasi terpenuhi.
@@ -4147,6 +4148,76 @@ async function fetchBayarSebagianData() {
             });
         } catch (e) {
             console.warn('[FCM Push] Gagal setup push notification:', e.message);
+        }
+    }
+
+    // ==================== FCM TOKEN AUTO-REFRESH (JANGAN HILANG TOKEN) ====================
+    async function refreshFcmTokenIfNeeded() {
+        /**
+         * Jalankan SETIAP kali app dibuka (dari masukApp) untuk pastikan token FCM selalu
+         * terdaftar di Supabase, bahkan kalau token lama hilang/expired/di-clear.
+         *
+         * Alur:
+         * 1. Ambil token FCM saat ini dari browser
+         * 2. Query Supabase: apakah token ini SUDAH ada di tabel fcm_tokens?
+         * 3. Kalau TIDAK ada → upsert token baru (sama seperti initFcmPush)
+         * 4. Kalau ADA dan masih valid → abaikan (tidak perlu diulang)
+         *
+         * PENTING: Fungsi ini BERBEDA dari initFcmPush yang hanya jalankan SATU KALI
+         * saat app pertama kali dibuka. refreshFcmTokenIfNeeded dijalankan SETIAP kali
+         * app dibuka/di-reload, supaya jadi "fallback" kalau token sebelumnya hilang.
+         */
+        try {
+            if (FCM_VAPID_KEY === 'ISI_VAPID_KEY_DI_SINI' || !sbClient) return;
+            if (!('serviceWorker' in navigator) || typeof firebase === 'undefined') return;
+            if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+            if (!firebase.apps || !firebase.apps.length) firebase.initializeApp(FCM_CONFIG);
+            const messaging = firebase.messaging();
+
+            // Ambil token saat ini
+            const swReg = await navigator.serviceWorker.ready;
+            const token = await messaging.getToken({ vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: swReg });
+            if (!token) {
+                console.log('[FCM Refresh] Tidak dapat token (user mungkin belum kasih izin notifikasi).');
+                return;
+            }
+
+            // Cek: apakah token ini SUDAH ada di Supabase?
+            const { data, error: queryError } = await sbClient
+                .from('fcm_tokens')
+                .select('id')
+                .eq('token', token)
+                .limit(1)
+                .single();
+
+            if (queryError && queryError.code !== 'PGRST116') {
+                // Ada error selain "baris tidak ditemukan"
+                console.warn('[FCM Refresh] Error cek token:', queryError.message);
+                return;
+            }
+
+            // Kalau token SUDAH ada, jangan upsert ulang (sudah terdaftar sebelumnya)
+            if (data && data.id) {
+                console.log('[FCM Refresh] Token sudah terdaftar, tidak perlu refresh.');
+                return;
+            }
+
+            // Token TIDAK ada → upsert sekarang (artinya token lama hilang atau browser dibersihkan)
+            const { error: upsertError } = await externalRepository.fcm.upsertToken({
+                token,
+                device_info: navigator.userAgent,
+                updated_at: new Date().toISOString(),
+            });
+
+            if (upsertError) {
+                console.warn('[FCM Refresh] Gagal re-register token:', upsertError.message);
+            } else {
+                console.log('[FCM Refresh] Token di-recover & ter-register ulang.');
+            }
+        } catch (e) {
+            // Jangan crash app, cukup log warning
+            console.warn('[FCM Refresh] Error unexpected:', e.message);
         }
     }
 
