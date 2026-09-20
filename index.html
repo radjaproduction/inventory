@@ -9238,7 +9238,12 @@ function updateSSK(tab, rowId) {
     }
     const LEGACY_SEP_BILLING_TOTAL = 23261400;
     function isLegacyHistoricalSettlement(payment) {
-        return String(payment?.keterangan || '').trim() === 'LUNAS HISTORIS 12–18 SEP 2026';
+        const keterangan = String(payment?.keterangan || '')
+            .trim()
+            .toUpperCase()
+            .replace(/[–—−-]/g, '-')
+            .replace(/\s+/g, ' ');
+        return keterangan === 'LUNAS HISTORIS 12-18 SEP 2026';
     }
     // PERBAIKAN: Fungsi ini sekarang mengonversi tanggal ke zona waktu lokal
     // dengan mengatur jam ke tengah hari (12:00) untuk menghindari masalah
