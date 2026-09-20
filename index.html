@@ -9759,7 +9759,6 @@ function updateSSK(tab, rowId) {
             return;
         }
         const { dari, sampai } = getFilterRange();
-        const isLegacyPeriod = isLegacySepBillingPeriod(dari, sampai);
         const filtered = appData.riwayatInput.filter(d => tanggalDalamRange(d.tanggal, dari, sampai) && (_filterInputMode === 'semua' || d.mode === _filterInputMode));
         if (filtered.length === 0) {
             list.innerHTML = '<div class="text-center text-white/60 text-xs mt-10"><i class="fa-solid fa-calendar-xmark text-3xl mb-2 opacity-50"></i><br>Tidak ada data di rentang tanggal ini.</div>';
@@ -11556,6 +11555,7 @@ function updateSSK(tab, rowId) {
         if (!list) return;
         // PERBAIKAN: Ambil rentang tanggal dari filter
         const { dari, sampai } = getFilterRange();
+        const isLegacyPeriod = isLegacySepBillingPeriod(dari, sampai);
 
         // PERF: bangun lookup SEKALI di sini (O(pelunasan.length)), dipakai berulang di bawah
         // (baik untuk filter "gabungan" maupun breakdown per vendor) — menggantikan pola lama
