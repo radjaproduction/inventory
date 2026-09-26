@@ -5131,16 +5131,21 @@ function _serverStockAllBrands() {
         if (!byBrand.has(brand)) byBrand.set(brand, 0);
         byBrand.set(brand, byBrand.get(brand) + (Number(qty) || 0));
     });
-    // Hitung jumlah model per brand dari masterData.model (sumber yang benar)
-    const modelCountByBrandId = new Map();
-    (masterData.model || []).forEach(m => {
-        if (!m.brandId) return;
-        modelCountByBrandId.set(m.brandId, (modelCountByBrandId.get(m.brandId) || 0) + 1);
+    // Hitung jumlah model per brand hanya yang stok > 0 (dari _stockVariantServer)
+    const modelSetByBrand = new Map(); // brandNamaUpper -> Set(modelNamaUpper)
+    _stockVariantServer.forEach((qty, key) => {
+        if ((Number(qty) || 0) <= 0) return;
+        const parts = key.split('||');
+        const brand = parts[0];
+        const model = parts[1];
+        if (!model) return;
+        if (!modelSetByBrand.has(brand)) modelSetByBrand.set(brand, new Set());
+        modelSetByBrand.get(brand).add(model);
     });
     return masterData.brand.map(brand => {
         const brandKey = String(brand.nama || '').trim().toUpperCase();
         const total = byBrand.has(brandKey) ? byBrand.get(brandKey) : 0;
-        const modelCount = modelCountByBrandId.get(brand.id) || 0;
+        const modelCount = modelSetByBrand.has(brandKey) ? modelSetByBrand.get(brandKey).size : 0;
         return { ...brand, total, modelCount };
     });
 }
