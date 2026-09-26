@@ -5134,8 +5134,8 @@ function _serverStockAllBrands() {
     // Hitung jumlah model per brand dari masterData.model (sumber yang benar)
     const modelCountByBrandId = new Map();
     (masterData.model || []).forEach(m => {
-        if (!m.brand_id) return;
-        modelCountByBrandId.set(m.brand_id, (modelCountByBrandId.get(m.brand_id) || 0) + 1);
+        if (!m.brandId) return;
+        modelCountByBrandId.set(m.brandId, (modelCountByBrandId.get(m.brandId) || 0) + 1);
     });
     return masterData.brand.map(brand => {
         const brandKey = String(brand.nama || '').trim().toUpperCase();
