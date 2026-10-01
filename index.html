@@ -9535,12 +9535,31 @@ function updateSSK(tab, rowId) {
         tutupPopupFilterTanggal();
     }
 
-    function applyFilterTanggal() {
-        const dari = document.getElementById('filter-dari-tanggal')?.value;
-        const sampai = document.getElementById('filter-sampai-tanggal')?.value;
-        if (dari && sampai && dari > sampai) {
-            showToast('⚠️ Tanggal awal tidak boleh lebih besar dari tanggal akhir!');
-            return;
+    // Buka kalender native saat kolom tanggal diketuk. Di sebagian Android/WebView (atau mode
+    // "situs desktop") kolom date masuk mode ketik per-segmen (dd/mm/yyyy) dan kalender tidak muncul.
+    function _bukaPickerTanggal(el) {
+        try { if (el && typeof el.showPicker === 'function') el.showPicker(); } catch (e) {}
+    }
+
+    // Dipanggil dari onchange kolom DARI/SAMPAI. Saat tanggal diketik manual, browser mengirim
+    // event change di tiap angka (tahun 0002, 0020, 0202, 2026), jadi nilai setengah jadi diabaikan.
+    function onFilterTanggalInputChange(el) {
+        const v = el && el.value;
+        if (v) {
+            const y = parseInt(v.slice(0, 4), 10);
+            if (!(y >= 2000 && y <= 2100)) return;
+        }
+        applyFilterTanggal(el);
+    }
+
+    function applyFilterTanggal(sumber) {
+        const elDari = document.getElementById('filter-dari-tanggal');
+        const elSampai = document.getElementById('filter-sampai-tanggal');
+        // Kalau rentang terbalik, samakan kolom yang TIDAK sedang diubah (bukan menolak),
+        // supaya nilai input (yang dibaca getFilterRange) tidak pernah tersimpan terbalik.
+        if (elDari && elSampai && elDari.value && elSampai.value && elDari.value > elSampai.value) {
+            if (sumber === elSampai) elDari.value = elSampai.value;
+            else elSampai.value = elDari.value;
         }
         updateFilterTanggalBadge();
         selectedTrxIds.clear();
@@ -13786,8 +13805,8 @@ function updateSSK(tab, rowId) {
             </div>
             <div style="padding:18px 16px;display:flex;flex-direction:column;gap:12px;">
                 <div class="flex flex-col gap-2">
-                    <div class="flex flex-col min-w-0"><label class="text-[8px] text-black font-bold mb-0.5 leading-none">DARI</label><input type="date" id="filter-dari-tanggal" onchange="applyFilterTanggal()" class="w-full bg-darkBg text-black text-[11px] px-2 py-3 rounded-lg border-2 border-borderDark outline-none"></div>
-                    <div class="flex flex-col min-w-0"><label class="text-[8px] text-black font-bold mb-0.5 leading-none">SAMPAI</label><input type="date" id="filter-sampai-tanggal" onchange="applyFilterTanggal()" class="w-full bg-darkBg text-black text-[11px] px-2 py-3 rounded-lg border-2 border-borderDark outline-none"></div>
+                    <div class="flex flex-col min-w-0"><label class="text-[8px] text-black font-bold mb-0.5 leading-none">DARI</label><input type="date" id="filter-dari-tanggal" onclick="_bukaPickerTanggal(this)" onchange="onFilterTanggalInputChange(this)" class="w-full bg-darkBg text-black text-[11px] px-2 py-3 rounded-lg border-2 border-borderDark outline-none"></div>
+                    <div class="flex flex-col min-w-0"><label class="text-[8px] text-black font-bold mb-0.5 leading-none">SAMPAI</label><input type="date" id="filter-sampai-tanggal" onclick="_bukaPickerTanggal(this)" onchange="onFilterTanggalInputChange(this)" class="w-full bg-darkBg text-black text-[11px] px-2 py-3 rounded-lg border-2 border-borderDark outline-none"></div>
                 </div>
                 <div class="flex gap-2">
                     <button onclick="setFilterMingguLalu()" class="flex-1 py-3 text-[10px] font-black rounded-lg text-black transition-colors flex items-center justify-center gap-1 whitespace-nowrap" style="background:linear-gradient(90deg,#ff8c00,#ffb347);">
