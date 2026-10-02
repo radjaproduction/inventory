@@ -3486,6 +3486,7 @@ async function fetchBayarSebagianData() {
     // otomatis berkurang begitu vendor/admin mengonfirmasi pesanan di app Pesanan.
     const PESANAN_TABLE = 'produksi_orders';
     let pesananMenungguCount = 0;
+    let _pesananOrdersCache = [];
     // order_code pesanan yang MASIH "Menunggu" (stage 0, belum dikonfirmasi admin). Transaksi
     // yang order_code-nya ada di Set ini SENGAJA disembunyikan dari tab Riwayat Transaksi —
     // walau stok-nya sudah langsung terpotong sejak pesanan dibuat (supaya aman dari oversold),
@@ -3720,6 +3721,7 @@ async function fetchBayarSebagianData() {
     function _renderRincianPesananList(orders) {
         const wrap = document.getElementById('rincian-pesanan-list');
         if (!wrap) return;
+        _pesananOrdersCache = Array.isArray(orders) ? orders : [];
         // PERBAIKAN: sebelumnya filter ini juga mewajibkan items.length > 0, jadi order yang
         // items-nya kosong (misal gagal kesimpan sempurna dari app Pesanan) ikut disembunyikan
         // dari popup ini — padahal render di bawah SUDAH siap menampilkan kondisi item kosong
@@ -3845,7 +3847,7 @@ async function fetchBayarSebagianData() {
 
             // ── Tombol aksi ──
             const btnHtml = isMenunggu
-                ? '<button type="button" class="rp-rincian-pesanan-btn" data-action="konfirmasi" data-code="' + _escPesanan(o.order_code) + '" style="background:linear-gradient(90deg,#16a34a,#22c55e);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:11px;font-weight:900;white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="fa-solid fa-check"></i> Konfirmasi</button>'
+                ? '<button type="button" class="rp-rincian-pesanan-btn" data-action="konfirmasi" data-code="' + _escPesanan(o.order_code) + '" style="background:linear-gradient(90deg,#16a34a,#22c55e);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:11px;font-weight:900;white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="fa-solid fa-pen-to-square"></i> Edit & Konfirmasi</button>'
                 : '<button type="button" class="rp-rincian-pesanan-btn" data-action="disiapkan" data-code="' + _escPesanan(o.order_code) + '" style="background:linear-gradient(90deg,#ff8c00,#ffb347);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:11px;font-weight:900;white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="fa-solid fa-box"></i> Disiapkan</button>';
 
             return '<div style="background:#f7f8fa;border:1.5px solid ' + borderColor + ';border-radius:16px;overflow:hidden;flex-shrink:0;">'
@@ -3893,11 +3895,76 @@ async function fetchBayarSebagianData() {
         if (fab) { fab.style.pointerEvents = ''; fab.style.visibility = ''; }
     }
 
+    function tutupEditPesanan() {
+        const el = document.getElementById('popup-edit-pesanan');
+        if (el) { el.classList.add('hidden'); el.classList.remove('flex'); }
+    }
+
+    function bukaEditPesanan(orderCode) {
+        const order = _pesananOrdersCache.find(o => String(o.order_code) === String(orderCode));
+        if (!order) { showToast('❌ Data pesanan tidak ditemukan, muat ulang daftar'); return; }
+        const items = Array.isArray(order.items) ? order.items : [];
+        const wrap = document.getElementById('edit-pesanan-items');
+        const title = document.getElementById('edit-pesanan-code');
+        const modal = document.getElementById('popup-edit-pesanan');
+        if (!wrap || !modal) return;
+        if (title) title.textContent = orderCode;
+        wrap.innerHTML = items.length ? items.map((it, idx) => {
+            const model = it.name || it.nama || it.productName || it.model || it.pid || '—';
+            const size = it.size || it.ukuran || '';
+            const color = it.warna || it.color || '';
+            const qty = Math.max(0, Number(it.qty || 0));
+            return '<div class="edit-pesanan-row" data-index="' + idx + '">' +
+                '<div class="edit-pesanan-model"><b>' + _escPesanan(model) + '</b><small>Item ' + (idx + 1) + '</small></div>' +
+                '<label>SIZE<input class="edit-pesanan-field" data-field="size" value="' + _escPesanan(size) + '"></label>' +
+                '<label>WARNA<input class="edit-pesanan-field" data-field="warna" value="' + _escPesanan(color) + '"></label>' +
+                '<label>QTY<input class="edit-pesanan-field edit-pesanan-qty" data-field="qty" type="number" min="0" step="1" value="' + qty + '"></label>' +
+                '</div>';
+        }).join('') : '<div style="padding:24px;text-align:center;color:#64748b;font-size:12px;">Pesanan ini belum memiliki item.</div>';
+        modal.dataset.orderCode = orderCode;
+        modal.classList.remove('hidden'); modal.classList.add('flex');
+    }
+
+    async function simpanEditDanKonfirmasiPesanan() {
+        const modal = document.getElementById('popup-edit-pesanan');
+        const orderCode = modal?.dataset.orderCode;
+        const order = _pesananOrdersCache.find(o => String(o.order_code) === String(orderCode));
+        const saveBtn = document.getElementById('edit-pesanan-save');
+        if (!order || !orderCode || !sbClient) { showToast('❌ Tidak ada koneksi ke server'); return; }
+        const items = (Array.isArray(order.items) ? order.items : []).map((source, idx) => {
+            const item = { ...source };
+            const row = document.querySelector('.edit-pesanan-row[data-index="' + idx + '"]');
+            row?.querySelectorAll('.edit-pesanan-field').forEach(input => {
+                if (input.dataset.field === 'qty') item.qty = Math.max(0, Number(input.value || 0));
+                else if (input.dataset.field === 'size') { item.size = input.value.trim(); item.ukuran = input.value.trim(); }
+                else if (input.dataset.field === 'warna') { item.warna = input.value.trim(); item.color = input.value.trim(); }
+            });
+            return item;
+        });
+        if (saveBtn) { saveBtn.disabled = true; saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> MENYIMPAN...'; }
+        try {
+            const { error } = await externalRepository.pesanan.updateItems(orderCode, items);
+            if (error) throw error;
+            order.items = items;
+            tutupEditPesanan();
+            await _prosesRincianPesanan('konfirmasi-final', orderCode, null);
+        } catch (e) {
+            console.error('Gagal menyimpan edit pesanan:', e);
+            showToast('❌ Gagal menyimpan perubahan: ' + (e?.message || 'coba lagi'));
+        } finally {
+            if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> SIMPAN & KONFIRMASI'; }
+        }
+    }
+
     // Event delegation pada wrapper list — aman dari note yang mengandung tanda kutip,
     // karena order_code diambil dari atribut data-* bukan diselipkan ke string JS inline.
     async function _prosesRincianPesanan(action, orderCode, btnEl) {
         if (!orderCode) return;
         if (action === 'konfirmasi') {
+            bukaEditPesanan(orderCode);
+            return;
+        }
+        if (action === 'konfirmasi-final') {
             if (!sbClient) { showToast('❌ Tidak ada koneksi ke server'); return; }
             if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; }
             try {
@@ -3929,7 +3996,7 @@ async function fetchBayarSebagianData() {
             } catch (e) {
                 console.error('Gagal konfirmasi pesanan:', e);
                 showToast('❌ Gagal konfirmasi: ' + (e?.message || 'coba lagi'));
-                if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '<i class="fa-solid fa-check"></i> Konfirmasi'; }
+                if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Edit & Konfirmasi'; }
             }
         } else if (action === 'disiapkan') {
             // Ditandai selesai LANGSUNG DI DATABASE (kolom disiapkan_selesai) — bukan
@@ -13845,6 +13912,28 @@ function updateSSK(tab, rowId) {
             </div>
             <div id="rincian-pesanan-list" style="padding:14px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;flex:1;">
                 <!-- Diisi oleh _renderRincianPesananList() -->
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .edit-pesanan-row{display:grid;grid-template-columns:minmax(0,1.35fr) repeat(3,minmax(55px,.75fr));gap:7px;align-items:end;padding:10px;border:1px solid #dbe4ee;border-radius:12px;background:#f8fafc}
+        .edit-pesanan-model{min-width:0;display:flex;flex-direction:column;gap:4px;padding-bottom:4px}.edit-pesanan-model b{font-size:11px;color:#172033;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.edit-pesanan-model small{font-size:8px;color:#94a3b8;font-weight:700}
+        .edit-pesanan-row label{display:flex;flex-direction:column;gap:4px;color:#64748b;font-size:8px;font-weight:900}.edit-pesanan-field{width:100%;height:31px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;color:#172033;font-size:10px;font-weight:800;padding:0 6px;outline:none}.edit-pesanan-field:focus{border-color:#16a34a;box-shadow:0 0 0 2px rgba(22,163,74,.12)}
+        @media(max-width:430px){.edit-pesanan-row{grid-template-columns:minmax(0,1fr) repeat(3,58px);gap:5px}.edit-pesanan-model b{font-size:10px}.edit-pesanan-field{font-size:9px;padding:0 4px}}
+    </style>
+    <!-- EDIT PESANAN: pesanan baru masuk Riwayat setelah tombol SIMPAN & KONFIRMASI ditekan. -->
+    <div id="popup-edit-pesanan" class="hidden fixed inset-0 z-[99999] items-center justify-center" style="background:rgba(0,0,0,0.78);backdrop-filter:blur(3px);padding:16px;" onclick="if(event.target===this) tutupEditPesanan()">
+        <div style="background:#fff;border-radius:20px;width:100%;max-width:520px;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 55px rgba(0,0,0,.35);">
+            <div style="background:linear-gradient(90deg,#16a34a,#22c55e);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+                <div><div style="font-family:Montserrat,sans-serif;font-weight:900;font-size:13px;color:#fff;letter-spacing:.4px;">EDIT PESANAN</div><div id="edit-pesanan-code" style="font-size:10px;color:rgba(255,255,255,.82);font-weight:700;margin-top:3px;"></div></div>
+                <button onclick="tutupEditPesanan()" style="width:32px;height:32px;background:rgba(0,0,0,.16);border:0;border-radius:50%;color:#fff;font-size:14px;cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div style="padding:14px 16px 4px;color:#475569;font-size:10px;font-weight:700;line-height:1.5;">Periksa dan ubah size, warna, atau qty. Pesanan baru masuk Riwayat setelah disimpan.</div>
+            <div id="edit-pesanan-items" style="padding:10px 16px 16px;overflow-y:auto;display:flex;flex-direction:column;gap:9px;"></div>
+            <div style="display:flex;gap:8px;padding:12px 16px 16px;border-top:1px solid #e2e8f0;flex-shrink:0;">
+                <button onclick="tutupEditPesanan()" style="flex:1;padding:11px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc;color:#475569;font-size:10px;font-weight:900;cursor:pointer;">BATAL</button>
+                <button id="edit-pesanan-save" onclick="simpanEditDanKonfirmasiPesanan()" style="flex:2;padding:11px;border:0;border-radius:10px;background:linear-gradient(90deg,#16a34a,#22c55e);color:#fff;font-size:10px;font-weight:900;cursor:pointer;"><i class="fa-solid fa-check"></i> SIMPAN & KONFIRMASI</button>
             </div>
         </div>
     </div>
