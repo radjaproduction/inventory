@@ -3911,6 +3911,17 @@ async function fetchBayarSebagianData() {
         if (fab) { fab.style.pointerEvents = ''; fab.style.visibility = ''; }
     }
 
+    function togglePerbesarPopupPesanan() {
+        const panel = document.getElementById('popup-rincian-pesanan-panel');
+        const button = document.getElementById('popup-rincian-pesanan-expand');
+        if (!panel || !button) return;
+        const expanded = panel.classList.toggle('is-expanded');
+        button.setAttribute('aria-label', expanded ? 'Kembalikan ukuran popup' : 'Perbesar popup');
+        button.innerHTML = expanded
+            ? '<i class="fa-solid fa-down-left-and-up-right-to-center"></i>'
+            : '<i class="fa-solid fa-up-right-and-down-left-from-center"></i>';
+    }
+
     function tutupEditPesanan() {
         const el = document.getElementById('popup-edit-pesanan');
         if (el) { el.classList.add('hidden'); el.classList.remove('flex'); }
@@ -13921,13 +13932,16 @@ function updateSSK(tab, rowId) {
          Konfirmasi/Disiapkan per order, dipakai event delegation supaya aman dari note
          yang mengandung tanda kutip. -->
     <div id="popup-rincian-pesanan" class="hidden fixed inset-0 z-[99998] items-center justify-center" style="background:rgba(0,0,0,0.75);backdrop-filter:blur(2px);padding:16px;" onmousedown="if(event.target===this) tutupPopupRincianPesanan()">
-        <div style="background:#ffffff;border-radius:20px;width:100%;max-width:420px;max-height:85vh;border:2px solid rgba(118,153,201,.4);overflow:hidden;display:flex;flex-direction:column;">
+        <div id="popup-rincian-pesanan-panel" class="pesanan-popup-panel" style="background:#ffffff;border-radius:20px;width:100%;max-width:420px;max-height:85vh;border:2px solid rgba(118,153,201,.4);overflow:hidden;display:flex;flex-direction:column;">
             <div style="background:linear-gradient(90deg,#e6396b,#a3123f);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-radius:18px 18px 0 0;">
                 <div style="display:flex;align-items:center;gap:10px;">
                     <div style="width:34px;height:34px;background:rgba(0,0,0,0.18);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;color:#fff;"><i class="fa-solid fa-box-open"></i></div>
                     <span style="font-family:Montserrat,sans-serif;font-weight:900;font-size:13px;color:#fff;letter-spacing:0.5px;">RINCIAN PESANAN</span>
                 </div>
-                <button onclick="tutupPopupRincianPesanan()" style="width:32px;height:32px;background:rgba(0,0,0,0.18);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:14px;"><i class="fa-solid fa-xmark"></i></button>
+                <div style="display:flex;align-items:center;gap:7px;">
+                    <button id="popup-rincian-pesanan-expand" onclick="togglePerbesarPopupPesanan()" aria-label="Perbesar popup" style="width:32px;height:32px;background:rgba(0,0,0,0.18);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:13px;"><i class="fa-solid fa-up-right-and-down-left-from-center"></i></button>
+                    <button onclick="tutupPopupRincianPesanan()" style="width:32px;height:32px;background:rgba(0,0,0,0.18);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:14px;"><i class="fa-solid fa-xmark"></i></button>
+                </div>
             </div>
             <div id="rincian-pesanan-list" style="padding:14px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;flex:1;">
                 <!-- Diisi oleh _renderRincianPesananList() -->
@@ -13936,6 +13950,9 @@ function updateSSK(tab, rowId) {
     </div>
 
     <style>
+        .pesanan-popup-panel{transition:max-width .2s ease,max-height .2s ease;border-radius:20px}
+        .pesanan-popup-panel.is-expanded{max-width:min(96vw,980px)!important;max-height:94vh!important;border-radius:14px!important}
+        .pesanan-popup-panel.is-expanded #rincian-pesanan-list{padding:18px 22px!important}
         .edit-pesanan-row{display:grid;grid-template-columns:minmax(0,1.35fr) repeat(3,minmax(55px,.75fr));gap:7px;align-items:end;padding:10px;border:1px solid #dbe4ee;border-radius:12px;background:#f8fafc}
         .edit-pesanan-model{min-width:0;display:flex;flex-direction:column;gap:4px;padding-bottom:4px}.edit-pesanan-model b{font-size:11px;color:#172033;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.edit-pesanan-model small{font-size:8px;color:#94a3b8;font-weight:700}
         .edit-pesanan-row label{display:flex;flex-direction:column;gap:4px;color:#64748b;font-size:8px;font-weight:900}.edit-pesanan-field{width:100%;height:31px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;color:#172033;font-size:10px;font-weight:800;padding:0 6px;outline:none}.edit-pesanan-field:focus{border-color:#16a34a;box-shadow:0 0 0 2px rgba(22,163,74,.12)}
