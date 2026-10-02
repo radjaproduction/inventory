@@ -3554,6 +3554,7 @@ async function fetchBayarSebagianData() {
     // Pakai Web Speech API (SpeechSynthesis), gratis & tidak perlu file audio.
     // Kalau browser tidak mendukung TTS ini (jarang terjadi), otomatis fallback ke beep biasa.
     let _speakInProgress = false;
+    let _pesananAlarmStopToken = 0;
     // _isRetry: dipakai internal saat percobaan kedua (suara default, tanpa maksa lang id-ID).
     // Beberapa HP Android belum punya paket suara Bahasa Indonesia ter-install di TTS sistemnya —
     // memaksa utter.lang='id-ID' pada kondisi begini bikin speechSynthesis error (language-unavailable/
@@ -3570,6 +3571,7 @@ async function fetchBayarSebagianData() {
                 console.log('[Suara Pesanan] Masih ada ucapan berjalan, panggilan baru diabaikan (mencegah tabrakan).');
                 return;
             }
+            const alarmToken = _pesananAlarmStopToken;
             // Sebagian Chrome Android kadang "nyangkut" di state paused tanpa sebab jelas
             // (bug lama Chromium) — resume() dulu sebelum speak() supaya tidak diam-diam
             // diabaikan oleh browser.
@@ -3599,6 +3601,7 @@ async function fetchBayarSebagianData() {
             utter.onerror = (ev) => {
                 _settled = true;
                 _speakInProgress = false;
+                if (alarmToken !== _pesananAlarmStopToken) return;
                 console.warn('[Suara Pesanan] TTS gagal (percobaan ' + (_isRetry ? 'ke-2, default voice' : 'ke-1, id-ID') + '). Alasan:', ev.error);
                 if (!_isRetry) {
                     // Kemungkinan besar penyebab: paket suara Bahasa Indonesia belum ter-install
@@ -3619,6 +3622,7 @@ async function fetchBayarSebagianData() {
             setTimeout(() => {
                 if (_settled) return; // sudah ditangani onstart/onerror, aman
                 _speakInProgress = false;
+                if (alarmToken !== _pesananAlarmStopToken) return;
                 console.warn('[Suara Pesanan] TTS tidak merespons dalam 2 detik (kemungkinan diblokir browser tanpa error). Percobaan: ' + (_isRetry ? 'ke-2' : 'ke-1'));
                 try { speechSynthesis.cancel(); } catch (e) {}
                 if (!_isRetry) {
@@ -3655,6 +3659,18 @@ async function fetchBayarSebagianData() {
     }
     function _stopPesananRepeatAlarm() {
         if (_pesananRepeatTimer) { clearInterval(_pesananRepeatTimer); _pesananRepeatTimer = null; }
+    }
+
+    // Hentikan semua suara notifikasi ketika pesanan mulai diproses.
+    // Timer saja tidak cukup karena TTS yang sedang berbicara tetap akan selesai
+    // dan AudioContext/getaran bisa tetap aktif.
+    function _stopPesananAlarm() {
+        _pesananAlarmStopToken++;
+        _stopPesananRepeatAlarm();
+        _speakInProgress = false;
+        try { if ('speechSynthesis' in window) speechSynthesis.cancel(); } catch (e) {}
+        try { if (_audioCtxPesanan && _audioCtxPesanan.state === 'running') _audioCtxPesanan.suspend(); } catch (e) {}
+        try { if (navigator.vibrate) navigator.vibrate(0); } catch (e) {}
     }
 
     function _updatePesananBellBadge() {
@@ -3961,6 +3977,9 @@ async function fetchBayarSebagianData() {
     async function _prosesRincianPesanan(action, orderCode, btnEl) {
         if (!orderCode) return;
         if (action === 'konfirmasi') {
+            // Begitu operator mulai mengedit pesanan, alarm berhenti agar tidak
+            // terus berbunyi selama form editor sedang diisi.
+            _stopPesananAlarm();
             bukaEditPesanan(orderCode);
             return;
         }
