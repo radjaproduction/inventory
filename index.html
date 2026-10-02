@@ -3714,10 +3714,8 @@ async function fetchBayarSebagianData() {
 
     // ================================================================
     // POPUP RINCIAN PESANAN (FAB "Pesanan"): daftar per-order dengan detail item,
-    // Alur per order: Menunggu (stage 0) --Konfirmasi--> stage diubah jadi 1 di DB
-    // (ini yang mematikan alarm dan badge pesanan) -->
-    // "📦 Disiapkan" --klik lagi--> ditandai selesai di database tanpa mengubah
-    // stage pesanan, supaya tidak mengubah skema yang sudah dipakai app Pesanan.
+    // Alur per order: Menunggu (stage 0) --Konfirmasi--> stage diubah jadi 1 di DB.
+    // Setelah itu pesanan sudah masuk Riwayat dan tidak lagi ditampilkan di popup ini.
     // ================================================================
 
     function _escPesanan(str) {
@@ -3726,26 +3724,14 @@ async function fetchBayarSebagianData() {
             .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
-    // Status "selesai disiapkan" disimpan LANGSUNG DI DATABASE (kolom disiapkan_selesai
-    // pada produksi_orders), BUKAN di localStorage lagi. Sebelumnya status ini cuma
-    // tersimpan di localStorage HP yang mengklik tombolnya — akibatnya (a) order yang
-    // sama muncul lagi sebagai "belum selesai" di HP/browser lain, dan (b) di beberapa
-    // browser (terutama saat file dibuka langsung dari file:// alih-alih lewat server),
-    // localStorage bisa tidak persisten antar reload sama sekali, jadi tombol "Disiapkan"
-    // yang sudah diklik seolah "tidak nyimpen" dan popup selalu muncul lagi tiap refresh.
-    // Dengan kolom DB, statusnya otomatis konsisten di semua device & tahan reload/refresh.
-    // CATATAN: kolom ini perlu ditambahkan dulu ke tabel produksi_orders lewat migration
-    // SQL (ALTER TABLE ... ADD COLUMN disiapkan_selesai boolean NOT NULL DEFAULT false)
-    // sebelum kode ini dipakai, kalau belum query di bawah akan error "column not found".
-
-    // Ambil semua order yang masih "aktif" (stage 0 = Menunggu, atau stage 1 = Diterima/
-    // sedang disiapkan) — disiapkan_selesai diikutkan supaya bisa difilter di render.
+    // Ambil hanya order yang masih menunggu konfirmasi. Order stage 1 sudah masuk Riwayat
+    // dan sengaja tidak dibuatkan sesi lanjutan "Disiapkan".
     async function _fetchAktifPesananOrders() {
         if (!sbClient) return [];
         const { data, error } = await sbClient
             .from(PESANAN_TABLE)
             .select('order_code, items, note, stage, created_at, disiapkan_selesai, priority_items')
-            .in('stage', [0, 1])
+            .eq('stage', 0)
             .order('created_at', { ascending: false });
         if (error) { console.warn('Gagal ambil daftar pesanan aktif:', error.message); return []; }
         return data || [];
@@ -3882,7 +3868,7 @@ async function fetchBayarSebagianData() {
             const hasDraft = _hasPesananDraft(o.order_code);
             const btnHtml = isMenunggu
                 ? '<button type="button" class="rp-rincian-pesanan-btn" data-action="konfirmasi" data-code="' + _escPesanan(o.order_code) + '" style="background:linear-gradient(90deg,#16a34a,#22c55e);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:11px;font-weight:900;white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="fa-solid ' + (hasDraft ? 'fa-pen-to-square' : 'fa-pen-to-square') + '"></i> ' + (hasDraft ? 'Lanjutkan Edit' : 'Edit & Konfirmasi') + '</button>'
-                : '<button type="button" class="rp-rincian-pesanan-btn" data-action="disiapkan" data-code="' + _escPesanan(o.order_code) + '" style="background:linear-gradient(90deg,#ff8c00,#ffb347);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:11px;font-weight:900;white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="fa-solid fa-box"></i> Disiapkan</button>';
+                : '';
 
             return '<div style="background:#f7f8fa;border:1.5px solid ' + borderColor + ';border-radius:16px;overflow:hidden;flex-shrink:0;">'
                 // ── HEADER: kode, waktu, status, catatan, prioritas ──
@@ -3912,7 +3898,7 @@ async function fetchBayarSebagianData() {
     async function bukaPopupRincianPesanan() {
         const el = document.getElementById('popup-rincian-pesanan');
         if (el) { el.classList.remove('hidden'); el.classList.add('flex'); }
-        // Sembunyikan FAB agar tidak menutupi/memblokir tombol Konfirmasi/Disiapkan
+        // Sembunyikan FAB agar tidak menutupi/memblokir tombol konfirmasi
         const fab = document.getElementById('fab-pesanan');
         if (fab) { fab.style.pointerEvents = 'none'; fab.style.visibility = 'hidden'; }
         const wrap = document.getElementById('rincian-pesanan-list');
@@ -4070,24 +4056,6 @@ async function fetchBayarSebagianData() {
                 showToast('❌ Gagal konfirmasi: ' + (e?.message || 'coba lagi'));
                 if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Lanjutkan Edit'; }
             }
-        } else if (action === 'disiapkan') {
-            // Ditandai selesai LANGSUNG DI DATABASE (kolom disiapkan_selesai) — bukan
-            // stage-nya yang diubah (tetap 1, app Pesanan tidak terpengaruh), supaya
-            // statusnya konsisten di semua device & tidak hilang saat refresh/reload.
-            if (!sbClient) { showToast('❌ Tidak ada koneksi ke server'); return; }
-            if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; }
-            try {
-                const { error } = await externalRepository.pesanan.markPrepared(orderCode);
-                if (error) throw error;
-                showToast('📦 ' + orderCode + ' ditandai selesai disiapkan');
-                const orders = await _fetchAktifPesananOrders();
-                _renderRincianPesananList(orders);
-                _refreshFabPesananBadge();
-            } catch (e) {
-                console.error('Gagal menandai selesai disiapkan:', e);
-                showToast('❌ Gagal menandai selesai, coba lagi');
-                if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '<i class="fa-solid fa-box"></i> Disiapkan'; }
-            }
         }
     }
 
@@ -4100,9 +4068,8 @@ async function fetchBayarSebagianData() {
         _prosesRincianPesanan(btn.dataset.action, btn.dataset.code, btn);
     });
 
-    // Badge di FAB "Pesanan" = jumlah order aktif (stage 0/1) DIKURANGI yang sudah
-    // ditandai selesai_disiapkan di DB — beda dari pesananMenungguCount (badge lonceng)
-    // yang cuma hitung stage 0. Di-refresh setiap _updatePesananBellBadge() dipanggil
+    // Badge di FAB "Pesanan" = jumlah order yang masih menunggu konfirmasi.
+    // Di-refresh setiap _updatePesananBellBadge() dipanggil
     // (realtime change) supaya tetap akurat tanpa polling terpisah.
     async function _refreshFabPesananBadge() {
         const badge = document.getElementById('fab-pesanan-badge');
@@ -4199,14 +4166,7 @@ async function fetchBayarSebagianData() {
             _updatePesananBellBadge();
             if (typeof _renderRiwayatTransaksiOri === 'function') _renderRiwayatTransaksiOri();
 
-            // BUG FIX: badge FAB "Pesanan" & daftar di popup "Rincian Pesanan" (termasuk yang
-            // dipicu tombol "Disiapkan") sebelumnya TIDAK ikut disegarkan di sini — cuma
-            // _updatePesananBellBadge() (badge LONCENG, cuma hitung stage=0) yang jalan.
-            // Padahal status "selesai disiapkan" (kolom disiapkan_selesai) itu status TERPISAH
-            // yang dipakai badge FAB & daftar popup. Akibatnya: HP yang menekan "Disiapkan"
-            // hilang duluan (update lokal langsung setelah klik), tapi di HP lain order itu
-            // TETAP tampak sampai popup ditutup-buka manual — realtime-nya sendiri tidak
-            // pernah menyentuh badge/daftar itu.
+            // Segarkan badge dan daftar popup setelah perubahan pesanan.
             // Sengaja refresh di SETIAP event UPDATE tabel ini (bukan cuma kalau terdeteksi
             // disiapkan_selesai berubah) — karena payload.old dari Supabase Realtime cuma
             // menyertakan kolom lengkap kalau REPLICA IDENTITY tabel ini di-set FULL, yang
@@ -13974,7 +13934,7 @@ function updateSSK(tab, rowId) {
     </div>
 
     <!-- POPUP RINCIAN PESANAN (dari FAB "Pesanan"): daftar tiap order + item + tombol
-         Konfirmasi/Disiapkan per order, dipakai event delegation supaya aman dari note
+         konfirmasi per order, dipakai event delegation supaya aman dari note
          yang mengandung tanda kutip. -->
     <div id="popup-rincian-pesanan" class="hidden fixed inset-0 z-[99998] items-center justify-center" style="background:rgba(0,0,0,0.75);backdrop-filter:blur(2px);padding:16px;" onmousedown="if(event.target===this) tutupPopupRincianPesanan()">
         <div id="popup-rincian-pesanan-panel" class="pesanan-popup-panel" style="background:#ffffff;border-radius:20px;width:100%;max-width:420px;max-height:85vh;border:2px solid rgba(118,153,201,.4);overflow:hidden;display:flex;flex-direction:column;">
@@ -14003,7 +13963,7 @@ function updateSSK(tab, rowId) {
         .edit-pesanan-row label{display:flex;flex-direction:column;gap:4px;color:#64748b;font-size:8px;font-weight:900}.edit-pesanan-field{width:100%;height:31px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;color:#172033;font-size:10px;font-weight:800;padding:0 6px;outline:none}.edit-pesanan-field:focus{border-color:#16a34a;box-shadow:0 0 0 2px rgba(22,163,74,.12)}
         @media(max-width:430px){.edit-pesanan-row{grid-template-columns:minmax(0,1fr) repeat(3,58px);gap:5px}.edit-pesanan-model b{font-size:10px}.edit-pesanan-field{font-size:9px;padding:0 4px}}
     </style>
-    <!-- EDIT PESANAN: pesanan baru masuk Riwayat setelah tombol SIMPAN & KONFIRMASI ditekan. -->
+    <!-- EDIT PESANAN: pesanan masuk Riwayat setelah tombol KONFIRMASI ditekan. -->
     <div id="popup-edit-pesanan" class="hidden fixed inset-0 z-[99999] items-center justify-center" style="background:rgba(0,0,0,0.78);backdrop-filter:blur(3px);padding:16px;" onclick="if(event.target===this) tutupEditPesanan()">
         <div id="popup-edit-pesanan-panel" class="pesanan-popup-panel" style="background:#fff;border-radius:20px;width:100%;max-width:520px;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 55px rgba(0,0,0,.35);">
             <div style="background:linear-gradient(90deg,#16a34a,#22c55e);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
