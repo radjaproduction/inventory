@@ -3972,6 +3972,65 @@ async function fetchBayarSebagianData() {
         });
     }
 
+    // produksi_orders.items dan transaksi_item adalah dua data yang berbeda.
+    // Mengubah JSON pesanan saja tidak otomatis mengubah qty yang tampil di Riwayat,
+    // karena Riwayat membaca transaksi_item. Sinkronkan keduanya sebelum konfirmasi.
+    async function _syncPesananItemsToTransaksi(orderCode, items) {
+        if (!sbClient) throw new Error('Tidak ada koneksi ke server');
+        const groups = new Map();
+        (items || []).forEach(it => {
+            let brand = it.brand || it.brand_name || it.brandName || '';
+            let model = it.name || it.nama || it.productName || it.model || '';
+            if ((!brand || !model) && it.pid && Array.isArray(masterData?.model)) {
+                const mid = parseInt(String(it.pid).replace(/^m/i, ''), 10);
+                const found = masterData.model.find(m => Number(m.id) === mid);
+                if (found) { brand = brand || found.brandNama || ''; model = model || found.nama || ''; }
+            }
+            const key = String(brand) + '||' + String(model);
+            if (!groups.has(key)) groups.set(key, { brand, model, items: [] });
+            const color = it.warna ?? it.color ?? '';
+            const size = it.ukuran ?? it.size ?? '';
+            const itemKey = String(color) + '||' + String(size);
+            const group = groups.get(key);
+            const existing = group.items.find(x => x.key === itemKey);
+            if (existing) existing.qty += Math.max(0, Number(it.qty || 0));
+            else group.items.push({ key: itemKey, warna: color, ukuran: size, qty: Math.max(0, Number(it.qty || 0)) });
+        });
+
+        const { data: headers, error: headerError } = await sbClient
+            .from('transaksi').select('id,brand,model').eq('order_code', orderCode);
+        if (headerError) throw headerError;
+        if (!headers?.length && groups.size) throw new Error('Transaksi Riwayat untuk pesanan belum tersedia');
+
+        for (const group of groups.values()) {
+            const header = headers.find(h => String(h.brand || '') === String(group.brand || '') && String(h.model || '') === String(group.model || ''));
+            if (!header) throw new Error('Transaksi ' + (group.model || 'pesanan') + ' belum tersedia');
+            const { data: current, error: itemError } = await sbClient
+                .from('transaksi_item').select('id,warna,ukuran,qty').eq('transaksi_id', header.id);
+            if (itemError) throw itemError;
+            const currentByKey = new Map((current || []).map(row => [String(row.warna ?? '') + '||' + String(row.ukuran ?? ''), row]));
+            const expected = new Set();
+            for (const item of group.items) {
+                expected.add(item.key);
+                const found = currentByKey.get(item.key);
+                if (found) {
+                    const { error } = await sbClient.from('transaksi_item').update({ qty: item.qty }).eq('id', found.id);
+                    if (error) throw error;
+                } else {
+                    const { error } = await sbClient.from('transaksi_item').insert({ transaksi_id: header.id, warna: item.warna, ukuran: item.ukuran, qty: item.qty, ssk: '-' });
+                    if (error) throw error;
+                }
+            }
+            for (const stale of (current || [])) {
+                const staleKey = String(stale.warna ?? '') + '||' + String(stale.ukuran ?? '');
+                if (!expected.has(staleKey)) {
+                    const { error } = await sbClient.from('transaksi_item').delete().eq('id', stale.id);
+                    if (error) throw error;
+                }
+            }
+        }
+    }
+
     async function simpanEditPesanan(lanjutKonfirmasi = false) {
         const modal = document.getElementById('popup-edit-pesanan');
         const orderCode = modal?.dataset.orderCode;
@@ -3983,6 +4042,7 @@ async function fetchBayarSebagianData() {
         try {
             const { error } = await externalRepository.pesanan.updateItems(orderCode, items);
             if (error) throw error;
+            await _syncPesananItemsToTransaksi(orderCode, items);
             order.items = items;
             // Tetap tandai sebagai draft sampai konfirmasi database benar-benar sukses.
             _setPesananDraft(orderCode, true);
