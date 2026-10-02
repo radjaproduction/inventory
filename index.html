@@ -3495,6 +3495,17 @@ async function fetchBayarSebagianData() {
     // Pesanan yang sudah dibuka/diakui admin tidak lagi membunyikan alarm,
     // tetapi tetap disembunyikan dari Riwayat sampai tombol Simpan & Konfirmasi.
     const _pesananAlarmAcknowledgedCodes = new Set();
+    const PESANAN_DRAFT_STORAGE_KEY = 'inventory_pesanan_draft_codes_v1';
+    function _getPesananDraftCodes() {
+        try { return new Set(JSON.parse(localStorage.getItem(PESANAN_DRAFT_STORAGE_KEY) || '[]')); }
+        catch (e) { return new Set(); }
+    }
+    function _setPesananDraft(orderCode, isDraft) {
+        const codes = _getPesananDraftCodes();
+        if (isDraft) codes.add(String(orderCode)); else codes.delete(String(orderCode));
+        try { localStorage.setItem(PESANAN_DRAFT_STORAGE_KEY, JSON.stringify([...codes])); } catch (e) {}
+    }
+    function _hasPesananDraft(orderCode) { return _getPesananDraftCodes().has(String(orderCode)); }
     let _audioCtxPesanan = null;
     function _isPesananMenunggu(row) {
         return (row?.stage || 0) === 0 && row?.disiapkan_selesai !== true;
@@ -3868,8 +3879,9 @@ async function fetchBayarSebagianData() {
             })() : '';
 
             // ── Tombol aksi ──
+            const hasDraft = _hasPesananDraft(o.order_code);
             const btnHtml = isMenunggu
-                ? '<button type="button" class="rp-rincian-pesanan-btn" data-action="konfirmasi" data-code="' + _escPesanan(o.order_code) + '" style="background:linear-gradient(90deg,#16a34a,#22c55e);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:11px;font-weight:900;white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="fa-solid fa-pen-to-square"></i> Edit & Konfirmasi</button>'
+                ? '<button type="button" class="rp-rincian-pesanan-btn" data-action="konfirmasi" data-code="' + _escPesanan(o.order_code) + '" style="background:linear-gradient(90deg,#16a34a,#22c55e);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:11px;font-weight:900;white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="fa-solid ' + (hasDraft ? 'fa-pen-to-square' : 'fa-pen-to-square') + '"></i> ' + (hasDraft ? 'Lanjutkan Edit' : 'Edit & Konfirmasi') + '</button>'
                 : '<button type="button" class="rp-rincian-pesanan-btn" data-action="disiapkan" data-code="' + _escPesanan(o.order_code) + '" style="background:linear-gradient(90deg,#ff8c00,#ffb347);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:11px;font-weight:900;white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="fa-solid fa-box"></i> Disiapkan</button>';
 
             return '<div style="background:#f7f8fa;border:1.5px solid ' + borderColor + ';border-radius:16px;overflow:hidden;flex-shrink:0;">'
@@ -3961,13 +3973,8 @@ async function fetchBayarSebagianData() {
         modal.classList.remove('hidden'); modal.classList.add('flex');
     }
 
-    async function simpanEditDanKonfirmasiPesanan() {
-        const modal = document.getElementById('popup-edit-pesanan');
-        const orderCode = modal?.dataset.orderCode;
-        const order = _pesananOrdersCache.find(o => String(o.order_code) === String(orderCode));
-        const saveBtn = document.getElementById('edit-pesanan-save');
-        if (!order || !orderCode || !sbClient) { showToast('❌ Tidak ada koneksi ke server'); return; }
-        const items = (Array.isArray(order.items) ? order.items : []).map((source, idx) => {
+    function _ambilEditPesananItems(order) {
+        return (Array.isArray(order.items) ? order.items : []).map((source, idx) => {
             const item = { ...source };
             const row = document.querySelector('.edit-pesanan-row[data-index="' + idx + '"]');
             row?.querySelectorAll('.edit-pesanan-field').forEach(input => {
@@ -3977,18 +3984,37 @@ async function fetchBayarSebagianData() {
             });
             return item;
         });
+    }
+
+    async function simpanEditPesanan(lanjutKonfirmasi = false) {
+        const modal = document.getElementById('popup-edit-pesanan');
+        const orderCode = modal?.dataset.orderCode;
+        const order = _pesananOrdersCache.find(o => String(o.order_code) === String(orderCode));
+        const saveBtn = lanjutKonfirmasi ? document.getElementById('edit-pesanan-confirm') : document.getElementById('edit-pesanan-save');
+        if (!order || !orderCode || !sbClient) { showToast('❌ Tidak ada koneksi ke server'); return; }
+        const items = _ambilEditPesananItems(order);
         if (saveBtn) { saveBtn.disabled = true; saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> MENYIMPAN...'; }
         try {
             const { error } = await externalRepository.pesanan.updateItems(orderCode, items);
             if (error) throw error;
             order.items = items;
+            // Tetap tandai sebagai draft sampai konfirmasi database benar-benar sukses.
+            _setPesananDraft(orderCode, true);
             tutupEditPesanan();
-            await _prosesRincianPesanan('konfirmasi-final', orderCode, null);
+            if (lanjutKonfirmasi) {
+                await _prosesRincianPesanan('konfirmasi-final', orderCode, null);
+            } else {
+                showToast('💾 Perubahan pesanan disimpan sementara');
+                _renderRincianPesananList(_pesananOrdersCache);
+            }
         } catch (e) {
             console.error('Gagal menyimpan edit pesanan:', e);
             showToast('❌ Gagal menyimpan perubahan: ' + (e?.message || 'coba lagi'));
         } finally {
-            if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> SIMPAN & KONFIRMASI'; }
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = lanjutKonfirmasi ? '<i class="fa-solid fa-check"></i> KONFIRMASI' : '<i class="fa-solid fa-floppy-disk"></i> SIMPAN';
+            }
         }
     }
 
@@ -4034,6 +4060,7 @@ async function fetchBayarSebagianData() {
                 }
                 _pesananMenungguCodes.delete(orderCode);
                 _pesananAlarmAcknowledgedCodes.delete(orderCode);
+                _setPesananDraft(orderCode, false);
                 _updatePesananBellBadge();
                 if (typeof _renderRiwayatTransaksiOri === 'function') _renderRiwayatTransaksiOri();
                 const orders = await _fetchAktifPesananOrders();
@@ -4041,7 +4068,7 @@ async function fetchBayarSebagianData() {
             } catch (e) {
                 console.error('Gagal konfirmasi pesanan:', e);
                 showToast('❌ Gagal konfirmasi: ' + (e?.message || 'coba lagi'));
-                if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Edit & Konfirmasi'; }
+                if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Lanjutkan Edit'; }
             }
         } else if (action === 'disiapkan') {
             // Ditandai selesai LANGSUNG DI DATABASE (kolom disiapkan_selesai) — bukan
@@ -13988,9 +14015,9 @@ function updateSSK(tab, rowId) {
             </div>
             <div style="padding:14px 16px 4px;color:#475569;font-size:10px;font-weight:700;line-height:1.5;">Periksa dan ubah size, warna, atau qty. Pesanan baru masuk Riwayat setelah disimpan.</div>
             <div id="edit-pesanan-items" style="padding:10px 16px 16px;overflow-y:auto;display:flex;flex-direction:column;gap:9px;"></div>
-            <div style="display:flex;gap:8px;padding:12px 16px 16px;border-top:1px solid #e2e8f0;flex-shrink:0;">
-                <button onclick="tutupEditPesanan()" style="flex:1;padding:11px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc;color:#475569;font-size:10px;font-weight:900;cursor:pointer;">BATAL</button>
-                <button id="edit-pesanan-save" onclick="simpanEditDanKonfirmasiPesanan()" style="flex:2;padding:11px;border:0;border-radius:10px;background:linear-gradient(90deg,#16a34a,#22c55e);color:#fff;font-size:10px;font-weight:900;cursor:pointer;"><i class="fa-solid fa-check"></i> SIMPAN & KONFIRMASI</button>
+                <div style="display:flex;gap:8px;padding:12px 16px 16px;border-top:1px solid #e2e8f0;flex-shrink:0;">
+                <button id="edit-pesanan-save" onclick="simpanEditPesanan(false)" style="flex:1;padding:11px;border:0;border-radius:10px;background:#0f766e;color:#fff;font-size:10px;font-weight:900;cursor:pointer;"><i class="fa-solid fa-floppy-disk"></i> SIMPAN</button>
+                <button id="edit-pesanan-confirm" onclick="simpanEditPesanan(true)" style="flex:1.35;padding:11px;border:0;border-radius:10px;background:linear-gradient(90deg,#16a34a,#22c55e);color:#fff;font-size:10px;font-weight:900;cursor:pointer;"><i class="fa-solid fa-check"></i> KONFIRMASI</button>
             </div>
         </div>
     </div>
