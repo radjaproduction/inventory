@@ -567,27 +567,14 @@ html, body { background: #ffffff !important; }}</style>
         }
     </script>
 
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Built at deploy time from the utility classes in this document.  Keeping this local
+         avoids downloading and executing Tailwind's runtime compiler before first paint. -->
+    <link rel="stylesheet" href="./styles/app.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Firebase (untuk Push Notification pesanan, seperti WhatsApp — tetap masuk walau app ditutup) -->
-    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-messaging-compat.js"></script>
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        darkBg: '#06142B', cardBg: '#0A1C38', headerBox: '#0A1C38', borderDark: '#7699C9',
-                    }
-                }
-            }
-        }
-    </script>
     <style>:root {
 --brand-main: #ff8c00;--brand-gradient: linear-gradient(90deg, #ff8c00 0%, #ffb347 100%);color-scheme: dark;--nav-backdrop-h: 112px;--scroll-pad-bottom: calc(var(--nav-backdrop-h) + 48px + env(safe-area-inset-bottom));--scroll-pad-bottom-ext: calc(var(--nav-backdrop-h) + 66px + 56px + env(safe-area-inset-bottom));--action-bar-bottom: calc(14px + env(safe-area-inset-bottom));}
 * { box-sizing: border-box; }body:not(#tab-stok):not(#tab-stok *) .bg-darkBg,
@@ -4279,6 +4266,27 @@ async function fetchBayarSebagianData() {
     //      yang lalu kirim push ke SEMUA token yang tersimpan lewat FCM HTTP v1 API.
     //   4) Waktu app tertutup, firebase-messaging-sw.js (jalan di dalam service-worker.js yang
     //      sudah ada) yang menampilkan notifikasi sistemnya.
+    // Firebase is only needed after a user has entered the app and enables push. Loading it
+    // here keeps its two SDKs out of the critical rendering path without changing FCM setup.
+    let firebaseMessagingLoader;
+    function loadFirebaseMessaging() {
+        if (typeof firebase !== 'undefined') return Promise.resolve();
+        if (firebaseMessagingLoader) return firebaseMessagingLoader;
+
+        const loadScript = (src) => new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = src;
+            script.async = true;
+            script.onload = resolve;
+            script.onerror = () => reject(new Error(`Gagal memuat ${src}`));
+            document.head.appendChild(script);
+        });
+
+        firebaseMessagingLoader = loadScript('https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js')
+            .then(() => loadScript('https://www.gstatic.com/firebasejs/10.13.1/firebase-messaging-compat.js'));
+        return firebaseMessagingLoader;
+    }
+
     const FCM_CONFIG = {
         apiKey: "AIzaSyAlHs68T1Z2G7VFouBmdXN1P4RR5S0v4ps",
         authDomain: "radja-production-push.firebaseapp.com",
@@ -4299,12 +4307,14 @@ async function fetchBayarSebagianData() {
                 console.warn('[FCM Push] VAPID key belum diisi, push notification (WA-style) belum aktif. Notifikasi in-app biasa tetap jalan.');
                 return;
             }
-            if (!('serviceWorker' in navigator) || typeof firebase === 'undefined') return;
+            if (!('serviceWorker' in navigator)) return;
             if (!('Notification' in window)) return;
             if (Notification.permission === 'default') {
                 try { await Notification.requestPermission(); } catch (e) {}
             }
             if (Notification.permission !== 'granted') return;
+
+            await loadFirebaseMessaging();
 
             if (!firebase.apps || !firebase.apps.length) firebase.initializeApp(FCM_CONFIG);
             const messaging = firebase.messaging();
@@ -4355,8 +4365,10 @@ async function fetchBayarSebagianData() {
          */
         try {
             if (FCM_VAPID_KEY === 'ISI_VAPID_KEY_DI_SINI' || !sbClient) return;
-            if (!('serviceWorker' in navigator) || typeof firebase === 'undefined') return;
+            if (!('serviceWorker' in navigator)) return;
             if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+            await loadFirebaseMessaging();
 
             if (!firebase.apps || !firebase.apps.length) firebase.initializeApp(FCM_CONFIG);
             const messaging = firebase.messaging();

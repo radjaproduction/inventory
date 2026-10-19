@@ -4,6 +4,7 @@
   "description": "",
   "main": "service-worker.js",
   "scripts": {
+    "build:css": "tailwindcss -i ./styles/tailwind.css -o ./styles/app.css --minify",
     "test": "playwright test"
   },
   "repository": {
@@ -19,7 +20,8 @@
   },
   "homepage": "https://github.com/radjaproduction/inventory#readme",
   "devDependencies": {
-    "@playwright/test": "^1.62.1"
+    "@playwright/test": "^1.62.1",
+    "tailwindcss": "^3.4.17"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.115.0"
