@@ -8560,7 +8560,25 @@ function updateSSK(tab, rowId) {
 
     // ==================== NUMPAD CUSTOM UNTUK KOLOM QTY INLINE (Input Data & Transaksi) ====================
     let _qtyNumpadTarget = null; // { type: 'input' | 'trx', id }
+    function _getInputReturStock(rowId) {
+        if (!inputState.modelNama) return null;
+        const warna = document.getElementById(`input-warna-label-${rowId}`)?.textContent?.trim();
+        const ukuran = document.getElementById(`input-ukuran-label-${rowId}`)?.textContent?.trim();
+        if (_isInputPlaceholder(warna) || _isInputPlaceholder(ukuran)) return null;
+        return hitungStokItem(inputState.modelNama, warna, ukuran, inputState.brandNama, inputState.brandId);
+    }
     function openQtyCustomNumpad(type, id) {
+        if (type === 'input' && inputState.mode === 'retur') {
+            const stokTersedia = _getInputReturStock(id);
+            if (stokTersedia === null) {
+                showToast('Pilih warna dan ukuran terlebih dahulu untuk mengisi qty retur.');
+                return;
+            }
+            if (stokTersedia <= 0) {
+                showToast('Stok varian ini kosong, retur tidak dapat diinput.');
+                return;
+            }
+        }
         _qtyNumpadTarget = { type, id };
         const fieldId = (type === 'input' ? 'input-qty-' : 'trx-qty-') + id;
         const field = document.getElementById(fieldId);
@@ -8617,6 +8635,16 @@ function updateSSK(tab, rowId) {
         } else {
             val = (val === '0') ? key : val + key;
             if (val.length > 6) val = val.slice(0, 6);
+        }
+        if (type === 'input' && inputState.mode === 'retur') {
+            const stokTersedia = _getInputReturStock(id);
+            if (stokTersedia === null || stokTersedia <= 0) {
+                val = '0';
+                showToast('Pilih varian dengan stok tersedia sebelum mengisi qty retur.');
+            } else if (parseInt(val, 10) > stokTersedia) {
+                val = String(stokTersedia);
+                showToast(`Qty retur dibatasi sesuai stok tersedia: ${stokTersedia} pcs.`);
+            }
         }
         field.value = val;
         const display = document.getElementById('qty-custom-numpad-display');
