@@ -19,6 +19,19 @@ test('asset lokal utama dapat dimuat', async ({ request }) => {
   }
 });
 
+test('validasi stok menolak warna kosong dan placeholder', async ({ page }) => {
+  await page.goto('/inventory/', { waitUntil: 'domcontentloaded' });
+  await expect.poll(() => page.evaluate(() => typeof window._isValidStockColor)).toBe('function');
+
+  const results = await page.evaluate(() => [
+    window._isValidStockColor(''),
+    window._isValidStockColor('   '),
+    window._isValidStockColor('Pilih Warna'),
+    window._isValidStockColor('ARMY'),
+  ]);
+  expect(results).toEqual([false, false, false, true]);
+});
+
 test('koneksi database uji dan navigasi utama berjalan', async ({ page }) => {
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(error.message));

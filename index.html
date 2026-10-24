@@ -981,7 +981,8 @@ width: 25px;height: 100%;position: absolute;left: 0;top: 0;border-radius: 0 4px 
 min-width: 0;padding-left: 6px;padding-right: 5px;text-align: center;}#tab-stok.rp-stock-screen .rp-stock-compact-model-name{
 display: block;overflow: hidden;text-overflow: ellipsis;white-space: nowrap;color: #f4f7fb;font-size: 9.5px;line-height: 1.1;font-weight: 900;letter-spacing: .01em;text-align: center;}#tab-stok.rp-stock-screen .rp-stock-compact-color-name{
 min-width: 0;display: flex;align-items: center;justify-content: center;gap: 4px;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;color: #aebbd0;font-size: 8px;font-weight: 700;}#tab-stok.rp-stock-screen .rp-stock-compact-color-name > span:last-child{
-overflow: hidden;text-overflow: ellipsis;}#tab-stok.rp-stock-screen .rp-stock-color-dot{
+overflow: hidden;text-overflow: ellipsis;}#tab-stok.rp-stock-screen .rp-stock-compact-row.is-missing-color .rp-stock-compact-color-name{
+color: #fbbf24;}#tab-stok.rp-stock-screen .rp-stock-color-dot{
 width: 8px;height: 8px;min-width: 8px;border-radius: 50%;border: 1px solid rgba(255,255,255,.28);}#tab-stok.rp-stock-screen .rp-stock-compact-size{
 color: #d9e2ef;font-size: 8.5px;font-weight: 900;text-align: center;white-space: nowrap;}#tab-stok.rp-stock-screen .rp-stock-compact-qty{
 display: flex;align-items: baseline;justify-content: flex-end;gap: 3px;min-width: 0;padding-right: 1px;color: #ff9b19;}#tab-stok.rp-stock-screen .rp-stock-compact-qty > span{
@@ -3972,6 +3973,12 @@ async function fetchBayarSebagianData() {
     // karena Riwayat membaca transaksi_item. Sinkronkan keduanya sebelum konfirmasi.
     async function _syncPesananItemsToTransaksi(orderCode, items) {
         if (!sbClient) throw new Error('Tidak ada koneksi ke server');
+        const hasMissingColor = (items || []).some(it =>
+            !_isValidStockColor(it?.warna ?? it?.color)
+        );
+        if (hasMissingColor) {
+            throw new Error('Pesanan tidak dapat disinkronkan: setiap item wajib memiliki warna.');
+        }
         const groups = new Map();
         (items || []).forEach(it => {
             let brand = it.brand || it.brand_name || it.brandName || '';
@@ -3983,7 +3990,7 @@ async function fetchBayarSebagianData() {
             }
             const key = String(brand) + '||' + String(model);
             if (!groups.has(key)) groups.set(key, { brand, model, items: [] });
-            const color = it.warna ?? it.color ?? '';
+            const color = String(it.warna ?? it.color).trim();
             const size = it.ukuran ?? it.size ?? '';
             const itemKey = String(color) + '||' + String(size);
             const group = groups.get(key);
@@ -6101,6 +6108,7 @@ function updateSSK(tab, rowId) {
         const warnaData = masterData.warna.find(w => w.nama.toUpperCase() === warnaNama.toUpperCase());
         if (warnaData && warnaData.kode && warnaData.kode !== '#cccccc') return warnaData.kode;
         // FIX: fallback map diperluas — sebelumnya 49 warna umum jatuh ke #3a3d4a (abu gelap semua)
+        const normalizedWarna = String(warnaNama || '').trim().toUpperCase();
         const fallback = {
             // Putih & turunan
             'PUTIH':'#f5f5f5','WHITE':'#f5f5f5','BROKEN WHITE':'#f5f0e8','OFF WHITE':'#f5f0e8',
@@ -6140,7 +6148,7 @@ function updateSSK(tab, rowId) {
             'CARAMEL':'#c07c3e','MOCCA':'#7c4e2e','COFFEE':'#6b3f22',
             'COKSU':'#8b6548','NUDE':'#ddb99a','CREAM':'#f0e6cc','KREM':'#f5e6c8',
         };
-        return fallback[warnaNama.toUpperCase()] || '#888888';
+        return fallback[normalizedWarna] || '#888888';
     }
 
     function renderDetailItems(filterWarna) {
@@ -6172,14 +6180,17 @@ function updateSSK(tab, rowId) {
         });
 
         const rows = entries.map(([key, qty]) => {
-            const [model, warna, ukuran] = key.split('||');
+            const [model, rawWarna, ukuran] = key.split('||');
+            const warna = rawWarna.trim();
+            const hasMissingColor = !warna;
+            const warnaLabel = hasMissingColor ? 'BELUM DIISI' : warna;
             const isMinus = qty < 0;
             const isLow = !isMinus && qty <= LOW_STOCK;
             const warnaKode = isMinus ? '#7f1d1d' : getWarnaKode(warna);
             const keyEsc = key.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
 
             return `
-                <div class="rp-stock-compact-row ${isMinus ? 'is-minus' : ''} ${isLow ? 'is-low' : ''}"
+                <div class="rp-stock-compact-row ${isMinus ? 'is-minus' : ''} ${isLow ? 'is-low' : ''} ${hasMissingColor ? 'is-missing-color' : ''}"
                      data-stock-key="${keyEsc}">
                     <div class="rp-stock-compact-color" style="--row-color:${warnaKode};background:${warnaKode};"></div>
 
@@ -6187,9 +6198,9 @@ function updateSSK(tab, rowId) {
                         <span class="rp-stock-compact-model-name">${model}</span>
                     </div>
 
-                    <div class="rp-stock-compact-color-name" title="${warna}">
+                    <div class="rp-stock-compact-color-name" title="${hasMissingColor ? 'Warna belum diisi pada data stok' : warna}">
                         <span class="rp-stock-color-dot" style="background:${warnaKode};"></span>
-                        <span>${warna}</span>
+                        <span>${warnaLabel}</span>
                     </div>
 
                     <div class="rp-stock-compact-size">${ukuran}</div>
@@ -6461,6 +6472,10 @@ function updateSSK(tab, rowId) {
             showToast('⚠️ Stok target harus lebih besar dari stok sekarang'); return;
         }
         const [model, warna, ukuran] = key.split('||');
+        if (!_isValidStockColor(warna)) {
+            showToast('⚠️ Warna stok belum diisi. Pilih warna yang benar sebelum melakukan koreksi.');
+            return;
+        }
         const brandNama = _detailBrandName;
         const now = new Date();
         const tanggal = now.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' });
@@ -8195,6 +8210,10 @@ function updateSSK(tab, rowId) {
         return !text || text === 'PILIH' || text === 'PILIH WARNA' || text === 'PILIH UKURAN';
     }
 
+    function _isValidStockColor(value) {
+        return typeof value === 'string' && !_isInputPlaceholder(value);
+    }
+
     function _updateInputRowBtn(id) {
         const btn = document.getElementById('input-del-btn-' + id);
         if (!btn) return;
@@ -8681,7 +8700,7 @@ function updateSSK(tab, rowId) {
             const warna = document.getElementById('input-warna-label-' + idNum)?.textContent;
             const ukuran = document.getElementById('input-ukuran-label-' + idNum)?.textContent;
             const qty = parseInt(document.getElementById('input-qty-' + idNum)?.value) || 0;
-            if (_isInputPlaceholder(warna)) { showAlert('Pilih warna!', {type:'warning'}); valid = false; return; }
+            if (!_isValidStockColor(warna)) { showAlert('Pilih warna!', {type:'warning'}); valid = false; return; }
             if (_isInputPlaceholder(ukuran)) { showAlert('Pilih ukuran!', {type:'warning'}); valid = false; return; }
             if (qty <= 0) { showAlert('Qty tidak boleh 0!', {type:'warning'}); valid = false; return; }
             // Validasi retur: qty retur tidak boleh melebihi stok tersedia
@@ -8696,7 +8715,7 @@ function updateSSK(tab, rowId) {
                     return;
                 }
             }
-            items.push({ warna, ukuran, qty });
+            items.push({ warna: warna.trim(), ukuran: ukuran.trim(), qty });
         });
         if (!valid) return;
 
@@ -9382,7 +9401,7 @@ function updateSSK(tab, rowId) {
             const warna = document.getElementById('trx-warna-label-' + idNum)?.textContent?.trim();
             const ukuran = document.getElementById('trx-ukuran-label-' + idNum)?.textContent?.trim();
             const qty = parseInt(document.getElementById('trx-qty-' + idNum)?.value) || 0;
-            if (!warna || warna === 'Pilih' || !ukuran || ukuran === 'Pilih') return;
+            if (!_isValidStockColor(warna) || !ukuran || ukuran === 'Pilih') return;
             const k = warna + '||' + ukuran;
             qtyAggr[k] = (qtyAggr[k] || 0) + qty;
         });
@@ -9393,7 +9412,7 @@ function updateSSK(tab, rowId) {
             const ukuran = document.getElementById('trx-ukuran-label-' + idNum)?.textContent?.trim();
             const qty = parseInt(document.getElementById('trx-qty-' + idNum)?.value) || 0;
             const ssk = document.getElementById('trx-ssk-' + idNum)?.value;
-            if (!warna || warna === 'Pilih') { showAlert('Pilih warna!', {type:'warning'}); valid = false; return; }
+            if (!_isValidStockColor(warna)) { showAlert('Pilih warna!', {type:'warning'}); valid = false; return; }
             if (!ukuran || ukuran === 'Pilih') { showAlert('Pilih ukuran!', {type:'warning'}); valid = false; return; }
             if (!qty || qty <= 0) { showAlert('QTY tidak boleh 0!\nIsi jumlah item yang akan ditransaksikan.', {type:'warning'}); valid = false; return; }
             const k = warna + '||' + ukuran;
@@ -9407,7 +9426,7 @@ function updateSSK(tab, rowId) {
                 valid = false;
                 return;
             }
-            items.push({ warna, ukuran, qty, ssk: ssk || '-' });
+            items.push({ warna: warna.trim(), ukuran: ukuran.trim(), qty, ssk: ssk || '-' });
         });
         if (!valid) return;
 
@@ -13630,6 +13649,19 @@ function updateSSK(tab, rowId) {
 
     async function jalankanRestore() {
         if (!_restoreData) { showAlert('Pilih file backup terlebih dahulu.'); return; }
+        const missingInputColor = (_restoreData.riwayat_input_item || [])
+            .findIndex(item => !_isValidStockColor(item?.warna));
+        const missingTransactionColor = (_restoreData.transaksi_item || [])
+            .findIndex(item => !_isValidStockColor(item?.warna));
+        if (missingInputColor !== -1 || missingTransactionColor !== -1) {
+            const source = missingInputColor !== -1 ? 'input stok' : 'transaksi';
+            const row = missingInputColor !== -1 ? missingInputColor + 1 : missingTransactionColor + 1;
+            showAlert(
+                `Restore dibatalkan: warna pada detail ${source} nomor ${row} masih kosong atau belum dipilih. Data lama tidak dihapus. Lengkapi warna pada file backup lalu coba lagi.`,
+                { title: 'WARNA BELUM DIISI', type: 'danger', icon: '⚠️' }
+            );
+            return;
+        }
         showConfirm(
             '⚠️ RESTORE DATABASE ⚠️\n\nSEMUA data saat ini akan DIHAPUS dan diganti dengan data dari file backup.\n\nAksi ini TIDAK BISA dibatalkan!',
             function() {
