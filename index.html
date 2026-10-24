@@ -6952,10 +6952,12 @@ function updateSSK(tab, rowId) {
         if (toInsert.length === 0) { showAlert('Isi minimal satu nama model!', {type:'warning'}); return; }
         const btnSimpanModel = document.getElementById('btn-simpan-model');
         setButtonLoading(btnSimpanModel, true, 'MENYIMPAN...');
+        let modelTersimpan = false;
         try {
             const result = await dataRepository.writes.insert('model', toInsert, false);
             if (result?.error) throw result.error;
             const data = result?.data;
+            modelTersimpan = true;
 
             // Jika respons insert tidak mengembalikan baris, sinkronkan ulang
             // dari database agar UI tetap mencerminkan data yang tersimpan.
@@ -6967,15 +6969,31 @@ function updateSSK(tab, rowId) {
             } else {
                 await fetchModelData();
             }
+            const modelBaru = toInsert.map(item => masterData.model.find(m =>
+                m.brandId == brandId && m.nama.toUpperCase() === item.nama.toUpperCase()
+            ));
+            if (modelBaru.some(model => !model)) {
+                throw new Error('Model tersimpan, tetapi ID model baru tidak ditemukan untuk mengatur status Pesanan.');
+            }
+            const metadataResult = await dataRepository.writes.upsert(
+                'pesanan_produk_meta',
+                modelBaru.map(model => ({ model_id: model.id, aktif: false })),
+                { onConflict: 'model_id' }
+            );
+            if (metadataResult?.error) throw metadataResult.error;
+
             document.getElementById('model-rows-container').innerHTML = '';
             modelRowCount = 0;
             tambahModelRow();
             brandSelect.value = '';
             renderModelList();
-            showToast('✅ Model disimpan!');
+            showToast('✅ Model disimpan dan belum ditampilkan di Pesanan. Aktifkan dari menu admin Pesanan jika siap dijual.');
         } catch (err) {
             console.error('Gagal simpan model:', err);
-            showToast('❌ Gagal simpan model: ' + (err?.message || err?.code || 'koneksi/database bermasalah'));
+            const pesanError = err?.message || err?.code || 'koneksi/database bermasalah';
+            showToast(modelTersimpan
+                ? '⚠️ Model tersimpan, tetapi status nonaktif Pesanan gagal disimpan: ' + pesanError
+                : '❌ Gagal simpan model: ' + pesanError);
         } finally {
             setButtonLoading(btnSimpanModel, false);
         }
