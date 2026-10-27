@@ -3195,6 +3195,23 @@ END $$;`;
     // ==================== STATE IN-MEMORY ====================
     const masterData = { vendor: [], brand: [], model: [], warna: [], ukuran: [] };
     const appData    = { riwayatInput: [], riwayatTransaksi: [], pelunasan: [] };
+    // Transaksi menyimpan snapshot harga; tampilan dan perhitungan memakai harga master terbaru.
+    function syncTransactionPricesToMaster() {
+        if (!masterData.model.length || !appData.riwayatTransaksi.length) return;
+
+        const pricesByProduct = new Map(masterData.model.map(model => {
+            const brand = String(model.brandNama || '').trim().toLocaleLowerCase();
+            const name = String(model.nama || '').trim().toLocaleLowerCase();
+            return [`${brand}||${name}`, Number(model.harga) || 0];
+        }));
+
+        appData.riwayatTransaksi.forEach(transaction => {
+            const brand = String(transaction.brand || '').trim().toLocaleLowerCase();
+            const name = String(transaction.model || '').trim().toLocaleLowerCase();
+            const key = `${brand}||${name}`;
+            if (pricesByProduct.has(key)) transaction.harga = pricesByProduct.get(key);
+        });
+    }
     // Expose ke window agar RadjaBot Live & devtools bisa membaca state
     window.masterData = masterData;
     window.appData    = appData;
@@ -3251,6 +3268,7 @@ END $$;`;
             ]);
             appData.riwayatInput = RPDataMappers.mapInputHistory(riDataRaw, riItemsData);
             appData.riwayatTransaksi = RPDataMappers.mapTransactions(trxDataRaw, trxItemsData);
+            syncTransactionPricesToMaster();
 
             try {
                 const pelDB = await repository.payments.settlements();
@@ -3340,6 +3358,7 @@ END $$;`;
     async function fetchModelData() {
         const data = await dataRepository.master.model();
         masterData.model = (data || []).map(x => ({ id: x.id, brandId: x.brand_id, brandNama: x.brand?.nama || x.brand_nama || '', nama: x.nama, harga: x.harga || 0, hargaModal: x.harga_modal || 0 }));
+        syncTransactionPricesToMaster();
     }
     async function fetchWarnaData() {
         const data = await dataRepository.master.warna();
@@ -3377,6 +3396,7 @@ END $$;`;
             repository.transactions.items(),
         ]);
         appData.riwayatTransaksi = RPDataMappers.mapTransactions(trxData, trxItemsData);
+        syncTransactionPricesToMaster();
         await Promise.all([fetchDashboardTotalsServer(), fetchStockVariantServer()]);
     }
 
@@ -3454,7 +3474,7 @@ async function fetchBayarSebagianData() {
     const REALTIME_GROUP_HANDLERS = {
         vendor:       { fetch: fetchVendorData,       render: () => { if (_activeTab === 'master') renderVendorList(); } },
         brand:        { fetch: fetchBrandData,        render: () => { renderBrandOptions(); if (_activeTab === 'master') renderBrandList(); } },
-        model:        { fetch: fetchModelData,        render: () => { if (_activeTab === 'master') renderModelList(); if (_activeTab === 'laba' && _labaUiLoaded && typeof renderLabaKotor === 'function') renderLabaKotor(); } },
+        model:        { fetch: fetchModelData,        render: () => { if (_activeTab === 'master') renderModelList(); renderStokDashboard(); if (typeof _renderRiwayatTransaksiOri === 'function') _renderRiwayatTransaksiOri(); if (typeof _renderPelunasanViewOri === 'function') _renderPelunasanViewOri(); if (_activeTab === 'laba' && _labaUiLoaded && typeof renderLabaKotor === 'function') renderLabaKotor(); } },
         warna:        { fetch: fetchWarnaData,        render: () => { if (_activeTab === 'master') renderWarnaList(); } },
         ukuran:       { fetch: fetchUkuranData,       render: () => { if (_activeTab === 'master') renderUkuranList(); } },
         pengaturan:   { fetch: fetchPengaturanData,   render: () => {} }, // tema/nama brand sudah langsung diterapkan di dalam fetch-nya
@@ -7032,6 +7052,7 @@ function updateSSK(tab, rowId) {
                 const { error } = await dataRepository.writes.update('model', { harga: hargaBaru }, 'id', id);
                 if (error) throw error;
                 m.harga = hargaBaru;
+                syncTransactionPricesToMaster();
             } catch (err) {
                 console.error('Gagal update harga model:', err);
                 showToast('❌ Gagal update harga: ' + (err?.message || err?.code || 'koneksi/database bermasalah'));
@@ -7040,6 +7061,10 @@ function updateSSK(tab, rowId) {
             }
         }
         renderModelList();
+        renderStokDashboard();
+        if (typeof _renderRiwayatTransaksiOri === 'function') _renderRiwayatTransaksiOri();
+        if (typeof _renderPelunasanViewOri === 'function') _renderPelunasanViewOri();
+        if (_activeTab === 'laba' && _labaUiLoaded && typeof renderLabaKotor === 'function') renderLabaKotor();
         showToast('✅ Harga diperbarui!');
     }
     function batalEditHarga(id) { renderModelList(); }
