@@ -5495,6 +5495,62 @@ function updateSSK(tab, rowId) {
     }
 }
 
+    const _dashboardKpiAnimations = new WeakMap();
+
+    function animateDashboardKpi(el, value) {
+        const target = Math.round(Number(value) || 0);
+        const activeAnimation = _dashboardKpiAnimations.get(el);
+        el.classList.remove('kpi-skel');
+        if (activeAnimation && activeAnimation.target === target) return;
+
+        const current = Number(el.dataset.kpiCurrent ?? el.textContent.replace(/[^\d-]/g, '')) || 0;
+        if (activeAnimation) cancelAnimationFrame(activeAnimation.frame);
+
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || current === target) {
+            el.textContent = target.toLocaleString('id-ID');
+            el.dataset.kpiCurrent = String(target);
+            _dashboardKpiAnimations.delete(el);
+            return;
+        }
+
+        const startTime = performance.now();
+        const duration = 900;
+        const animation = { target, frame: 0 };
+        _dashboardKpiAnimations.set(el, animation);
+
+        function tick(now) {
+            if (_dashboardKpiAnimations.get(el) !== animation) return;
+
+            const progress = Math.min((now - startTime) / duration, 1);
+            const easedProgress = 1 - Math.pow(1 - progress, 3);
+            const currentValue = Math.round(current + (target - current) * easedProgress);
+            el.textContent = currentValue.toLocaleString('id-ID');
+            el.dataset.kpiCurrent = String(currentValue);
+
+            if (progress < 1) {
+                animation.frame = requestAnimationFrame(tick);
+            } else {
+                el.textContent = target.toLocaleString('id-ID');
+                el.dataset.kpiCurrent = String(target);
+                _dashboardKpiAnimations.delete(el);
+            }
+        }
+
+        animation.frame = requestAnimationFrame(tick);
+    }
+
+    function resetDashboardKpis() {
+        ['kpi-total-produk', 'kpi-total-stok', 'kpi-total-brand'].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const animation = _dashboardKpiAnimations.get(el);
+            if (animation) cancelAnimationFrame(animation.frame);
+            _dashboardKpiAnimations.delete(el);
+            el.dataset.kpiCurrent = '0';
+            el.textContent = '0';
+        });
+    }
+
     function renderStokDashboard() {
         _dedupeRiwayatInputState();
         _dedupeTransaksiState();
@@ -5531,11 +5587,10 @@ function updateSSK(tab, rowId) {
                 appData.riwayatInput.forEach(d => { if (d.model) uniqueModels.add(String(d.model).trim().toUpperCase()); });
                 jumlahModel = uniqueModels.size;
             }
-            elProduk.textContent = jumlahModel.toLocaleString('id-ID');
-            elProduk.classList.remove('kpi-skel');
+            animateDashboardKpi(elProduk, jumlahModel);
         }
         // KPI Total Stok = jumlah stok brand yang tampil (total > 0), dihitung setelah brandStok tersedia di bawah.
-        if (elKeluar) { elKeluar.textContent = totalKeluar.toLocaleString('id-ID'); elKeluar.classList.remove('kpi-skel'); }
+        if (elKeluar) animateDashboardKpi(elKeluar, totalKeluar);
 
         const brandListEl = document.getElementById('stok-brand-list');
         const realtimeNoteEl = document.getElementById('stok-brand-realtime-note');
@@ -5544,8 +5599,8 @@ function updateSSK(tab, rowId) {
                 brandListEl.innerHTML = '<div class="text-center text-black text-[11px] py-8 flex flex-col items-center gap-2"><i class="fa-solid fa-inbox text-2xl opacity-40"></i>Belum ada brand. Tambahkan di Tab Master.</div>';
                 const kpiTotalStokEl0 = document.getElementById('kpi-total-stok');
                 const kpiTotalBrandEl0 = document.getElementById('kpi-total-brand');
-                if (kpiTotalStokEl0) { kpiTotalStokEl0.textContent = '0'; kpiTotalStokEl0.classList.remove('kpi-skel'); }
-                if (kpiTotalBrandEl0) { kpiTotalBrandEl0.textContent = totalKeluar.toLocaleString('id-ID'); kpiTotalBrandEl0.classList.remove('kpi-skel'); }
+                if (kpiTotalStokEl0) animateDashboardKpi(kpiTotalStokEl0, 0);
+                if (kpiTotalBrandEl0) animateDashboardKpi(kpiTotalBrandEl0, totalKeluar);
             } else {
                 // PERF: dulu masterData.brand.map(b => hitungStokBrand(b.id) + full scan
                 // riwayatInput lagi per brand) — sekarang 1x hitung untuk semua brand sekaligus,
@@ -5567,10 +5622,9 @@ function updateSSK(tab, rowId) {
                 // tidak ikut dihitung di KPI — angka KPI konsisten dengan yang terlihat.
                 if (kpiTotalStokEl) {
                     const totalStokTampil = brandStok.reduce((s, b) => s + b.total, 0);
-                    kpiTotalStokEl.textContent = totalStokTampil.toLocaleString('id-ID');
-                    kpiTotalStokEl.classList.remove('kpi-skel');
+                    animateDashboardKpi(kpiTotalStokEl, totalStokTampil);
                 }
-                if (kpiTotalBrandEl) { kpiTotalBrandEl.textContent = totalKeluar.toLocaleString('id-ID'); kpiTotalBrandEl.classList.remove('kpi-skel'); }
+                if (kpiTotalBrandEl) animateDashboardKpi(kpiTotalBrandEl, totalKeluar);
                 if (brandStok.length === 0) {
                     brandListEl.innerHTML = '<div class="text-center text-black text-[11px] py-8 flex flex-col items-center gap-2"><i class="fa-solid fa-inbox text-2xl opacity-40"></i>Belum ada stok tersedia.</div>';
                 } else {
@@ -5904,6 +5958,7 @@ function updateSSK(tab, rowId) {
 
     function _doSwitchTab(tabName) {
         const tabs = ['stok','input','transaksi','riwayat-input','riwayat-beban','riwayat-retur','riwayat','laba','master'];
+        const enteringStok = tabName === 'stok' && _activeTab !== 'stok';
 
         // Tutup floating navbar otomatis setiap kali tab berpindah
         if (typeof window._closeFloatingNav === 'function') window._closeFloatingNav();
@@ -5941,6 +5996,7 @@ function updateSSK(tab, rowId) {
         // Render langsung hanya untuk perpindahan ke STOK; refresh realtime
         // biasa tetap menggunakan wrapper debounce di bawah.
         closeBrandDetail(tabName === 'stok');
+        if (enteringStok) resetDashboardKpis();
         if (tabName === 'stok' && typeof _renderStokDashboardOri === 'function') {
             _renderStokDashboardOri();
         }
