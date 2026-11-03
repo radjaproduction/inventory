@@ -5,7 +5,7 @@
   "start_url": "/inventory/index.html",
   "scope": "/inventory/",
   "display": "standalone",
-  "background_color": "#F6DBB4",
+  "background_color": "#06142B",
   "theme_color": "#06142B",
   "orientation": "portrait-primary",
   "lang": "id",
