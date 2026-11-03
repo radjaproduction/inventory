@@ -5642,11 +5642,14 @@ function updateSSK(tab, rowId) {
                                     <span class="rp-brand-order">${orderNo}</span>
                                     <span class="rp-brand-name">${b.nama}</span>
                                 </div>
-                                <div class="rp-brand-meta"><span class="rp-brand-stok-count">${b.total.toLocaleString('id-ID')} STOK</span> <span>•</span> ${b.modelCount.toLocaleString('id-ID')} MODEL</div>
+                                <div class="rp-brand-meta"><span class="rp-brand-stok-count"><span class="rp-brand-stok-value" data-target="${b.total}">0</span> STOK</span> <span>•</span> ${b.modelCount.toLocaleString('id-ID')} MODEL</div>
                             </div>
                             <div class="rp-brand-arrow"><i class="fa-solid fa-chevron-right"></i></div>
                         </div>`;
                     }).join('');
+                    brandListEl.querySelectorAll('.rp-brand-stok-value').forEach(el => {
+                        animateDashboardKpi(el, el.dataset.target);
+                    });
                 }
             }
         }
