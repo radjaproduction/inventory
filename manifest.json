@@ -6,7 +6,7 @@
   "scope": "/inventory/",
   "display": "standalone",
   "background_color": "#F6DBB4",
-  "theme_color": "#F6DBB4",
+  "theme_color": "#06142B",
   "orientation": "portrait-primary",
   "lang": "id",
   "categories": ["business", "productivity"],
