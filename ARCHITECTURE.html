@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Arsitektur Radja Production | inventory</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="Arsitektur Radja Production" />
+<meta property="og:locale" content="en_US" />
+<link rel="canonical" href="https://radjaproduction.github.io/inventory/ARCHITECTURE.html" />
+<meta property="og:url" content="https://radjaproduction.github.io/inventory/ARCHITECTURE.html" />
+<meta property="og:site_name" content="inventory" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Arsitektur Radja Production" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","headline":"Arsitektur Radja Production","url":"https://radjaproduction.github.io/inventory/ARCHITECTURE.html"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <link rel="stylesheet" href="/inventory/assets/css/style.css?v=1324ac9676dd18fac8a742a7e810e8b91f18f182">
+    <!-- start custom head snippets, customize with your own _includes/head-custom.html file -->
+
+<!-- Setup Google Analytics -->
+
+
+
+<!-- You can set your favicon here -->
+<!-- link rel="shortcut icon" type="image/x-icon" href="/inventory/favicon.ico" -->
+
+<!-- end custom head snippets -->
+
+  </head>
+  <body>
+    <div class="container-lg px-3 my-5 markdown-body">
+      
+      <h1><a href="https://radjaproduction.github.io/inventory/">inventory</a></h1>
+      
+
+      <h1 id="arsitektur-radja-production">Arsitektur Radja Production</h1>
+
+<p>Dokumen ini menjadi acuan refactor bertahap aplikasi vanilla JavaScript. Refactor tidak
+mengubah skema database atau perilaku bisnis tanpa keputusan terpisah.</p>
+
+<h2 id="kondisi-saat-ini">Kondisi saat ini</h2>
+
+<p><code class="language-plaintext highlighter-rouge">index.html</code> masih menjadi shell UI, tempat seluruh fungsi aplikasi, state global, query
+Supabase, realtime, notifikasi, backup, dan print hidup bersamaan. Tab yang tidak aktif
+disembunyikan dari tampilan, tetapi markup dan sebagian besar kode tetap ikut dimuat.</p>
+
+<p>State utama saat ini:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">masterData</code>: vendor, brand, model, warna, ukuran.</li>
+  <li><code class="language-plaintext highlighter-rouge">appData</code>: riwayat input, riwayat transaksi, pelunasan.</li>
+  <li>state form dan navigasi tersebar di banyak fungsi global.</li>
+</ul>
+
+<p>Alur startup saat ini mengambil data master, riwayat input beserta item, transaksi beserta
+item, pelunasan, dan data beban sebelum loading awal ditutup. Ini adalah titik yang paling
+berpengaruh terhadap waktu buka aplikasi.</p>
+
+<h2 id="target-arsitektur-tanpa-react">Target arsitektur tanpa React</h2>
+
+<p>Kode akan dipisahkan berdasarkan tanggung jawab, bukan berdasarkan jenis file HTML:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>core/
+  app-state.js          # state aplikasi dan invalidasi cache
+  app-router.js         # perpindahan tab dan lifecycle tab
+  loading-controller.js # status loading startup
+
+data/
+  supabase-client.js    # pembuatan client dan konfigurasi
+  repositories/         # query dan mapping database
+    master-repository.js
+    inventory-repository.js
+    transaction-repository.js
+    payment-repository.js
+    expense-repository.js
+
+domain/
+  stock-calculator.js   # aturan hitung stok, tanpa DOM dan tanpa Supabase
+  transaction-rules.js  # validasi transaksi dan perubahan qty
+  payment-rules.js      # aturan pelunasan
+
+features/
+  stock/
+  input/
+  transaction/
+  history/
+  profit-loss/
+  master-data/
+
+integrations/
+  realtime.js
+  notifications.js
+  backup.js
+  printing.js
+
+ui/
+  dom.js
+  modal.js
+  toast.js
+</code></pre></div></div>
+
+<h2 id="aturan-dependensi">Aturan dependensi</h2>
+
+<ol>
+  <li><code class="language-plaintext highlighter-rouge">domain/</code> tidak boleh mengimpor atau memanggil DOM, Supabase, <code class="language-plaintext highlighter-rouge">localStorage</code>, atau
+<code class="language-plaintext highlighter-rouge">window</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">data/repositories/</code> menjadi satu-satunya tempat query tabel database.</li>
+  <li><code class="language-plaintext highlighter-rouge">features/</code> mengorkestrasi use case dan memanggil repository/domain; fitur tidak boleh
+mengulang query tabel secara langsung.</li>
+  <li><code class="language-plaintext highlighter-rouge">ui/</code> hanya menangani elemen tampilan dan event UI.</li>
+  <li><code class="language-plaintext highlighter-rouge">core/app-state.js</code> menjadi sumber state bersama; akses langsung ke variabel global baru
+tidak boleh ditambah.</li>
+  <li>Realtime memperbarui state atau meminta refresh repository, lalu mengirim satu event
+perubahan fitur. Realtime tidak boleh merender banyak tab secara langsung.</li>
+  <li>Data list besar wajib memiliki batas query, pagination, atau aggregate server-side.</li>
+</ol>
+
+<h2 id="urutan-refactor">Urutan refactor</h2>
+
+<h3 id="fase-1--fondasi-dan-pengukuran">Fase 1 — fondasi dan pengukuran</h3>
+
+<ul>
+  <li>Pertahankan perilaku aplikasi.</li>
+  <li>Dokumentasikan kontrak state, query, dan render.</li>
+  <li>Tambahkan logging waktu startup, waktu query, dan jumlah baris yang dirender.</li>
+</ul>
+
+<h3 id="fase-2--data-access">Fase 2 — data access</h3>
+
+<ul>
+  <li>Ekstrak client Supabase dan helper query.</li>
+  <li>Pindahkan query master, inventory, transaksi, pelunasan, dan beban ke repository.</li>
+  <li>Pertahankan fungsi global lama sebagai adapter sementara agar UI tidak langsung berubah.</li>
+</ul>
+
+<h3 id="fase-3--domain-stok">Fase 3 — domain stok</h3>
+
+<ul>
+  <li>Pindahkan <code class="language-plaintext highlighter-rouge">hitungStokBrand</code>, <code class="language-plaintext highlighter-rouge">hitungStokItem</code>, dan perhitungan agregat ke modul murni.</li>
+  <li>Uji dengan data fixture sebelum fungsi lama dihapus.</li>
+</ul>
+
+<h3 id="fase-4--lifecycle-tab-dan-ui">Fase 4 — lifecycle tab dan UI</h3>
+
+<ul>
+  <li>Pisahkan render tiap fitur.</li>
+  <li>Muat data fitur ketika tab dibuka jika data tersebut tidak dibutuhkan dashboard.</li>
+  <li>Kurangi ketergantungan antar-tab dan render ulang yang tidak perlu.</li>
+</ul>
+
+<h3 id="fase-5--optimasi-performa">Fase 5 — optimasi performa</h3>
+
+<ul>
+  <li>Pagination riwayat.</li>
+  <li>Virtualisasi list jika jumlah kartu besar.</li>
+  <li>Lazy-load aset dan modul fitur.</li>
+  <li>Ukur ulang dengan perangkat nyata sebelum memutuskan perlu bundler atau migrasi framework.</li>
+</ul>
+
+<h2 id="keputusan-awal">Keputusan awal</h2>
+
+<ul>
+  <li>React belum digunakan.</li>
+  <li>Database dan nama tabel tetap dipertahankan.</li>
+  <li>Migrasi dilakukan bertahap dan dapat dibatalkan per fase.</li>
+  <li>Artefak runtime tetap self-contained: <code class="language-plaintext highlighter-rouge">index.html</code> meng-inline modul aplikasi yang
+diperlukan. File di folder <code class="language-plaintext highlighter-rouge">js/</code> menjadi source modular untuk pemeliharaan, bukan dependency
+<code class="language-plaintext highlighter-rouge">&lt;script src&gt;</code> yang wajib tersedia saat aplikasi dibuka.</li>
+  <li>Sinkronisasi source ke artefak runtime dilakukan dengan <code class="language-plaintext highlighter-rouge">node tools/sync-inline-modules.js</code>
+sebelum deploy. Script ini bersifat idempotent dan akan gagal jika marker inline hilang.</li>
+  <li>Dependency eksternal hanya boleh ditambahkan setelah jalur CDN, fallback, dan strategi cache
+service worker diuji pada URL deployment sebenarnya.</li>
+  <li>Perubahan visual dan perubahan aturan bisnis berada di luar refactor arsitektur kecuali
+diperlukan untuk menjaga kontrak modul.</li>
+</ul>
+
+<h2 id="progres-implementasi">Progres implementasi</h2>
+
+<ul class="task-list">
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Kontrak arsitektur dan aturan dependensi didokumentasikan.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Repository Supabase dibuat sebagai seam data access.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Query startup dan realtime untuk data master dipindahkan ke repository.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Query riwayat input, transaksi, pelunasan, dan bayar sebagian dipindahkan ke repository.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Mapping row database ke bentuk state dipusatkan di data mapper.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Kalkulator stok dipisahkan ke modul domain tanpa ketergantungan DOM/database.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Data beban dikeluarkan dari jalur startup dan dimuat on-demand di tab-nya.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Operasi tambah/hapus/edit master mulai memakai adapter repository.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Insert header dan item untuk Input Stok serta Transaksi memakai adapter repository.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Update/delete satu record untuk input item, transaksi item, transaksi, dan pelunasan memakai adapter repository.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Insert/delete satu record untuk pelunasan dan biaya operasional memakai adapter repository.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Update multi-kondisi dan delete batch memakai adapter repository.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Repository aplikasi dibuat sekali setelah koneksi Supabase dan dipakai bersama.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Penyimpanan pengaturan memakai adapter repository.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Operasi delete massal dan insert batch restore memakai adapter repository.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Rollback insert input dan penghapusan riwayat retur memakai adapter repository.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Instrumentasi durasi startup data dan render awal ditambahkan.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Query foto/data ringkas beban dan koreksi stok memakai repository.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />RPC aggregate dashboard dan stok varian dipanggil melalui repository.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />RPC beban, cleanup transaksi, dan sinkronisasi sequence dipanggil melalui repository.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Startup memakai ringkasan dashboard/stok; ledger riwayat lengkap dimuat saat dibutuhkan.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Guard deduplikasi ID untuk patch realtime transaksi dan refresh cache aggregate setelah mutasi.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Fallback update/delete item transaksi memakai repository.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Backup/restore pengaturan memakai repository.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Pemanggilan langsung ke tabel inventory utama sudah dipusatkan.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Integrasi Pesanan dan FCM dipisahkan ke external repository.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Modul repository/domain di-inline ke <code class="language-plaintext highlighter-rouge">index.html</code> agar kegagalan path file lokal tidak
+dapat menghentikan startup runtime.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Script sinkronisasi source modular ke blok inline dibuat dan diuji idempotent.</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Query riwayat besar diubah menjadi pagination sesuai kebutuhan layar.</li>
+</ul>
+
+
+      
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/4.1.0/anchor.min.js" integrity="sha256-lZaRhKri35AyJSypXXs4o6OPFTbTmUoltBbDCbdzegg=" crossorigin="anonymous"></script>
+    <script>anchors.add();</script>
+  </body>
+</html>
